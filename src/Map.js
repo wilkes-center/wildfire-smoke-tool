@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Map, { Source, Layer } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -10,23 +10,24 @@ const layers = [
       name: 'AQI Data',
       source: {
         type: 'vector',
-        url: 'mapbox://pkulandh.aqi'
+        url: 'mapbox://pkulandh.split_2024-09-16_morning'
       },
       layer: {
         'id': 'custom-layer',
         'type': 'circle',
-        'source-layer': 'AQI_processed',
+        'source-layer': 'split_20240916_morning_processed',
         'paint': {
-          'circle-radius': {
-            stops: 
-            [[1, 30],
-            [2, 40], 
-            [3, 50], 
-            [4, 60],  
-            [5, 70], 
-            [11, 6], 
-            [16, 40]]
-          },
+            'circle-radius': [
+                'interpolate',
+                ['exponential', 1.5],
+                ['zoom'],
+                1, 3,
+                4, 10,
+                5, 15,
+                10, 30,
+                15, 40,
+                20, 50
+              ],
           'circle-color': [
             'case',
             ['all', 
@@ -52,7 +53,7 @@ const layers = [
             'case',
             ['all', 
               ['has', 'AQI'],
-              ['>', ['to-number', ['get', 'AQI'], 0], 20]
+              ['>', ['to-number', ['get', 'AQI'], 0], 50]
             ],
             0.8,
             0  // Fully transparent for AQI values below 10
@@ -62,7 +63,6 @@ const layers = [
     },
   ];
   
-
 const MapComponent = () => {
   const [viewport, setViewport] = useState({
     latitude: 40,
@@ -77,9 +77,11 @@ const MapComponent = () => {
   const [currentTime, setCurrentTime] = useState(new Date('2024-09-15T00:00:00'));
   const [timeRange, setTimeRange] = useState({ 
     min: new Date('2024-09-15T00:00:00'), 
-    max: new Date('2024-09-19T23:00:00') 
+    max: new Date('2024-09-16T23:00:00') 
   });
   const [debugInfo, setDebugInfo] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     setTimeRange({
@@ -87,6 +89,29 @@ const MapComponent = () => {
       max: new Date('2024-09-19T23:00:00')
     });
   }, []);
+
+  useEffect(() => {
+    if (isPlaying) {
+      intervalRef.current = setInterval(() => {
+        setCurrentTime(prevTime => {
+          const newTime = new Date(prevTime.getTime() + 60 * 60 * 1000); // Advance by 1 hour
+          if (newTime > timeRange.max) {
+            setIsPlaying(false);
+            return timeRange.min;
+          }
+          return newTime;
+        });
+      }, 1000); // Update every second
+    } else {
+      clearInterval(intervalRef.current);
+    }
+
+    return () => clearInterval(intervalRef.current);
+  }, [isPlaying, timeRange]);
+
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying);
+  };
 
   const toggleLayer = (layerId) => {
     setActiveLayers(prev =>
@@ -152,6 +177,7 @@ const MapComponent = () => {
                    `Current center: ${map.getCenter().lng.toFixed(4)}, ${map.getCenter().lat.toFixed(4)}`);
     };
 
+
     map.on('zoom', updateDebugInfo);
     map.on('moveend', updateDebugInfo);
     map.on('sourcedata', (e) => {
@@ -159,6 +185,10 @@ const MapComponent = () => {
         updateDebugInfo();
       }
     });
+  }, []);
+
+  const onViewportChange = useCallback((newViewport) => {
+    setViewport(newViewport);
   }, []);
 
   return (
@@ -187,15 +217,15 @@ const MapComponent = () => {
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ flex: 1, position: 'relative' }}>
-          <Map
+        <Map
             {...viewport}
             style={{ width: '100%', height: '100%' }}
             mapStyle="mapbox://styles/mapbox/light-v10"
             mapboxAccessToken={MAPBOX_TOKEN}
-            onMove={evt => setViewport(evt.viewState)}
             onError={onError}
             onLoad={onMapLoad}
-          >
+            onMove={evt => onViewportChange(evt.viewState)}
+            >
             {activeLayers.map(layerId => {
               const layer = layers.find(l => l.id === layerId);
               const filteredLayer = getLayerWithTimeFilter(layer);
@@ -208,6 +238,9 @@ const MapComponent = () => {
           </Map>
         </div>
         <div style={{ padding: '10px', background: '#f0f0f0' }}>
+          <button onClick={togglePlay}>
+            {isPlaying ? 'Pause' : 'Play'}
+          </button>
           <input
             type="range"
             min={0}
