@@ -18,16 +18,18 @@ const layers = [
         'source-layer': 'split_20240916_morning_processed',
         'paint': {
             'circle-radius': [
-                'interpolate',
-                ['exponential', 1.5],
-                ['zoom'],
-                1, 3,
-                4, 10,
-                5, 15,
-                10, 30,
-                15, 40,
-                20, 50
-              ],
+            'interpolate',
+            ['exponential', 1.5],
+            ['zoom'],
+            2, 8,
+            3, 8,
+            4, 8,
+            5, 12,
+            6, 14,
+            10, 30,
+            15, 40,
+            20, 50
+            ],
           'circle-color': [
             'case',
             ['all', 
@@ -46,17 +48,17 @@ const layers = [
               300, 'rgba(126, 0, 35, 0.7)', // Hazardous
               500, 'rgba(126, 0, 35, 0.7)'  // Hazardous 
             ],
-            'rgba(0, 0, 0, 0)'  // Transparent for AQI values below 10
+            'rgba(0, 0, 0, 0)'  
           ],
           'circle-blur': 0.5,
           'circle-opacity': [
             'case',
             ['all', 
               ['has', 'AQI'],
-              ['>', ['to-number', ['get', 'AQI'], 0], 50]
+              ['>', ['to-number', ['get', 'AQI'], 0], 50] // Transparent for AQI values below 50
             ],
             0.8,
-            0  // Fully transparent for AQI values below 10
+            0  
           ]
         }
       }
@@ -74,10 +76,10 @@ const MapComponent = () => {
 
   const [activeLayers, setActiveLayers] = useState(['custom-layer']);
   const [error, setError] = useState(null);
-  const [currentTime, setCurrentTime] = useState(new Date('2024-09-15T00:00:00'));
+  const [currentTime, setCurrentTime] = useState(new Date('2024-09-15T18:00:00'));
   const [timeRange, setTimeRange] = useState({ 
-    min: new Date('2024-09-15T00:00:00'), 
-    max: new Date('2024-09-16T23:00:00') 
+    min: new Date('2024-09-15T18:00:00'), 
+    max: new Date('2024-09-15T23:00:00') 
   });
   const [debugInfo, setDebugInfo] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -85,8 +87,8 @@ const MapComponent = () => {
 
   useEffect(() => {
     setTimeRange({
-      min: new Date('2024-09-15T00:00:00'),
-      max: new Date('2024-09-19T23:00:00')
+      min: new Date('2024-09-15T18:00:00'),
+      max: new Date('2024-09-15T23:00:00')
     });
   }, []);
 
@@ -101,7 +103,7 @@ const MapComponent = () => {
           }
           return newTime;
         });
-      }, 1000); // Update every second
+      }, 500); // Update half a second
     } else {
       clearInterval(intervalRef.current);
     }
