@@ -1,0 +1,5 @@
+export const basemaps = [
+    { id: 'streets', name: 'Streets', style: 'mapbox://styles/mapbox/streets-v11' },
+    { id: 'satellite', name: 'Satellite', style: 'mapbox://styles/mapbox/satellite-v9' },
+    { id: 'topography', name: 'Topography', style: 'mapbox://styles/mapbox/outdoors-v11' },
+  ];
