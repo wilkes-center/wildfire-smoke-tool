@@ -25,6 +25,7 @@ const MapComponent = () => {
   const mapRef = useRef(null);
   const [currentZoom, setCurrentZoom] = useState(3.5);
   const activeLayers = useRef([]);
+  const [aqiThreshold, setAqiThreshold] = useState(100);
 
   const getTilesetId = (date) => {
     const formattedDate = date.toISOString().slice(0, 10).replace(/-/g, '') + '_' + date.getHours().toString().padStart(2, '0');
@@ -40,7 +41,7 @@ const MapComponent = () => {
     type: 'circle',
     source: `aqi-source-${tilesetId}`,
     'source-layer': layerName,
-    filter: ['>', ['to-number', ['get', 'AQI']], 20],
+    filter: ['>', ['to-number', ['get', 'AQI']], aqiThreshold],
     paint: {
       'circle-radius': [
         'interpolate',
@@ -74,7 +75,15 @@ const MapComponent = () => {
         6, 0.6,
         8, 0.4
       ],
-      'circle-opacity': opacity
+      'circle-opacity': [
+      'interpolate',
+      ['linear'],
+      ['to-number', ['get', 'AQI'], 0],
+      0, ['*', 0.3, opacity],
+      99, ['*', 0.3, opacity],
+      100, opacity,
+      500, opacity
+    ]
     }
   });
 
@@ -93,6 +102,8 @@ const MapComponent = () => {
 
     if (!map.getLayer(layerId)) {
       map.addLayer(createLayerConfig(tilesetId, layerName, opacity));
+    } else {
+      map.setFilter(layerId, ['>', ['to-number', ['get', 'AQI']], aqiThreshold]);
     }
 
     return layerId;
@@ -126,13 +137,13 @@ const MapComponent = () => {
     });
 
     activeLayers.current = layersToShow.map(layer => layer.layerId);
-  }, [currentTime]);
+  }, [currentTime, aqiThreshold]);
 
   useEffect(() => {
     if (mapRef.current) {
       updateLayers();
     }
-  }, [currentTime, updateLayers]);
+  }, [currentTime, aqiThreshold, updateLayers]);
 
   useEffect(() => {
     if (isPlaying) {
@@ -177,6 +188,10 @@ const MapComponent = () => {
     });
   };
 
+  const handleAqiThresholdChange = (event) => {
+    setAqiThreshold(parseInt(event.target.value));
+  };
+
   const totalHours = Math.floor((timeRange.max - timeRange.min) / (1000 * 60 * 60));
 
   return (
@@ -184,6 +199,18 @@ const MapComponent = () => {
       <div style={{ width: '250px', padding: '10px', background: '#f0f0f0', overflowY: 'auto' }}>
         <h3>Zoom Info</h3>
         <div>Current Zoom: {currentZoom.toFixed(2)}</div>
+        <h3>AQI Threshold</h3>
+        <div>
+          <input
+            type="range"
+            min="0"
+            max="200"
+            value={aqiThreshold}
+            onChange={handleAqiThresholdChange}
+            style={{ width: '100%' }}
+          />
+          <div>Current Threshold: {aqiThreshold}</div>
+        </div>
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
