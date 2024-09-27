@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import Map, { Source, Layer } from 'react-map-gl';
+import Map from 'react-map-gl';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
+const TRANSITION_DURATION = 300; // milliseconds
 
 const MapComponent = () => {
   const [viewport, setViewport] = useState({
@@ -24,75 +25,24 @@ const MapComponent = () => {
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const mapRef = useRef(null);
   const [currentZoom, setCurrentZoom] = useState(3.5);
-  const activeLayers = useRef([]);
   const [aqiThreshold, setAqiThreshold] = useState(100);
 
-  const getTilesetId = (date) => {
+  const getTilesetId = useCallback((date) => {
     const formattedDate = date.toISOString().slice(0, 10).replace(/-/g, '') + '_' + date.getHours().toString().padStart(2, '0');
     return `pkulandh.aqi_${formattedDate}`;
-  };
+  }, []);
 
-  const getLayerName = (date) => {
+  const getLayerName = useCallback((date) => {
     return date.toISOString().slice(0, 10).replace(/-/g, '') + '_' + date.getHours().toString().padStart(2, '0');
-  };
+  }, []);
 
-  const createLayerConfig = (tilesetId, layerName, opacity = 1) => ({
-    id: `aqi-layer-${tilesetId}`,
-    type: 'circle',
-    source: `aqi-source-${tilesetId}`,
-    'source-layer': layerName,
-    filter: ['>', ['to-number', ['get', 'AQI']], aqiThreshold],
-    paint: {
-      'circle-radius': [
-        'interpolate',
-        ['exponential', 1.5],
-        ['zoom'],
-        2, 20,
-        4, 20,
-        5, 30,
-        6, 35,
-        7, 40,
-        8, 40,
-      ],
-      'circle-color': [
-        'interpolate',
-        ['linear'],
-        ['to-number', ['get', 'AQI'], 0],
-        20, 'rgba(0, 228, 0, 0.1)',
-        50, 'rgba(255, 255, 0, 0.1)',
-        100, 'rgba(255, 126, 0, 0.1)',
-        150, 'rgba(255, 0, 0, 0.1)',
-        200, 'rgba(143, 63, 151, 0.1)',
-        300, 'rgba(126, 0, 35, 0.1)',
-        500, 'rgba(126, 0, 35, 0.1)'
-      ],
-      'circle-blur': [
-        'interpolate',
-        ['linear'],
-        ['zoom'],
-        2, 1,
-        4, 0.8,
-        6, 0.6,
-        8, 0.4
-      ],
-      'circle-opacity': [
-      'interpolate',
-      ['linear'],
-      ['to-number', ['get', 'AQI'], 0],
-      0, ['*', 0.3, opacity],
-      99, ['*', 0.3, opacity],
-      100, opacity,
-      500, opacity
-    ]
-    }
-  });
-
-  const addSourceAndLayer = (map, date, opacity = 1) => {
+  const updateLayer = useCallback((map, date) => {
     const tilesetId = getTilesetId(date);
-    const sourceId = `aqi-source-${tilesetId}`;
     const layerName = getLayerName(date);
-    const layerId = `aqi-layer-${tilesetId}`;
+    const sourceId = `source-${tilesetId}`;
+    const layerId = `layer-${tilesetId}`;
 
+    // Add new source if it doesn't exist
     if (!map.getSource(sourceId)) {
       map.addSource(sourceId, {
         type: 'vector',
@@ -100,50 +50,79 @@ const MapComponent = () => {
       });
     }
 
+    // Prepare the new layer
+    const newLayerConfig = {
+      id: layerId,
+      type: 'circle',
+      source: sourceId,
+      'source-layer': layerName,
+      filter: ['>', ['to-number', ['get', 'AQI']], aqiThreshold],
+      paint: {
+        'circle-radius': [
+          'interpolate',
+          ['exponential', 1.5],
+          ['zoom'],
+          2, 2,
+          4, 3,
+          5, 7,
+          6, 9,
+          7, 11,
+          8, 13,
+        ],
+        'circle-color': [
+          'interpolate',
+          ['linear'],
+          ['to-number', ['get', 'AQI'], 0],
+          20, 'rgb(0, 228, 0)',
+          50, 'rgb(255, 255, 0)',
+          100, 'rgb(255, 126, 0)',
+          150, 'rgb(255, 0, 0)',
+          200, 'rgb(143, 63, 151)',
+          300, 'rgb(126, 0, 35)',
+          500, 'rgb(126, 0, 35)'
+        ],
+        'circle-blur': 0.4,
+        'circle-opacity': 0,
+      },
+    };
+
+    // Add the new layer if it doesn't exist
     if (!map.getLayer(layerId)) {
-      map.addLayer(createLayerConfig(tilesetId, layerName, opacity));
-    } else {
-      map.setFilter(layerId, ['>', ['to-number', ['get', 'AQI']], aqiThreshold]);
+      map.addLayer(newLayerConfig);
     }
 
-    return layerId;
-  };
-
-  const updateLayers = useCallback(() => {
-    if (!mapRef.current) return;
-
-    const map = mapRef.current.getMap();
-    const currentHour = currentTime.getHours();
-    const layersToShow = [-1, 0, 1, 2].map(offset => {
-      const time = new Date(currentTime);
-      time.setHours(currentHour + offset);
-      return { time, layerId: addSourceAndLayer(map, time, 0) };
-    });
-
-    // Update opacities
-    layersToShow.forEach(({ time, layerId }, index) => {
-      const timeDiff = (time.getTime() - currentTime.getTime()) / (60 * 60 * 1000);
-      let opacity = 1 - Math.abs(timeDiff);
-      opacity = Math.max(0, Math.min(1, opacity)); // Clamp between 0 and 1
-      map.setPaintProperty(layerId, 'circle-opacity', opacity);
-    });
-
-    // Remove old layers
-    activeLayers.current.forEach(layerId => {
-      if (!layersToShow.some(layer => layer.layerId === layerId)) {
-        map.removeLayer(layerId);
-        map.removeSource(layerId.replace('aqi-layer-', 'aqi-source-'));
+    // Fade out all other layers
+    map.getStyle().layers.forEach(layer => {
+      if (layer.id.startsWith('layer-') && layer.id !== layerId) {
+        map.setPaintProperty(layer.id, 'circle-opacity', 0, {
+          duration: TRANSITION_DURATION,
+        });
       }
     });
 
-    activeLayers.current = layersToShow.map(layer => layer.layerId);
-  }, [currentTime, aqiThreshold]);
+    // Fade in the new layer
+    map.setPaintProperty(layerId, 'circle-opacity', 0.7, {
+      duration: TRANSITION_DURATION,
+    });
+
+    // Remove faded out layers and their sources after transition
+    setTimeout(() => {
+      map.getStyle().layers.forEach(layer => {
+        if (layer.id.startsWith('layer-') && layer.id !== layerId) {
+          map.removeLayer(layer.id);
+          map.removeSource(layer.source);
+        }
+      });
+    }, TRANSITION_DURATION);
+
+  }, [getTilesetId, getLayerName, aqiThreshold]);
 
   useEffect(() => {
     if (mapRef.current) {
-      updateLayers();
+      const map = mapRef.current.getMap();
+      updateLayer(map, currentTime);
     }
-  }, [currentTime, aqiThreshold, updateLayers]);
+  }, [currentTime, updateLayer]);
 
   useEffect(() => {
     if (isPlaying) {
@@ -156,12 +135,6 @@ const MapComponent = () => {
       return () => clearInterval(interval);
     }
   }, [isPlaying, timeRange, playbackSpeed]);
-
-  const onMapLoad = useCallback(() => {
-    if (mapRef.current) {
-      updateLayers();
-    }
-  }, [updateLayers]);
 
   const togglePlay = () => {
     setIsPlaying(!isPlaying);
@@ -189,7 +162,16 @@ const MapComponent = () => {
   };
 
   const handleAqiThresholdChange = (event) => {
-    setAqiThreshold(parseInt(event.target.value));
+    const newThreshold = parseInt(event.target.value);
+    setAqiThreshold(newThreshold);
+    const map = mapRef.current?.getMap();
+    if (map) {
+      map.getStyle().layers.forEach(layer => {
+        if (layer.id.startsWith('layer-')) {
+          map.setFilter(layer.id, ['>', ['to-number', ['get', 'AQI']], newThreshold]);
+        }
+      });
+    }
   };
 
   const totalHours = Math.floor((timeRange.max - timeRange.min) / (1000 * 60 * 60));
@@ -204,7 +186,7 @@ const MapComponent = () => {
           <input
             type="range"
             min="0"
-            max="200"
+            max="500"
             value={aqiThreshold}
             onChange={handleAqiThresholdChange}
             style={{ width: '100%' }}
@@ -224,7 +206,6 @@ const MapComponent = () => {
               setViewport(evt.viewState);
               setCurrentZoom(evt.viewState.zoom);
             }}
-            onLoad={onMapLoad}
             ref={mapRef}
           />
         </div>
