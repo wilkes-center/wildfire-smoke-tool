@@ -6,6 +6,7 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying }) => {
   const [drawingMode, setDrawingMode] = useState(false);
   const [polygon, setPolygon] = useState(null);
   const [areaStats, setAreaStats] = useState([]);
+  const [accumulatedData, setAccumulatedData] = useState([]);
   const [tempPolygon, setTempPolygon] = useState([]);
   const [error, setError] = useState(null);
   const [isStatsVisible, setIsStatsVisible] = useState(true);
@@ -102,6 +103,7 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying }) => {
     };
   }, [map, polygon, tempPolygon]);
 
+
   const updateAreaStats = useCallback(() => {
     if (map && polygon) {
       setError(null);
@@ -109,6 +111,18 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying }) => {
         .then(stats => {
           console.log('Calculated stats:', stats);
           setAreaStats(stats);
+          
+          // Process and accumulate the new data
+          const newData = formatChartData(stats);
+          setAccumulatedData(prevData => {
+            const combinedData = [...prevData, ...newData];
+            // Remove duplicates based on the 'time' field
+            const uniqueData = combinedData.filter((v, i, a) => 
+              a.findIndex(t => t.time === v.time) === i
+            );
+            // Sort the data by time
+            return uniqueData.sort((a, b) => new Date(a.time) - new Date(b.time));
+          });
         })
         .catch(err => {
           console.error('Error calculating area stats:', err);
@@ -194,7 +208,7 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying }) => {
         </div>
       )}
 
-      {areaStats.length > 0 && isStatsVisible && (
+{accumulatedData.length > 0 && isStatsVisible && (
         <div style={{
           position: 'absolute',
           top: 10,
@@ -223,9 +237,16 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying }) => {
             <>
               <p>Current Time: {currentDateTime.date} {currentDateTime.hour}:00</p>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={formatChartData(areaStats)}>
+                <LineChart data={accumulatedData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
+                  <XAxis 
+                    dataKey="time" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={70}
+                    interval={'preserveStartEnd'}
+                    tick={{fontSize: 10}}
+                  />
                   <YAxis />
                   <Tooltip content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
@@ -252,23 +273,19 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying }) => {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={{ border: '1px solid #ddd', padding: '8px' }}>Date</th>
-                      <th style={{ border: '1px solid #ddd', padding: '8px' }}>Hour</th>
+                      <th style={{ border: '1px solid #ddd', padding: '8px' }}>Time</th>
                       <th style={{ border: '1px solid #ddd', padding: '8px' }}>Avg AQI</th>
                       <th style={{ border: '1px solid #ddd', padding: '8px' }}>Max AQI</th>
                       <th style={{ border: '1px solid #ddd', padding: '8px' }}>Min AQI</th>
-                      <th style={{ border: '1px solid #ddd', padding: '8px' }}>Points</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {consolidateHourlyData(areaStats).map((hourData, index) => (
+                    {accumulatedData.map((hourData, index) => (
                       <tr key={index}>
-                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{hourData.date}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{hourData.hour}:00</td>
+                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{hourData.time}</td>
                         <td style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: getAQIColor(hourData.averageAQI) }}>{hourData.averageAQI}</td>
                         <td style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: getAQIColor(hourData.maxAQI) }}>{hourData.maxAQI}</td>
                         <td style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: getAQIColor(hourData.minAQI) }}>{hourData.minAQI}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{hourData.numPoints}</td>
                       </tr>
                     ))}
                   </tbody>
