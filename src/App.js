@@ -1,14 +1,12 @@
 import React from 'react';
-import Map from './Map';
+import MapComponent from './components/Map/MapComponent';
 
 const App = () => {
   return (
     <div className="App">
-
       <main>
-        <Map />
+        <MapComponent />
       </main>
-
     </div>
   );
 };
