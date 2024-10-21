@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.css": "/wildfire-webapp/static/css/main.decec01a.css",
+    "main.js": "/wildfire-webapp/static/js/main.38b8be03.js",
+    "static/js/879.f6f047a0.chunk.js": "/wildfire-webapp/static/js/879.f6f047a0.chunk.js",
+    "static/js/453.30bc9991.chunk.js": "/wildfire-webapp/static/js/453.30bc9991.chunk.js",
+    "index.html": "/wildfire-webapp/index.html",
+    "main.decec01a.css.map": "/wildfire-webapp/static/css/main.decec01a.css.map",
+    "main.38b8be03.js.map": "/wildfire-webapp/static/js/main.38b8be03.js.map",
+    "879.f6f047a0.chunk.js.map": "/wildfire-webapp/static/js/879.f6f047a0.chunk.js.map",
+    "453.30bc9991.chunk.js.map": "/wildfire-webapp/static/js/453.30bc9991.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.decec01a.css",
+    "static/js/main.38b8be03.js"
+  ]
+}

@@ -1,108 +1,13 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import calculateAreaStats from './calculateAreaStats';
 
-const AreaAnalysis = ({ map, currentDateTime, isPlaying }) => {
-  const [drawingMode, setDrawingMode] = useState(false);
-  const [polygon, setPolygon] = useState(null);
+const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon }) => {
   const [areaStats, setAreaStats] = useState([]);
   const [accumulatedData, setAccumulatedData] = useState([]);
-  const [tempPolygon, setTempPolygon] = useState([]);
   const [error, setError] = useState(null);
   const [isStatsVisible, setIsStatsVisible] = useState(true);
   const [isStatsMinimized, setIsStatsMinimized] = useState(false);
-  const polygonLayerId = useRef('polygon-layer');
-  const polygonSourceId = useRef('polygon-source');
-
-  const startDrawing = useCallback(() => {
-    setDrawingMode(true);
-    setTempPolygon([]);
-    setPolygon(null);
-    if (map) {
-      map.getCanvas().style.cursor = 'crosshair';
-    }
-  }, [map]);
-
-  const handleClick = useCallback((e) => {
-    if (!drawingMode) return;
-    const { lng, lat } = e.lngLat;
-    setTempPolygon(prev => [...prev, [lng, lat]]);
-  }, [drawingMode]);
-
-  const finishDrawing = useCallback(() => {
-    if (tempPolygon.length >= 3) {
-      setPolygon([...tempPolygon, tempPolygon[0]]);
-      setDrawingMode(false);
-      setTempPolygon([]);
-      if (map) {
-        map.getCanvas().style.cursor = '';
-      }
-    }
-  }, [tempPolygon, map]);
-
-  useEffect(() => {
-    if (map) {
-      map.on('click', handleClick);
-      return () => map.off('click', handleClick);
-    }
-  }, [map, handleClick]);
-
-  useEffect(() => {
-    if (!map) return;
-
-    if (map.getSource(polygonSourceId.current)) {
-      if (map.getLayer(polygonLayerId.current)) {
-        map.removeLayer(polygonLayerId.current);
-      }
-      map.removeSource(polygonSourceId.current);
-    }
-
-    if (polygon || tempPolygon.length > 0) {
-      map.addSource(polygonSourceId.current, {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [polygon || [...tempPolygon, tempPolygon[0]]]
-          }
-        }
-      });
-
-      map.addLayer({
-        id: polygonLayerId.current,
-        type: 'fill',
-        source: polygonSourceId.current,
-        paint: {
-          'fill-color': 'blue',
-          'fill-opacity': 0.2,
-        }
-      });
-
-      map.addLayer({
-        id: `${polygonLayerId.current}-outline`,
-        type: 'line',
-        source: polygonSourceId.current,
-        paint: {
-          'line-color': 'blue',
-          'line-width': 2,
-        }
-      });
-    }
-
-    return () => {
-      if (map.getLayer(polygonLayerId.current)) {
-        map.removeLayer(polygonLayerId.current);
-      }
-      if (map.getLayer(`${polygonLayerId.current}-outline`)) {
-        map.removeLayer(`${polygonLayerId.current}-outline`);
-      }
-      if (map.getSource(polygonSourceId.current)) {
-        map.removeSource(polygonSourceId.current);
-      }
-    };
-  }, [map, polygon, tempPolygon]);
-
 
   const updateAreaStats = useCallback(() => {
     if (map && polygon) {
@@ -112,15 +17,12 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying }) => {
           console.log('Calculated stats:', stats);
           setAreaStats(stats);
           
-          // Process and accumulate the new data
           const newData = formatChartData(stats);
           setAccumulatedData(prevData => {
             const combinedData = [...prevData, ...newData];
-            // Remove duplicates based on the 'time' field
             const uniqueData = combinedData.filter((v, i, a) => 
               a.findIndex(t => t.time === v.time) === i
             );
-            // Sort the data by time
             return uniqueData.sort((a, b) => new Date(a.time) - new Date(b.time));
           });
         })
@@ -171,44 +73,15 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying }) => {
     ).sort((a, b) => new Date(a.time) - new Date(b.time));
   };
 
-  const consolidateHourlyData = (stats) => {
-    return stats.flatMap(tilesetStats => 
-      tilesetStats.hourlyData.map(hourData => ({
-        date: tilesetStats.date,
-        hour: hourData.hour,
-        averageAQI: hourData.averageAQI,
-        maxAQI: hourData.maxAQI,
-        minAQI: hourData.minAQI,
-        numPoints: hourData.numPoints
-      }))
-    ).sort((a, b) => {
-      const dateA = new Date(`${a.date}T${String(a.hour).padStart(2, '0')}:00:00`);
-      const dateB = new Date(`${b.date}T${String(b.hour).padStart(2, '0')}:00:00`);
-      return dateA - dateB;
-    });
-  };
-
   return (
     <>
-      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 1 }}>
-        {!drawingMode && !polygon && (
-          <button onClick={startDrawing}>Draw Polygon</button>
-        )}
-        {drawingMode && (
-          <button onClick={finishDrawing}>Finish Drawing</button>
-        )}
-        {polygon && !drawingMode && (
-          <button onClick={() => setPolygon(null)}>Clear Polygon</button>
-        )}
-      </div>
-
       {error && (
         <div style={{ position: 'absolute', top: 10, right: 10, background: 'red', color: 'white', padding: 10 }}>
           {error}
         </div>
       )}
 
-{accumulatedData.length > 0 && isStatsVisible && (
+      {accumulatedData.length > 0 && isStatsVisible && (
         <div style={{
           position: 'absolute',
           top: 10,
