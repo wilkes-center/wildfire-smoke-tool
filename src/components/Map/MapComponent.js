@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Map from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { MAPBOX_TOKEN, TILESET_INFO, START_DATE, END_DATE, SKIPPED_HOURS, TOTAL_HOURS } from './constants';
+import { MAPBOX_TOKEN, START_DATE, SKIPPED_HOURS } from './constants';
 import { useMapLayers } from './hooks/useMapLayers';
 import { useTimeAnimation } from './hooks/useTimeAnimation';
 import MapControls from './MapControls';
@@ -26,7 +26,7 @@ const MapComponent = () => {
   const mapRef = useRef(null);
   const [mapInstance, setMapInstance] = useState(null);
 
-  // New state for polygon drawing
+  // Drawing state
   const [drawingMode, setDrawingMode] = useState(false);
   const [polygon, setPolygon] = useState(null);
   const [tempPolygon, setTempPolygon] = useState([]);
@@ -44,13 +44,13 @@ const MapComponent = () => {
   }, [currentHour]);
 
   const { updateLayers } = useMapLayers(mapRef, aqiThreshold, currentHour, isMapLoaded, getCurrentDateTime);
+
   useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
 
   const handleMapLoad = useCallback(() => {
     setIsMapLoaded(true);
     if (mapRef.current) {
-      const map = mapRef.current.getMap();
-      setMapInstance(map);
+      setMapInstance(mapRef.current.getMap());
     }
     console.log('Map loaded');
   }, []);
@@ -61,12 +61,12 @@ const MapComponent = () => {
     }
   }, [isMapLoaded]);
 
+  // Update layers when necessary
   useEffect(() => {
-    const map = mapRef.current?.getMap();
-    if (map && isMapLoaded) {
-      updateLayers(map);
+    if (mapInstance && isMapLoaded) {
+      updateLayers(mapInstance);
     }
-  }, [updateLayers, isMapLoaded, currentHour]);
+  }, [updateLayers, isMapLoaded, mapInstance]);
 
   // Polygon drawing functions
   const startDrawing = useCallback(() => {
@@ -100,69 +100,80 @@ const MapComponent = () => {
     setTempPolygon([]);
   }, []);
 
+  // Map click handler
   useEffect(() => {
     if (mapInstance) {
       mapInstance.on('click', handleMapClick);
-      return () => mapInstance.off('click', handleMapClick);
+      return () => {
+        if (mapInstance && !mapInstance._removed) {
+          mapInstance.off('click', handleMapClick);
+        }
+      };
     }
   }, [mapInstance, handleMapClick]);
 
-  // Render polygon on the map
+  // Polygon rendering
   useEffect(() => {
-    if (!mapInstance) return;
+    if (!mapInstance || mapInstance._removed) return;
 
     const sourceId = 'polygon-source';
     const layerId = 'polygon-layer';
+    const outlineLayerId = `${layerId}-outline`;
 
-    if (mapInstance.getSource(sourceId)) {
-      mapInstance.removeLayer(layerId);
-      mapInstance.removeSource(sourceId);
-    }
-
-    if (polygon || tempPolygon.length > 0) {
-      mapInstance.addSource(sourceId, {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [polygon || [...tempPolygon, tempPolygon[0]]]
-          }
+    const cleanup = () => {
+      if (mapInstance && !mapInstance._removed) {
+        if (mapInstance.getLayer(outlineLayerId)) {
+          mapInstance.removeLayer(outlineLayerId);
         }
-      });
-
-      mapInstance.addLayer({
-        id: layerId,
-        type: 'fill',
-        source: sourceId,
-        paint: {
-          'fill-color': 'blue',
-          'fill-opacity': 0.2,
+        if (mapInstance.getLayer(layerId)) {
+          mapInstance.removeLayer(layerId);
         }
-      });
-
-      mapInstance.addLayer({
-        id: `${layerId}-outline`,
-        type: 'line',
-        source: sourceId,
-        paint: {
-          'line-color': 'blue',
-          'line-width': 2,
+        if (mapInstance.getSource(sourceId)) {
+          mapInstance.removeSource(sourceId);
         }
-      });
-    }
-
-    return () => {
-      if (mapInstance.getLayer(layerId)) {
-        mapInstance.removeLayer(layerId);
-      }
-      if (mapInstance.getLayer(`${layerId}-outline`)) {
-        mapInstance.removeLayer(`${layerId}-outline`);
-      }
-      if (mapInstance.getSource(sourceId)) {
-        mapInstance.removeSource(sourceId);
       }
     };
+
+    cleanup();
+
+    if (polygon || tempPolygon.length > 0) {
+      try {
+        mapInstance.addSource(sourceId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: [polygon || [...tempPolygon, tempPolygon[0]]]
+            }
+          }
+        });
+
+        mapInstance.addLayer({
+          id: layerId,
+          type: 'fill',
+          source: sourceId,
+          paint: {
+            'fill-color': 'blue',
+            'fill-opacity': 0.2,
+          }
+        });
+
+        mapInstance.addLayer({
+          id: outlineLayerId,
+          type: 'line',
+          source: sourceId,
+          paint: {
+            'line-color': 'blue',
+            'line-width': 2,
+          }
+        });
+      } catch (error) {
+        console.error('Error adding polygon layers:', error);
+      }
+    }
+
+    return cleanup;
   }, [mapInstance, polygon, tempPolygon]);
 
   return (
@@ -208,7 +219,9 @@ const MapComponent = () => {
           map={mapInstance}
           mapStyle="mapbox://styles/mapbox/light-v10"
           mapboxAccessToken={MAPBOX_TOKEN}
-          polygon={polygon}  // Add this line
+          polygon={polygon}
+          currentDateTime={getCurrentDateTime()}
+          aqiThreshold={aqiThreshold}
         />
       )}
     </div>

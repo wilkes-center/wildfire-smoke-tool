@@ -2,19 +2,123 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import calculateAreaStats from './calculateAreaStats';
 
+const styles = {
+  container: {
+    position: 'absolute',
+    top: '10px',
+    right: '10px',
+    width: '450px',
+    backgroundColor: 'white',
+    borderRadius: '4px',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+    overflow: 'hidden',
+  },
+  header: {
+    padding: '10px',
+    borderBottom: '1px solid #eee',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  title: {
+    margin: 0,
+    fontSize: '18px',
+    fontWeight: 'bold',
+  },
+  buttonGroup: {
+    display: 'flex',
+    gap: '5px',
+  },
+  button: {
+    padding: '5px 10px',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    backgroundColor: 'white',
+    cursor: 'pointer',
+  },
+  activeButton: {
+    backgroundColor: '#e6e6e6',
+  },
+  content: {
+    padding: '15px',
+    maxHeight: '80vh',
+    overflowY: 'auto',
+  },
+  showButton: {
+    position: 'absolute',
+    top: '10px',
+    right: '10px',
+    padding: '8px 16px',
+    backgroundColor: 'white',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  error: {
+    padding: '10px',
+    marginBottom: '10px',
+    backgroundColor: '#ffe6e6',
+    color: '#ff0000',
+    borderRadius: '4px',
+  },
+  tabs: {
+    display: 'flex',
+    gap: '10px',
+    marginBottom: '15px',
+    borderBottom: '1px solid #eee',
+    padding: '0 10px',
+  },
+  tab: {
+    padding: '8px 16px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    borderBottom: '2px solid transparent',
+  },
+  activeTab: {
+    borderBottom: '2px solid #4a90e2',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    marginTop: '10px',
+  },
+  th: {
+    textAlign: 'left',
+    padding: '8px',
+    borderBottom: '1px solid #ddd',
+    backgroundColor: '#f5f5f5',
+  },
+  td: {
+    padding: '8px',
+    borderBottom: '1px solid #ddd',
+  },
+  aqiIndicator: {
+    display: 'inline-block',
+    width: '12px',
+    height: '12px',
+    borderRadius: '50%',
+    marginRight: '8px',
+  },
+  minimized: {
+    height: '50px',
+    overflow: 'hidden',
+  }
+};
+
 const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon }) => {
   const [areaStats, setAreaStats] = useState([]);
   const [accumulatedData, setAccumulatedData] = useState([]);
   const [error, setError] = useState(null);
   const [isStatsVisible, setIsStatsVisible] = useState(true);
   const [isStatsMinimized, setIsStatsMinimized] = useState(false);
+  const [activeView, setActiveView] = useState('chart');
 
   const updateAreaStats = useCallback(() => {
     if (map && polygon) {
       setError(null);
       calculateAreaStats(map, polygon)
         .then(stats => {
-          console.log('Calculated stats:', stats);
           setAreaStats(stats);
           
           const newData = formatChartData(stats);
@@ -28,7 +132,7 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon }) => {
         })
         .catch(err => {
           console.error('Error calculating area stats:', err);
-          setError('Failed to calculate area statistics. Please try again.');
+          setError('Failed to calculate area statistics');
           setAreaStats([]);
         });
     }
@@ -53,15 +157,6 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon }) => {
     return '#7e0023';
   };
 
-  const toggleStatsVisibility = () => {
-    setIsStatsVisible(!isStatsVisible);
-    setIsStatsMinimized(false);
-  };
-
-  const toggleStatsMinimized = () => {
-    setIsStatsMinimized(!isStatsMinimized);
-  };
-
   const formatChartData = (stats) => {
     return stats.flatMap(tilesetStats => 
       tilesetStats.hourlyData.map(hourData => ({
@@ -73,102 +168,128 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon }) => {
     ).sort((a, b) => new Date(a.time) - new Date(b.time));
   };
 
-  return (
-    <>
-      {error && (
-        <div style={{ position: 'absolute', top: 10, right: 10, background: 'red', color: 'white', padding: 10 }}>
-          {error}
-        </div>
-      )}
+  if (!isStatsVisible) {
+    return (
+      <button 
+        style={styles.showButton}
+        onClick={() => setIsStatsVisible(true)}
+      >
+        Show Statistics
+      </button>
+    );
+  }
 
-      {accumulatedData.length > 0 && isStatsVisible && (
-        <div style={{
-          position: 'absolute',
-          top: 10,
-          right: 10,
-          background: 'white',
-          padding: 10,
-          maxWidth: '800px',
-          maxHeight: isStatsMinimized ? '40px' : '80vh',
-          overflowY: isStatsMinimized ? 'hidden' : 'auto',
-          transition: 'max-height 0.3s ease-in-out',
-          boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-          borderRadius: '4px',
-          zIndex: 1000
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <h3 style={{ margin: 0 }}>Area Statistics</h3>
-            <div>
-              <button onClick={toggleStatsMinimized} style={{ marginRight: '5px' }}>
-                {isStatsMinimized ? 'Expand' : 'Minimize'}
-              </button>
-              <button onClick={toggleStatsVisibility}>Close</button>
-            </div>
-          </div>
-          
-          {!isStatsMinimized && (
+  return (
+    <div style={{...styles.container, ...(isStatsMinimized ? styles.minimized : {})}}>
+      <div style={styles.header}>
+        <h2 style={styles.title}>Area Statistics</h2>
+        <div style={styles.buttonGroup}>
+          <button
+            style={styles.button}
+            onClick={() => setIsStatsMinimized(!isStatsMinimized)}
+          >
+            {isStatsMinimized ? '↑' : '↓'}
+          </button>
+          <button
+            style={styles.button}
+            onClick={() => setIsStatsVisible(false)}
+          >
+            ×
+          </button>
+        </div>
+      </div>
+
+      {!isStatsMinimized && (
+        <div style={styles.content}>
+          <div>Current Time: {currentDateTime.date} {currentDateTime.hour}:00</div>
+
+          {error && (
+            <div style={styles.error}>{error}</div>
+          )}
+
+          {accumulatedData.length > 0 && (
             <>
-              <p>Current Time: {currentDateTime.date} {currentDateTime.hour}:00</p>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={accumulatedData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="time" 
-                    angle={-45}
-                    textAnchor="end"
-                    height={70}
-                    interval={'preserveStartEnd'}
-                    tick={{fontSize: 10}}
-                  />
-                  <YAxis />
-                  <Tooltip content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      return (
-                        <div style={{ background: 'white', padding: '5px', border: '1px solid #ccc' }}>
-                          <p><strong>{label}</strong></p>
-                          <p>Average AQI: {data.averageAQI}</p>
-                          <p>Max AQI: {data.maxAQI}</p>
-                          <p>Min AQI: {data.minAQI}</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }} />
-                  <Legend />
-                  <Line type="monotone" dataKey="averageAQI" stroke="#8884d8" name="Average AQI" />
-                  <Line type="monotone" dataKey="maxAQI" stroke="#82ca9d" name="Max AQI" />
-                  <Line type="monotone" dataKey="minAQI" stroke="#ffc658" name="Min AQI" />
-                </LineChart>
-              </ResponsiveContainer>
-              <div style={{ marginTop: '10px' }}>
-                <h4>AQI Summary</h4>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div style={styles.tabs}>
+                <button
+                  style={{
+                    ...styles.tab,
+                    ...(activeView === 'chart' ? styles.activeTab : {})
+                  }}
+                  onClick={() => setActiveView('chart')}
+                >
+                  Chart View
+                </button>
+                <button
+                  style={{
+                    ...styles.tab,
+                    ...(activeView === 'table' ? styles.activeTab : {})
+                  }}
+                  onClick={() => setActiveView('table')}
+                >
+                  Table View
+                </button>
+              </div>
+
+              {activeView === 'chart' && (
+                <div style={{ height: '300px', width: '100%' }}>
+                  <ResponsiveContainer>
+                    <LineChart data={accumulatedData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="time"
+                        angle={-45}
+                        textAnchor="end"
+                        height={40}
+                        interval="preserveStartEnd"
+                        tick={{ fontSize: 4 }}
+                      />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="averageAQI" stroke="#8884d8" name="Average AQI" />
+                      <Line type="monotone" dataKey="maxAQI" stroke="#82ca9d" name="Max AQI" />
+                      <Line type="monotone" dataKey="minAQI" stroke="#ffc658" name="Min AQI" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {activeView === 'table' && (
+                <table style={styles.table}>
                   <thead>
                     <tr>
-                      <th style={{ border: '1px solid #ddd', padding: '8px' }}>Time</th>
-                      <th style={{ border: '1px solid #ddd', padding: '8px' }}>Avg AQI</th>
-                      <th style={{ border: '1px solid #ddd', padding: '8px' }}>Max AQI</th>
-                      <th style={{ border: '1px solid #ddd', padding: '8px' }}>Min AQI</th>
+                      <th style={styles.th}>Time</th>
+                      <th style={styles.th}>Avg AQI</th>
+                      <th style={styles.th}>Max AQI</th>
+                      <th style={styles.th}>Min AQI</th>
                     </tr>
                   </thead>
                   <tbody>
                     {accumulatedData.map((hourData, index) => (
                       <tr key={index}>
-                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{hourData.time}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: getAQIColor(hourData.averageAQI) }}>{hourData.averageAQI}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: getAQIColor(hourData.maxAQI) }}>{hourData.maxAQI}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: getAQIColor(hourData.minAQI) }}>{hourData.minAQI}</td>
+                        <td style={styles.td}>{hourData.time}</td>
+                        <td style={styles.td}>
+                          <span style={{...styles.aqiIndicator, backgroundColor: getAQIColor(hourData.averageAQI)}} />
+                          {hourData.averageAQI}
+                        </td>
+                        <td style={styles.td}>
+                          <span style={{...styles.aqiIndicator, backgroundColor: getAQIColor(hourData.maxAQI)}} />
+                          {hourData.maxAQI}
+                        </td>
+                        <td style={styles.td}>
+                          <span style={{...styles.aqiIndicator, backgroundColor: getAQIColor(hourData.minAQI)}} />
+                          {hourData.minAQI}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+              )}
             </>
           )}
         </div>
       )}
-    </>
+    </div>
   );
 };
 
