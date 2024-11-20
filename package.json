@@ -1,6 +1,6 @@
 {
   "name": "wildfire-webapp",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "homepage": "https://praveenaak.github.io/wildfire-webapp",
   "private": true,
   "dependencies": {
@@ -9,6 +9,7 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "dotenv": "^16.4.5",
+    "lucide-react": "^0.460.0",
     "mapbox-gl": "^3.6.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -25,12 +26,18 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
+    "eslintConfig": {
+      "extends": [
+        "react-app",
+        "react-app/jest"
+      ],
+      "plugins": [
+        "jest"
+      ],
+      "env": {
+        "jest/globals": true
+      }
+    },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -46,9 +53,12 @@
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@eslint/js": "^9.11.0",
+    "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-plugin-react": "^7.36.1",
     "gh-pages": "^6.2.0",
-    "globals": "^15.9.0"
+    "globals": "^15.9.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15"
   }
 }

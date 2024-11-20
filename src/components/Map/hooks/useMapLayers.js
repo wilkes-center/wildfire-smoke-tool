@@ -3,16 +3,12 @@ import { TILESET_INFO, SKIPPED_HOURS, START_DATE } from '../constants';
 
 export const useMapLayers = (mapRef, aqiThreshold, currentHour, isMapLoaded) => {
     const getCurrentDateTime = useCallback(() => {
-        let adjustedHour = currentHour;
-        if (adjustedHour >= 12) { 
-          adjustedHour += SKIPPED_HOURS;
-        }
-        const currentDate = new Date(START_DATE.getTime() + adjustedHour * 60 * 60 * 1000);
-        return {
-          date: currentDate.toISOString().split('T')[0],
-          hour: currentDate.getHours(),
-        };
-      }, [currentHour]);
+      const currentDate = new Date(START_DATE.getTime() + currentHour * 60 * 60 * 1000);
+      return {
+        date: currentDate.toISOString().split('T')[0],
+        hour: currentDate.getHours(),
+      };
+    }, [currentHour]);
 
       const updateLayers = useCallback((map) => {
         if (!map || !map.getStyle) return;

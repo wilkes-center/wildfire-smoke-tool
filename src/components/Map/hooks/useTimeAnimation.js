@@ -15,9 +15,7 @@ export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
       if (elapsed >= animationDuration) {
         setCurrentHour((prevHour) => {
           let nextHour = (prevHour + 1) % TOTAL_HOURS;
-          if (nextHour === 12) {
-            nextHour = 36;
-          }
+          // Remove the condition that was causing the jump
           return nextHour;
         });
         lastTimestampRef.current = timestamp;

@@ -1,136 +1,118 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart2, X } from 'lucide-react';
 import calculateAreaStats from './calculateAreaStats';
 
-const AreaAnalysis = ({ map, currentDateTime, isPlaying }) => {
-  const [drawingMode, setDrawingMode] = useState(false);
-  const [polygon, setPolygon] = useState(null);
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-4 shadow-lg rounded-lg border border-gray-200">
+        <p className="font-semibold text-gray-800">{label}</p>
+        {payload.map((entry, index) => (
+          <div key={index} className="flex items-center gap-2 mt-1">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></div>
+            <span className="text-gray-600">{entry.name}:</span>
+            <span className="font-medium">{entry.value.toFixed(1)}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomXAxisTick = ({ x, y, payload }) => {
+  const [date, time] = payload.value.split(' ');
+
+  const dateColors = {
+    '2024-10-15': '#4B5563',
+    '2024-10-16': '#1D4ED8',
+    '2024-10-17': '#047857'
+  };
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text
+        x={0}
+        y={0}
+        dy={16}
+        textAnchor="end"
+        fill={dateColors[date] || '#6B7280'}
+        transform="rotate(-45)"
+        style={{ fontSize: '11px' }}
+      >
+        {time}
+      </text>
+    </g>
+  );
+};
+
+const LegendContent = () => (
+  <div className="absolute top-2 right-2 flex items-center gap-3 bg-white/80 px-2 py-1 rounded">
+    <div className="flex items-center gap-1">
+      <div className="w-2 h-2 rounded-full bg-[#c52222]"></div>
+      <span className="text-xs text-gray-600">Max</span>
+    </div>
+    <div className="flex items-center gap-1">
+      <div className="w-2 h-2 rounded-full bg-[#3B82F6]"></div>
+      <span className="text-xs text-gray-600">Avg</span>
+    </div>
+    <div className="flex items-center gap-1">
+      <div className="w-2 h-2 rounded-full bg-[#76f163]"></div>
+      <span className="text-xs text-gray-600">Min</span>
+    </div>
+  </div>
+);
+
+const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState('chart');
+  const [error, setError] = useState(null);
   const [areaStats, setAreaStats] = useState([]);
   const [accumulatedData, setAccumulatedData] = useState([]);
-  const [tempPolygon, setTempPolygon] = useState([]);
-  const [error, setError] = useState(null);
-  const [isStatsVisible, setIsStatsVisible] = useState(true);
-  const [isStatsMinimized, setIsStatsMinimized] = useState(false);
-  const polygonLayerId = useRef('polygon-layer');
-  const polygonSourceId = useRef('polygon-source');
 
-  const startDrawing = useCallback(() => {
-    setDrawingMode(true);
-    setTempPolygon([]);
-    setPolygon(null);
-    if (map) {
-      map.getCanvas().style.cursor = 'crosshair';
-    }
-  }, [map]);
+  const formatChartData = useCallback((stats) => {
+    return stats.flatMap(tilesetStats =>
+      tilesetStats.hourlyData.map(hourData => ({
+        time: `${tilesetStats.date} ${String(hourData.hour).padStart(2, '0')}:00`,
+        averageAQI: hourData.averageAQI,
+        maxAQI: hourData.maxAQI,
+        minAQI: hourData.minAQI
+      }))
+    ).sort((a, b) => new Date(a.time) - new Date(b.time));
+  }, []);
 
-  const handleClick = useCallback((e) => {
-    if (!drawingMode) return;
-    const { lng, lat } = e.lngLat;
-    setTempPolygon(prev => [...prev, [lng, lat]]);
-  }, [drawingMode]);
-
-  const finishDrawing = useCallback(() => {
-    if (tempPolygon.length >= 3) {
-      setPolygon([...tempPolygon, tempPolygon[0]]);
-      setDrawingMode(false);
-      setTempPolygon([]);
-      if (map) {
-        map.getCanvas().style.cursor = '';
-      }
-    }
-  }, [tempPolygon, map]);
-
-  useEffect(() => {
-    if (map) {
-      map.on('click', handleClick);
-      return () => map.off('click', handleClick);
-    }
-  }, [map, handleClick]);
-
-  useEffect(() => {
-    if (!map) return;
-
-    if (map.getSource(polygonSourceId.current)) {
-      if (map.getLayer(polygonLayerId.current)) {
-        map.removeLayer(polygonLayerId.current);
-      }
-      map.removeSource(polygonSourceId.current);
-    }
-
-    if (polygon || tempPolygon.length > 0) {
-      map.addSource(polygonSourceId.current, {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [polygon || [...tempPolygon, tempPolygon[0]]]
-          }
-        }
-      });
-
-      map.addLayer({
-        id: polygonLayerId.current,
-        type: 'fill',
-        source: polygonSourceId.current,
-        paint: {
-          'fill-color': 'blue',
-          'fill-opacity': 0.2,
-        }
-      });
-
-      map.addLayer({
-        id: `${polygonLayerId.current}-outline`,
-        type: 'line',
-        source: polygonSourceId.current,
-        paint: {
-          'line-color': 'blue',
-          'line-width': 2,
-        }
-      });
-    }
-
-    return () => {
-      if (map.getLayer(polygonLayerId.current)) {
-        map.removeLayer(polygonLayerId.current);
-      }
-      if (map.getLayer(`${polygonLayerId.current}-outline`)) {
-        map.removeLayer(`${polygonLayerId.current}-outline`);
-      }
-      if (map.getSource(polygonSourceId.current)) {
-        map.removeSource(polygonSourceId.current);
-      }
-    };
-  }, [map, polygon, tempPolygon]);
-
+  const getAQIColor = (aqi) => {
+    if (aqi <= 50) return '#00e400';
+    if (aqi <= 100) return '#ffff00';
+    if (aqi <= 150) return '#ff7e00';
+    if (aqi <= 200) return '#ff0000';
+    if (aqi <= 300) return '#8f3f97';
+    return '#7e0023';
+  };
 
   const updateAreaStats = useCallback(() => {
     if (map && polygon) {
       setError(null);
       calculateAreaStats(map, polygon)
         .then(stats => {
-          console.log('Calculated stats:', stats);
           setAreaStats(stats);
-          
-          // Process and accumulate the new data
           const newData = formatChartData(stats);
           setAccumulatedData(prevData => {
             const combinedData = [...prevData, ...newData];
-            // Remove duplicates based on the 'time' field
-            const uniqueData = combinedData.filter((v, i, a) => 
+            const uniqueData = combinedData.filter((v, i, a) =>
               a.findIndex(t => t.time === v.time) === i
             );
-            // Sort the data by time
             return uniqueData.sort((a, b) => new Date(a.time) - new Date(b.time));
           });
         })
         .catch(err => {
           console.error('Error calculating area stats:', err);
-          setError('Failed to calculate area statistics. Please try again.');
+          setError('Failed to calculate area statistics');
           setAreaStats([]);
         });
     }
-  }, [map, polygon]);
+  }, [map, polygon, formatChartData]);
 
   useEffect(() => {
     updateAreaStats();
@@ -142,160 +124,222 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying }) => {
     }
   }, [isPlaying, currentDateTime, updateAreaStats]);
 
-  const getAQIColor = (aqi) => {
-    if (aqi <= 50) return '#00e400';
-    if (aqi <= 100) return '#ffff00';
-    if (aqi <= 150) return '#ff7e00';
-    if (aqi <= 200) return '#ff0000';
-    if (aqi <= 300) return '#8f3f97';
-    return '#7e0023';
-  };
+  useEffect(() => {
+    if (!polygon) {
+      setIsExpanded(false);
+      setAccumulatedData([]);
+      setAreaStats([]);
+      setError(null);
+    }
+  }, [polygon]);
 
-  const toggleStatsVisibility = () => {
-    setIsStatsVisible(!isStatsVisible);
-    setIsStatsMinimized(false);
-  };
+  useEffect(() => {
+    if (polygon) {
+      // Short delay to allow Area Overview to expand first
+      setTimeout(() => setIsExpanded(true), 100);
+    } else {
+      setIsExpanded(false);
+      setAccumulatedData([]);
+      setAreaStats([]);
+      setError(null);
+    }
+  }, [polygon]);
 
-  const toggleStatsMinimized = () => {
-    setIsStatsMinimized(!isStatsMinimized);
-  };
 
-  const formatChartData = (stats) => {
-    return stats.flatMap(tilesetStats => 
-      tilesetStats.hourlyData.map(hourData => ({
-        time: `${tilesetStats.date} ${String(hourData.hour).padStart(2, '0')}:00`,
-        averageAQI: hourData.averageAQI,
-        maxAQI: hourData.maxAQI,
-        minAQI: hourData.minAQI
-      }))
-    ).sort((a, b) => new Date(a.time) - new Date(b.time));
-  };
-
-  const consolidateHourlyData = (stats) => {
-    return stats.flatMap(tilesetStats => 
-      tilesetStats.hourlyData.map(hourData => ({
-        date: tilesetStats.date,
-        hour: hourData.hour,
-        averageAQI: hourData.averageAQI,
-        maxAQI: hourData.maxAQI,
-        minAQI: hourData.minAQI,
-        numPoints: hourData.numPoints
-      }))
-    ).sort((a, b) => {
-      const dateA = new Date(`${a.date}T${String(a.hour).padStart(2, '0')}:00:00`);
-      const dateB = new Date(`${b.date}T${String(b.hour).padStart(2, '0')}:00:00`);
-      return dateA - dateB;
-    });
-  };
 
   return (
-    <>
-      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 1 }}>
-        {!drawingMode && !polygon && (
-          <button onClick={startDrawing}>Draw Polygon</button>
+    <div 
+      style={{ 
+        position: 'fixed',
+        top: isExpanded ? '490px' : '80px',
+        right: '20px',
+        zIndex: 1000,
+        transition: 'all 0.3s ease-in-out'
+      }}
+    >
+      <button
+        className="bg-white/70 rounded-lg shadow-md hover:bg-gray-50/70 transition-colors"
+        style={{
+          width: '48px',
+          height: '48px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: polygon ? 'pointer' : 'default',
+          position: 'relative',
+          backdropFilter: 'blur(8px)',
+        }}
+        onClick={() => polygon && setIsExpanded(!isExpanded)}
+      >
+        {!isExpanded ? (
+          <BarChart2 className="w-5 h-5 text-gray-600" />
+        ) : (
+          <X className="w-5 h-5 text-gray-600" />
         )}
-        {drawingMode && (
-          <button onClick={finishDrawing}>Finish Drawing</button>
-        )}
-        {polygon && !drawingMode && (
-          <button onClick={() => setPolygon(null)}>Clear Polygon</button>
-        )}
-      </div>
-
-      {error && (
-        <div style={{ position: 'absolute', top: 10, right: 10, background: 'red', color: 'white', padding: 10 }}>
-          {error}
-        </div>
-      )}
-
-{accumulatedData.length > 0 && isStatsVisible && (
-        <div style={{
-          position: 'absolute',
-          top: 10,
-          right: 10,
-          background: 'white',
-          padding: 10,
-          maxWidth: '800px',
-          maxHeight: isStatsMinimized ? '40px' : '80vh',
-          overflowY: isStatsMinimized ? 'hidden' : 'auto',
-          transition: 'max-height 0.3s ease-in-out',
-          boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-          borderRadius: '4px',
-          zIndex: 1000
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <h3 style={{ margin: 0 }}>Area Statistics</h3>
-            <div>
-              <button onClick={toggleStatsMinimized} style={{ marginRight: '5px' }}>
-                {isStatsMinimized ? 'Expand' : 'Minimize'}
-              </button>
-              <button onClick={toggleStatsVisibility}>Close</button>
+      </button>
+  
+      {isExpanded && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '56px',
+            right: 0,
+            width: '480px',
+            height: '400px',
+            backgroundColor: 'rgba(255, 255, 255, 0.4)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: '6px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            overflow: 'hidden',
+          }}
+        >
+          <div className="w-full h-full">
+            <div className="border-b border-gray-200/40">
+              <div className="flex items-center justify-between px-3 pt-2 pb-2 bg-white/30">
+                <div>
+                  <h2 className="text-xl font-bold leading-none text-gray-800">Polygon Statistics</h2>
+                  <div className="text-gray-600 text-sm mt-0.5">
+                    {currentDateTime.date} {currentDateTime.hour.toString().padStart(2, '0')}:00
+                  </div>
+                </div>
+  
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setActiveTab('chart')}
+                    className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                      activeTab === 'chart'
+                        ? 'bg-blue-500/70 text-white'
+                        : 'bg-gray-100/50 text-gray-600 hover:bg-gray-200/50'
+                    }`}
+                  >
+                    Chart
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('table')}
+                    className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                      activeTab === 'table'
+                        ? 'bg-blue-500/70 text-white'
+                        : 'bg-gray-100/50 text-gray-600 hover:bg-gray-200/50'
+                    }`}
+                  >
+                    Table
+                  </button>
+                </div>
+              </div>
+            </div>
+  
+            <div className="px-1">
+              {error && (
+                <div className="mb-4 p-4 bg-red-50/50 text-red-700 rounded-lg border border-red-200/50">
+                  {error}
+                </div>
+              )}
+  
+              {activeTab === 'chart' && accumulatedData.length > 0 && (
+                <div className="h-[320px] w-full relative bg-white/30">
+                  <ResponsiveContainer>
+                    <LineChart 
+                      data={accumulatedData} 
+                      margin={{ top: 20, right: 10, left: -20, bottom: 25 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis 
+                        dataKey="time"
+                        height={45}
+                        tick={<CustomXAxisTick />}
+                        tickMargin={15}
+                        axisLine={{ stroke: '#E5E7EB' }}
+                        interval={0}
+                      />
+                      <YAxis 
+                        tick={{ fill: '#6B7280', fontSize: 12 }}
+                        domain={[0, 500]}
+                        axisLine={{ stroke: '#E5E7EB' }}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Line 
+                        type="monotone" 
+                        dataKey="maxAQI" 
+                        stroke="#c52222"
+                        strokeWidth={2}
+                        dot={false}
+                        name="Max AQI"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="averageAQI" 
+                        stroke="#3B82F6" 
+                        strokeWidth={2}
+                        dot={false}
+                        name="Average AQI"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="minAQI" 
+                        stroke="#76f163"
+                        strokeWidth={2}
+                        dot={false}
+                        name="Min AQI"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  <LegendContent />
+                </div>
+              )}
+  
+              {activeTab === 'table' && accumulatedData.length > 0 && (
+                <div className="max-h-[320px] overflow-auto">
+                  <table className="w-full">
+                    <thead className="sticky top-0 bg-white/30">
+                      <tr className="border-b border-gray-200/40">
+                        <th className="py-2 px-4 text-left text-gray-600 font-medium">Time</th>
+                        <th className="py-2 px-4 text-left text-gray-600 font-medium">Avg AQI</th>
+                        <th className="py-2 px-4 text-left text-gray-600 font-medium">Max AQI</th>
+                        <th className="py-2 px-4 text-left text-gray-600 font-medium">Min AQI</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {accumulatedData.map((data, index) => (
+                        <tr key={index} className="border-b border-gray-200/40 hover:bg-gray-50/30">
+                          <td className="py-2 px-4">{data.time}</td>
+                          <td className="py-2 px-4">
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-2 h-2 rounded-full" 
+                                style={{ backgroundColor: getAQIColor(data.averageAQI) }}
+                              />
+                              <span>{data.averageAQI.toFixed(2)}</span>
+                            </div>
+                          </td>
+                          <td className="py-2 px-4">
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-2 h-2 rounded-full" 
+                                style={{ backgroundColor: getAQIColor(data.maxAQI) }}
+                              />
+                              <span>{data.maxAQI.toFixed(2)}</span>
+                            </div>
+                          </td>
+                          <td className="py-2 px-4">
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-2 h-2 rounded-full" 
+                                style={{ backgroundColor: getAQIColor(data.minAQI) }}
+                              />
+                              <span>{data.minAQI.toFixed(2)}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
-          
-          {!isStatsMinimized && (
-            <>
-              <p>Current Time: {currentDateTime.date} {currentDateTime.hour}:00</p>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={accumulatedData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="time" 
-                    angle={-45}
-                    textAnchor="end"
-                    height={70}
-                    interval={'preserveStartEnd'}
-                    tick={{fontSize: 10}}
-                  />
-                  <YAxis />
-                  <Tooltip content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      return (
-                        <div style={{ background: 'white', padding: '5px', border: '1px solid #ccc' }}>
-                          <p><strong>{label}</strong></p>
-                          <p>Average AQI: {data.averageAQI}</p>
-                          <p>Max AQI: {data.maxAQI}</p>
-                          <p>Min AQI: {data.minAQI}</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }} />
-                  <Legend />
-                  <Line type="monotone" dataKey="averageAQI" stroke="#8884d8" name="Average AQI" />
-                  <Line type="monotone" dataKey="maxAQI" stroke="#82ca9d" name="Max AQI" />
-                  <Line type="monotone" dataKey="minAQI" stroke="#ffc658" name="Min AQI" />
-                </LineChart>
-              </ResponsiveContainer>
-              <div style={{ marginTop: '10px' }}>
-                <h4>AQI Summary</h4>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ border: '1px solid #ddd', padding: '8px' }}>Time</th>
-                      <th style={{ border: '1px solid #ddd', padding: '8px' }}>Avg AQI</th>
-                      <th style={{ border: '1px solid #ddd', padding: '8px' }}>Max AQI</th>
-                      <th style={{ border: '1px solid #ddd', padding: '8px' }}>Min AQI</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {accumulatedData.map((hourData, index) => (
-                      <tr key={index}>
-                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{hourData.time}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: getAQIColor(hourData.averageAQI) }}>{hourData.averageAQI}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: getAQIColor(hourData.maxAQI) }}>{hourData.maxAQI}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px', backgroundColor: getAQIColor(hourData.minAQI) }}>{hourData.minAQI}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
         </div>
       )}
-    </>
+    </div>
   );
 };
 

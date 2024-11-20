@@ -17,8 +17,6 @@ export const TILESET_INFO = [
     { id: 'pkulandh.aqi_20241018_12_to_20241018_17', layer: '20241018_12_to_20241018_17', date: '2024-10-18', startHour: 12 },
     { id: 'pkulandh.aqi_20241018_18_to_20241018_23', layer: '20241018_18_to_20241018_23', date: '2024-10-18', startHour: 18 },
   ];
-export const START_DATE = new Date('2024-10-14T00:00:00');
-export const END_DATE = new Date('2024-10-17T23:59:59');
-export const SKIPPED_HOURS = 24;
-export const TOTAL_HOURS = Math.floor((END_DATE - START_DATE) / (1000 * 60 * 60)) - SKIPPED_HOURS;
-
+  export const START_DATE = new Date('2024-10-15T12:00:00');
+  export const END_DATE = new Date('2024-10-17T23:59:59');
+  export const TOTAL_HOURS = Math.floor((END_DATE - START_DATE) / (1000 * 60 * 60));

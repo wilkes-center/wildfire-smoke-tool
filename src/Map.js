@@ -33,10 +33,10 @@ const TOTAL_HOURS = Math.floor((END_DATE - START_DATE) / (1000 * 60 * 60)) - SKI
 
 const MapComponent = () => {
   const [viewport, setViewport] = useState({
-    latitude: 39.8283,
+    latitude: 31.8283,
     longitude: -98.5795,
-    zoom: 4,
-    minZoom: 4,
+    zoom: 3,
+    minZoom: 3,
     maxZoom: 8,
   });
 
