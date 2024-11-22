@@ -345,7 +345,7 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
         </div>
       )}
     </div>
-    </div>
+
   );
 };
 

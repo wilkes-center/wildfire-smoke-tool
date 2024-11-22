@@ -41,10 +41,7 @@ const MapComponent = () => {
   const [polygon, setPolygon] = useState(null);
   const [tempPolygon, setTempPolygon] = useState([]);
 
-  // Drawing state
-  const [drawingMode, setDrawingMode] = useState(false);
-  const [polygon, setPolygon] = useState(null);
-  const [tempPolygon, setTempPolygon] = useState([]);
+
 
   const getCurrentDateTime = useCallback(() => {
     const currentDate = new Date(START_DATE.getTime() + currentHour * 60 * 60 * 1000);
