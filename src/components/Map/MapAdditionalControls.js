@@ -18,14 +18,18 @@ const MapAdditionalControls = ({
   const [minimapViewport, setMinimapViewport] = useState(null);
   const minimapRef = useRef(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const initializedRef = useRef(false);
 
+  // Only run once when polygon is initially created
   useEffect(() => {
-    if (polygon) {
+    if (polygon && !initializedRef.current) {
+      initializedRef.current = true;
       setTimeout(() => {
         setIsExpanded(true);
         onExpandChange?.(true);
       }, 100);
-    } else {
+    } else if (!polygon) {
+      initializedRef.current = false;
       setIsExpanded(false);
       onExpandChange?.(false);
     }
@@ -35,10 +39,6 @@ const MapAdditionalControls = ({
     const newExpandedState = !isExpanded;
     setIsExpanded(newExpandedState);
     onExpandChange?.(newExpandedState);
-    
-    if (!newExpandedState) {
-      setMinimapVisible(false);
-    }
   };
 
   const setupMinimapLayers = (minimap) => {
@@ -100,7 +100,7 @@ const MapAdditionalControls = ({
   };
 
   useEffect(() => {
-    if (polygon && polygon.length > 0 && isExpanded) {
+    if (polygon && polygon.length > 0) {
       const bounds = polygon.reduce(
         (acc, [lng, lat]) => ({
           minLng: Math.min(acc.minLng, lng),
@@ -138,7 +138,7 @@ const MapAdditionalControls = ({
     } else {
       setMinimapVisible(false);
     }
-  }, [polygon, isExpanded]);
+  }, [polygon]);
 
   useEffect(() => {
     if (minimapRef.current) {
