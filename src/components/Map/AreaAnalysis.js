@@ -110,6 +110,7 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
         .catch(err => {
           console.error('Error calculating area stats:', err);
           setError('Failed to calculate area statistics');
+          setError('Failed to calculate area statistics');
           setAreaStats([]);
         });
     }
@@ -343,6 +344,7 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };

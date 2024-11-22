@@ -6,6 +6,7 @@ import { useMapLayers } from './hooks/useMapLayers';
 import { useTimeAnimation } from './hooks/useTimeAnimation';
 import MapControls from './MapControls';
 import MapAdditionalControls from './MapAdditionalControls';
+import MapAdditionalControls from './MapAdditionalControls';
 import LoadingOverlay from './LoadingOverlay';
 import AreaAnalysis from './AreaAnalysis';
 
@@ -40,6 +41,11 @@ const MapComponent = () => {
   const [polygon, setPolygon] = useState(null);
   const [tempPolygon, setTempPolygon] = useState([]);
 
+  // Drawing state
+  const [drawingMode, setDrawingMode] = useState(false);
+  const [polygon, setPolygon] = useState(null);
+  const [tempPolygon, setTempPolygon] = useState([]);
+
   const getCurrentDateTime = useCallback(() => {
     const currentDate = new Date(START_DATE.getTime() + currentHour * 60 * 60 * 1000);
     return {
@@ -50,11 +56,13 @@ const MapComponent = () => {
 
   const { updateLayers } = useMapLayers(mapRef, aqiThreshold, currentHour, isMapLoaded, getCurrentDateTime);
 
+
   useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
 
   const handleMapLoad = useCallback(() => {
     setIsMapLoaded(true);
     if (mapRef.current) {
+      setMapInstance(mapRef.current.getMap());
       setMapInstance(mapRef.current.getMap());
     }
   }, []);
