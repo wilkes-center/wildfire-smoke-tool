@@ -26,18 +26,18 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },
-    "eslintConfig": {
-      "extends": [
-        "react-app",
-        "react-app/jest"
-      ],
-      "plugins": [
-        "jest"
-      ],
-      "env": {
-        "jest/globals": true
-      }
-    },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ],
+    "plugins": [
+      "jest"
+    ],
+    "env": {
+      "jest/globals": true
+    }
+  },
   "browserslist": {
     "production": [
       ">0.2%",

@@ -31,6 +31,16 @@ const MapAdditionalControls = ({
     }
   }, [polygon, onExpandChange]);
 
+  const handleExpandToggle = () => {
+    const newExpandedState = !isExpanded;
+    setIsExpanded(newExpandedState);
+    onExpandChange?.(newExpandedState);
+    
+    if (!newExpandedState) {
+      setMinimapVisible(false);
+    }
+  };
+
   const setupMinimapLayers = (minimap) => {
     if (!minimap || !currentDateTime) return;
 
@@ -90,7 +100,7 @@ const MapAdditionalControls = ({
   };
 
   useEffect(() => {
-    if (polygon && polygon.length > 0) {
+    if (polygon && polygon.length > 0 && isExpanded) {
       const bounds = polygon.reduce(
         (acc, [lng, lat]) => ({
           minLng: Math.min(acc.minLng, lng),
@@ -128,7 +138,7 @@ const MapAdditionalControls = ({
     } else {
       setMinimapVisible(false);
     }
-  }, [polygon]);
+  }, [polygon, isExpanded]);
 
   useEffect(() => {
     if (minimapRef.current) {
@@ -177,7 +187,7 @@ const MapAdditionalControls = ({
             position: 'relative',
             backdropFilter: 'blur(8px)',
           }}
-          onClick={() => polygon && setIsExpanded(!isExpanded)}
+          onClick={polygon ? handleExpandToggle : undefined}
         >
           {!isExpanded ? (
             <MapIcon className="w-5 h-5 text-gray-600" />
@@ -187,7 +197,6 @@ const MapAdditionalControls = ({
         </button>
       </Tooltip>
       
-  
       {isExpanded && (
         <div
           style={{
