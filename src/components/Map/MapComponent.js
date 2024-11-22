@@ -6,7 +6,6 @@ import { useMapLayers } from './hooks/useMapLayers';
 import { useTimeAnimation } from './hooks/useTimeAnimation';
 import MapControls from './MapControls';
 import MapAdditionalControls from './MapAdditionalControls';
-import MapAdditionalControls from './MapAdditionalControls';
 import LoadingOverlay from './LoadingOverlay';
 import AreaAnalysis from './AreaAnalysis';
 
