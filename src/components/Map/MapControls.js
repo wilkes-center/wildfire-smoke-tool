@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Pen, X, Check, Gauge, Maximize2, ZoomIn, ZoomOut, Play, Pause } from 'lucide-react';
 
 const MapControls = ({
@@ -21,12 +21,39 @@ const MapControls = ({
   const { date, hour } = getCurrentDateTime();
   const [isThresholdExpanded, setIsThresholdExpanded] = useState(false);
   const [showSpeedOptions, setShowSpeedOptions] = useState(false);
+  const speedControlsTimeoutRef = useRef(null);
+  const speedControlsRef = useRef(null);
 
   useEffect(() => {
     if (aqiThreshold < 20) {
       setAqiThreshold(20);
     }
   }, []);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (speedControlsTimeoutRef.current) {
+        clearTimeout(speedControlsTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleSpeedControlsMouseEnter = () => {
+    if (speedControlsTimeoutRef.current) {
+      clearTimeout(speedControlsTimeoutRef.current);
+    }
+    setShowSpeedOptions(true);
+  };
+
+  const handleSpeedControlsMouseLeave = () => {
+    speedControlsTimeoutRef.current = setTimeout(() => {
+      // Only hide if the mouse isn't over the controls
+      if (speedControlsRef.current && !speedControlsRef.current.matches(':hover')) {
+        setShowSpeedOptions(false);
+      }
+    }, 300); // 300ms delay before hiding
+  };
 
   const handleAqiChange = (value) => {
     setAqiThreshold(Math.max(20, parseInt(value)));
@@ -42,7 +69,10 @@ const MapControls = ({
 
   const handleSpeedSelect = (speed) => {
     setPlaybackSpeed(speed);
-    setShowSpeedOptions(false);
+    // Don't hide immediately after selection
+    if (speedControlsTimeoutRef.current) {
+      clearTimeout(speedControlsTimeoutRef.current);
+    }
   };
 
   const handleZoom = (direction) => {
@@ -99,7 +129,7 @@ const MapControls = ({
 
         {/* Threshold Control */}
         <div className="flex items-center gap-2">
-        <button
+          <button
             onClick={toggleThreshold}
             className={`${buttonClass} ${isThresholdExpanded ? 'bg-blue-50' : ''}`}
             title="AQI Threshold"
@@ -129,7 +159,6 @@ const MapControls = ({
         {/* Zoom Controls */}
         <div className="w-16">
           <button onClick={() => handleZoom('in')} className={buttonClass} title="Zoom In">
-            
             <ZoomIn className="w-8 h-8 black" />
           </button>
         </div>
@@ -148,28 +177,36 @@ const MapControls = ({
       </div>
 
       {/* Timeline Control with Play Button - Bottom */}
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl mx-auto px-4">
-          <div className="flex items-center gap-4">
-            {/* Larger Play Control with Speed Options */}
-            <div
-              className="relative"
-              onMouseEnter={() => isPlaying && setShowSpeedOptions(true)}
-              onMouseLeave={() => setShowSpeedOptions(false)}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl mx-auto px-4">
+        <div className="flex items-center gap-4">
+          {/* Larger Play Control with Speed Options */}
+          <div
+            className="relative"
+            onMouseEnter={handleSpeedControlsMouseEnter}
+            onMouseLeave={handleSpeedControlsMouseLeave}
+          >
+            <button
+              onClick={handlePlayClick}
+              className={`rounded-full p-3 transition-colors ${
+                isPlaying ? 'bg-red-50' : 'bg-white/90'
+              } w-14 h-14 flex items-center justify-center shadow-lg`}
+              title={isPlaying ? 'Pause' : 'Play'}
             >
-              <button
-                onClick={handlePlayClick}
-                className={`rounded-full p-3 transition-colors ${isPlaying ? 'bg-red-50' : 'bg-white/90'} w-14 h-14 flex items-center justify-center shadow-lg`}
-                title={isPlaying ? 'Pause' : 'Play'}
+              {isPlaying ? (
+                <Pause className="w-8 h-8 text-red-600" />
+              ) : (
+                <Play className="w-8 h-8 text-green-600" />
+              )}
+            </button>
+
+            {showSpeedOptions && isPlaying && (
+              <div
+                ref={speedControlsRef}
+                className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2"
+                onMouseEnter={handleSpeedControlsMouseEnter}
+                onMouseLeave={handleSpeedControlsMouseLeave}
               >
-                {isPlaying ? (
-                  <Pause className="w-8 h-8 text-red-600" />
-                ) : (
-                  <Play className="w-8 h-8 text-green-600" />
-                )}
-              </button>
-              
-              {showSpeedOptions && isPlaying && (
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2 flex gap-1">
+                <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2 flex gap-1">
                   {[1, 2, 3].map((speed) => (
                     <button
                       key={speed}
@@ -184,24 +221,25 @@ const MapControls = ({
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
-
-            {/* Timeline Slider in a Box */}
-            <div className="flex-1">
-              <div className="bg-white/40 backdrop-blur-md rounded-lg shadow-lg p-4">
-                <input
-                  type="range"
-                  min="0"
-                  max={95}
-                  value={currentHour}
-                  onChange={(e) => setCurrentHour(parseInt(e.target.value))}
-                  className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
-                />
               </div>
+            )}
+          </div>
+
+          {/* Timeline Slider */}
+          <div className="flex-1">
+            <div className="bg-white/40 backdrop-blur-md rounded-lg shadow-lg p-4">
+              <input
+                type="range"
+                min="0"
+                max={95}
+                value={currentHour}
+                onChange={(e) => setCurrentHour(parseInt(e.target.value))}
+                className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
+              />
             </div>
           </div>
         </div>
+      </div>
     </>
   );
 };
