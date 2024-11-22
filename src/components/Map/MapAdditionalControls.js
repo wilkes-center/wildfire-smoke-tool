@@ -3,6 +3,7 @@ import { Map } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { TILESET_INFO } from './constants';
 import { Map as MapIcon, X } from 'lucide-react';
+import Tooltip from './Tooltip';
 
 const MapAdditionalControls = ({ 
   map, 
@@ -163,26 +164,29 @@ const MapAdditionalControls = ({
         zIndex: 1000
       }}
     >
-      <button
-        className="bg-white/70 rounded-lg shadow-md hover:bg-gray-50/70 transition-colors"
-        style={{
-          width: '48px',
-          height: '48px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: polygon ? 'pointer' : 'default',
-          position: 'relative',
-          backdropFilter: 'blur(8px)',
-        }}
-        onClick={() => polygon && setIsExpanded(!isExpanded)}
-      >
-        {!isExpanded ? (
-          <MapIcon className="w-5 h-5 text-gray-600" />
-        ) : (
-          <X className="w-5 h-5 text-gray-600" />
-        )}
-      </button>
+      <Tooltip content="Draw polygon to view area overview" position="left">
+        <button
+          className="bg-white/70 rounded-lg shadow-md hover:bg-gray-50/70 transition-colors"
+          style={{
+            width: '48px',
+            height: '48px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: polygon ? 'pointer' : 'default',
+            position: 'relative',
+            backdropFilter: 'blur(8px)',
+          }}
+          onClick={() => polygon && setIsExpanded(!isExpanded)}
+        >
+          {!isExpanded ? (
+            <MapIcon className="w-5 h-5 text-gray-600" />
+          ) : (
+            <X className="w-5 h-5 text-gray-600" />
+          )}
+        </button>
+      </Tooltip>
+      
   
       {isExpanded && (
         <div

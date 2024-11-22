@@ -144,11 +144,11 @@ const MapComponent = () => {
       setPolygon([...tempPolygon, tempPolygon[0]]);
       setDrawingMode(false);
       setTempPolygon([]);
+      setIsPlaying(true); // Start playing automatically
       
       if (mapInstance) {
         mapInstance.getCanvas().style.cursor = '';
         
-        // Execute view changes in sequence
         await resetView();
         setIsPanelExpanded(true);
         setTimeout(() => {
@@ -156,12 +156,13 @@ const MapComponent = () => {
         }, 100);
       }
     }
-  }, [tempPolygon, mapInstance, resetView, expandView]);
+  }, [tempPolygon, mapInstance, resetView, expandView, setIsPlaying]);
 
   const clearPolygon = useCallback(() => {
     setPolygon(null);
     setTempPolygon([]);
     setIsPanelExpanded(false);
+    setIsPlaying(false); // Pause when clearing polygon
     if (mapInstance) {
       mapInstance.easeTo({
         center: [baseViewport.longitude, baseViewport.latitude],
@@ -171,7 +172,7 @@ const MapComponent = () => {
         }
       });
     }
-  }, [mapInstance, updateLayers]);
+  }, [mapInstance, updateLayers, setIsPlaying]);
 
   // Map click handler
   useEffect(() => {

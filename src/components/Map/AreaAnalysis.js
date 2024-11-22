@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid,  Legend, ResponsiveContainer } from 'recharts';
 import { BarChart2, X } from 'lucide-react';
 import calculateAreaStats from './calculateAreaStats';
+import Tooltip from './Tooltip';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -157,26 +158,29 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
         transition: 'all 0.3s ease-in-out'
       }}
     >
-      <button
-        className="bg-white/70 rounded-lg shadow-md hover:bg-gray-50/70 transition-colors"
-        style={{
-          width: '48px',
-          height: '48px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: polygon ? 'pointer' : 'default',
-          position: 'relative',
-          backdropFilter: 'blur(8px)',
-        }}
-        onClick={() => polygon && setIsExpanded(!isExpanded)}
-      >
-        {!isExpanded ? (
-          <BarChart2 className="w-5 h-5 text-gray-600" />
-        ) : (
-          <X className="w-5 h-5 text-gray-600" />
-        )}
-      </button>
+      <Tooltip content="Draw polygon to view area statistics" position="left">
+        <button
+          className="bg-white/70 rounded-lg shadow-md hover:bg-gray-50/70 transition-colors"
+          style={{
+            width: '48px',
+            height: '48px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: polygon ? 'pointer' : 'default',
+            position: 'relative',
+            backdropFilter: 'blur(8px)',
+          }}
+          onClick={() => polygon && setIsExpanded(!isExpanded)}
+        >
+          {!isExpanded ? (
+            <BarChart2 className="w-5 h-5 text-gray-600" />
+          ) : (
+            <X className="w-5 h-5 text-gray-600" />
+          )}
+        </button>
+      </Tooltip>
+
   
       {isExpanded && (
         <div
