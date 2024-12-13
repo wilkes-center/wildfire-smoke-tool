@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { TILESET_INFO, SKIPPED_HOURS, START_DATE } from '../constants';
+import { TILESET_INFO, START_DATE } from '../../utils/map/constants.js'; 
 
 export const useMapLayers = (mapRef, aqiThreshold, currentHour, isMapLoaded) => {
     const getCurrentDateTime = useCallback(() => {

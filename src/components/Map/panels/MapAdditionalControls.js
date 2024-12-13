@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Map } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { TILESET_INFO } from './constants';
 import { Map as MapIcon, X } from 'lucide-react';
-import Tooltip from './Tooltip';
+import { TILESET_INFO } from '../../../utils/map/constants.js';
+import { Tooltip } from '../Tooltip';
 
 const MapAdditionalControls = ({ 
   map, 
@@ -129,8 +129,8 @@ const MapAdditionalControls = ({
       const viewport = {
         ...center,
         zoom: Math.min(Math.max(zoom, 3), 10),
-        minZoom: 3,
-        maxZoom: 10
+        minZoom: 4,
+        maxZoom: 7
       };
 
       setMinimapViewport(viewport);

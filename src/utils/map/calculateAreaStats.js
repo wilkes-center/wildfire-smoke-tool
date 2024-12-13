@@ -33,7 +33,6 @@ const calculateAreaStats = async (map, polygon) => {
       });
 
       if (features.length === 0) {
-        console.warn(`No features found in selected area for tileset: ${tileset.id}, hour: ${currentHour}`);
         continue;
       }
 
@@ -51,7 +50,9 @@ const calculateAreaStats = async (map, polygon) => {
       });
     }
 
-    stats.push(tilesetStats);
+    if (tilesetStats.hourlyData.length > 0) {
+      stats.push(tilesetStats);
+    }
   }
 
   return stats;

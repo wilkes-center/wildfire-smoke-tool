@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid,  Legend, ResponsiveContainer } from 'recharts';
 import { BarChart2, X } from 'lucide-react';
-import calculateAreaStats from './calculateAreaStats';
-import Tooltip from './Tooltip';
+import calculateAreaStats from '../../../utils/map/calculateAreaStats';
+import { Tooltip } from '../Tooltip';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {

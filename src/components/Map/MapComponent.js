@@ -1,16 +1,35 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Map from 'react-map-gl';
+import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { MAPBOX_TOKEN, START_DATE } from './constants';
-import { useMapLayers } from './hooks/useMapLayers';
-import { useTimeAnimation } from './hooks/useTimeAnimation';
-import MapControls from './MapControls';
-import MapAdditionalControls from './MapAdditionalControls';
+import { START_DATE, END_DATE, TOTAL_HOURS, MAPBOX_TOKEN } from '../../utils/map/constants.js'; 
+
+import { useMapLayers } from '../../hooks/map/useMapLayers';
+import { useTimeAnimation } from '../../hooks/map/useTimeAnimation';
+import MapControls from './controls'; 
+import MapAdditionalControls from './panels/MapAdditionalControls';
 import LoadingOverlay from './LoadingOverlay';
-import AreaAnalysis from './AreaAnalysis';
+import AreaAnalysis from './panels/AreaAnalysis';
+
+
+
+const BASEMAPS = {
+  light: {
+    url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+    name: 'Light'
+  },
+  dark: {
+    url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+    name: 'Dark'
+  },
+  satellite: {
+    url: 'mapbox://styles/mapbox/satellite-v9',
+    name: 'Satellite'
+  }
+};
 
 const MapComponent = () => {
-  // Base viewport for when panels are collapsed
+  // Base viewport config
   const baseViewport = {
     latitude: 39.8283,
     longitude: -98.5795,
@@ -19,46 +38,36 @@ const MapComponent = () => {
     maxZoom: 8,
   };
 
-  // Adjusted viewport for when panels are expanded
-  const expandedViewport = {
-    ...baseViewport,
-    longitude: -85.5795, // Shifted west to show more of the east coast
-  };
+  // Base state
+  const mapRef = useRef(null);
 
-  const [viewport, setViewport] = useState(baseViewport);
-  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
+  const [isPointSelected, setIsPointSelected] = useState(false);
+
+
   const [currentHour, setCurrentHour] = useState(0);
-  const [aqiThreshold, setAqiThreshold] = useState(0);
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const mapRef = useRef(null);
+
+  useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
+  const [viewport, setViewport] = useState(baseViewport);
+  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
+  const [aqiThreshold, setAqiThreshold] = useState(0);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapInstance, setMapInstance] = useState(null);
 
-  // Drawing state
+  // Theme and basemap state
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [currentBasemap, setCurrentBasemap] = useState(BASEMAPS.light.url);
+
+  // Area selection state
   const [drawingMode, setDrawingMode] = useState(false);
   const [polygon, setPolygon] = useState(null);
   const [tempPolygon, setTempPolygon] = useState([]);
 
-
-
-  const getCurrentDateTime = useCallback(() => {
-    const currentDate = new Date(START_DATE.getTime() + currentHour * 60 * 60 * 1000);
-    return {
-      date: currentDate.toISOString().split('T')[0],
-      hour: currentDate.getHours(),
-    };
-  }, [currentHour]);
-
-  const { updateLayers } = useMapLayers(mapRef, aqiThreshold, currentHour, isMapLoaded, getCurrentDateTime);
-
-
-  useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
-
+  // Map event handlers
   const handleMapLoad = useCallback(() => {
     setIsMapLoaded(true);
     if (mapRef.current) {
-      setMapInstance(mapRef.current.getMap());
       setMapInstance(mapRef.current.getMap());
     }
   }, []);
@@ -69,65 +78,116 @@ const MapComponent = () => {
     }
   }, [isMapLoaded]);
 
-  // Update layers when necessary
-  useEffect(() => {
-    if (mapInstance && isMapLoaded) {
-      updateLayers(mapInstance);
-    }
-  }, [updateLayers, isMapLoaded, mapInstance, currentHour, aqiThreshold]);
-
-  // Simplified reset view function
-  const resetView = useCallback(() => {
-    return new Promise((resolve) => {
-      if (mapInstance) {
-        mapInstance.easeTo({
-          center: [baseViewport.longitude, baseViewport.latitude],
-          zoom: baseViewport.zoom,
-          duration: 1000,
-          onComplete: () => {
-            updateLayers(mapInstance);
-            resolve();
-          }
-        });
-      } else {
-        resolve();
-      }
-    });
-  }, [mapInstance, updateLayers]);
-
-  // Simplified expand view function
-  const expandView = useCallback(() => {
-    if (mapInstance) {
-      mapInstance.easeTo({
-        center: [expandedViewport.longitude, expandedViewport.latitude],
-        zoom: expandedViewport.zoom,
-        duration: 500,
-        onComplete: () => {
-          updateLayers(mapInstance);
-        }
-      });
-    }
-  }, [mapInstance, updateLayers]);
-
-  // Handle panel expansion state changes
   const handlePanelExpandChange = useCallback((expanded) => {
     setIsPanelExpanded(expanded);
-    if (expanded) {
-      expandView();
+  }, []);
+
+
+  const getCurrentDateTime = useCallback(() => {
+    if (!START_DATE || isNaN(currentHour)) {
+      console.warn('Invalid currentHour or START_DATE:', { currentHour, START_DATE });
+      return { date: '', hour: 0 };
+    }
+  
+    try {
+      const timestamp = START_DATE.getTime() + (currentHour * 60 * 60 * 1000);
+      const currentDate = new Date(timestamp);
+      
+      // Validate the date is valid before converting to ISO string
+      if (isNaN(currentDate.getTime())) {
+        throw new Error('Invalid date calculation');
+      }
+  
+      return {
+        date: currentDate.toISOString().split('T')[0],
+        hour: currentDate.getHours()
+      };
+    } catch (error) {
+      console.error('Error calculating current date time:', error);
+      return { date: '', hour: 0 };
+    }
+  }, [currentHour]);
+
+  // Area selection helpers
+  const createCirclePolygon = useCallback((center, radiusDegrees) => {
+    const points = 64;
+    const coords = [];
+    
+    for (let i = 0; i <= points; i++) {
+      const angle = (i * 360) / points;
+      const dx = radiusDegrees * Math.cos((angle * Math.PI) / 180);
+      const dy = radiusDegrees * Math.sin((angle * Math.PI) / 180);
+      coords.push([center[0] + dx, center[1] + dy]);
+    }
+    
+    coords.push(coords[0]);
+    return coords;
+  }, []);
+
+  // Map click handler
+  const handleMapClick = useCallback((e) => {
+    // If a point is already selected, ignore new clicks
+    if (isPointSelected && !drawingMode) {
+      return;
+    }
+
+    const { lng, lat } = e.lngLat;
+    const point = [lng, lat];
+
+    if (drawingMode) {
+      // Handle polygon drawing logic
+      if (e.originalEvent.detail === 2 && tempPolygon.length >= 2) {
+        const finalPolygon = [...tempPolygon, tempPolygon[0]];
+        setPolygon(finalPolygon);
+        setDrawingMode(false);
+        setTempPolygon([]);
+        setIsPlaying(true);
+        return;
+      }
+      setTempPolygon(prev => [...prev, point]);
     } else {
-      setViewport(baseViewport);
+      // Single point selection
+      const circlePolygon = createCirclePolygon(point, 0.1);
+      setPolygon(circlePolygon);
+      setIsPointSelected(true);
+      setIsPlaying(true);
+
+      // Auto-zoom to selection
       if (mapInstance) {
-        mapInstance.easeTo({
-          center: [baseViewport.longitude, baseViewport.latitude],
-          duration: 300,
-          onComplete: () => {
-            updateLayers(mapInstance);
-          }
+        const bounds = circlePolygon.reduce(
+          (bounds, coord) => bounds.extend(coord),
+          new mapboxgl.LngLatBounds(point, point)
+        );
+        
+        mapInstance.fitBounds(bounds, {
+          padding: 50,
+          maxZoom: 7,
+          duration: 1000
         });
       }
     }
-  }, [mapInstance, expandView, updateLayers]);
+  }, [drawingMode, isPointSelected, tempPolygon, mapInstance, createCirclePolygon, setIsPlaying]);
 
+  // Update the clearPolygon function
+  const clearPolygon = useCallback(() => {
+    setPolygon(null);
+    setTempPolygon([]);
+    setDrawingMode(false);
+    setIsPointSelected(false); // Reset point selection state
+    setIsPlaying(false);
+    if (mapInstance) {
+      mapInstance.getCanvas().style.cursor = '';
+    }
+  }, [mapInstance, setIsPlaying]);
+
+  // Update cursor based on whether point selection is allowed
+  const getCursor = useCallback(() => {
+    if (drawingMode) return 'crosshair';
+    if (isPointSelected) return 'not-allowed';
+    return 'pointer';
+  }, [drawingMode, isPointSelected]);
+
+  // Area selection controls
   const startDrawing = useCallback(() => {
     setDrawingMode(true);
     setTempPolygon([]);
@@ -137,58 +197,46 @@ const MapComponent = () => {
     }
   }, [mapInstance]);
 
-  const handleMapClick = useCallback((e) => {
-    if (!drawingMode) return;
-    const { lng, lat } = e.lngLat;
-    setTempPolygon(prev => [...prev, [lng, lat]]);
-  }, [drawingMode]);
-
-  const finishDrawing = useCallback(async () => {
+  const finishDrawing = useCallback(() => {
     if (tempPolygon.length >= 3) {
-      setPolygon([...tempPolygon, tempPolygon[0]]);
-      setDrawingMode(false);
-      setTempPolygon([]);
-      setIsPlaying(true); // Start playing automatically
-      
-      if (mapInstance) {
-        mapInstance.getCanvas().style.cursor = '';
-        
-        await resetView();
-        setIsPanelExpanded(true);
-        setTimeout(() => {
-          expandView();
-        }, 100);
-      }
+      const finalPolygon = [...tempPolygon, tempPolygon[0]];
+      setPolygon(finalPolygon);
     }
-  }, [tempPolygon, mapInstance, resetView, expandView, setIsPlaying]);
-
-  const clearPolygon = useCallback(() => {
-    setPolygon(null);
+    setDrawingMode(false);
     setTempPolygon([]);
-    setIsPanelExpanded(false);
-    setIsPlaying(false); // Pause when clearing polygon
     if (mapInstance) {
-      mapInstance.easeTo({
-        center: [baseViewport.longitude, baseViewport.latitude],
-        duration: 300,
-        onComplete: () => {
-          updateLayers(mapInstance);
-        }
-      });
+      mapInstance.getCanvas().style.cursor = '';
     }
-  }, [mapInstance, updateLayers, setIsPlaying]);
+  }, [tempPolygon, mapInstance]);
 
-  // Map click handler
-  useEffect(() => {
-    if (mapInstance) {
-      mapInstance.on('click', handleMapClick);
-      return () => {
-        if (mapInstance && !mapInstance._removed) {
-          mapInstance.off('click', handleMapClick);
-        }
-      };
+
+
+  // Theme handling
+  const handleThemeChange = useCallback((darkMode) => {
+    setIsDarkMode(darkMode);
+    // Auto switch basemap if not in satellite mode
+    if (currentBasemap !== BASEMAPS.satellite.url) {
+      setCurrentBasemap(darkMode ? BASEMAPS.dark.url : BASEMAPS.light.url);
     }
-  }, [mapInstance, handleMapClick]);
+  }, [currentBasemap]);
+
+  // Hooks
+  const { updateLayers } = useMapLayers(
+    mapRef, 
+    aqiThreshold, 
+    currentHour, 
+    isMapLoaded, 
+    getCurrentDateTime
+  );
+
+  useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
+
+  // Effects
+  useEffect(() => {
+    if (mapInstance && isMapLoaded) {
+      updateLayers(mapInstance);
+    }
+  }, [updateLayers, isMapLoaded, mapInstance, currentHour, aqiThreshold]);
 
   // Polygon rendering effect
   useEffect(() => {
@@ -232,7 +280,7 @@ const MapComponent = () => {
           type: 'fill',
           source: sourceId,
           paint: {
-            'fill-color': 'blue',
+            'fill-color': isDarkMode ? '#60A5FA' : '#3B82F6',
             'fill-opacity': 0.2,
           }
         });
@@ -242,7 +290,7 @@ const MapComponent = () => {
           type: 'line',
           source: sourceId,
           paint: {
-            'line-color': 'blue',
+            'line-color': isDarkMode ? '#60A5FA' : '#3B82F6',
             'line-width': 2,
           }
         });
@@ -252,20 +300,23 @@ const MapComponent = () => {
     }
 
     return cleanup;
-  }, [mapInstance, polygon, tempPolygon]);
+  }, [mapInstance, polygon, tempPolygon, isDarkMode]);
 
   return (
-    <div className="relative w-screen h-screen">
+    <div className={`relative w-screen h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
       <Map
         {...viewport}
         style={{ width: '100%', height: '100%' }}
-        mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+        mapStyle={currentBasemap}
         mapboxAccessToken={MAPBOX_TOKEN}
         onMove={handleMapInteraction}
         ref={mapRef}
         onLoad={handleMapLoad}
+        onClick={handleMapClick}
+        cursor={getCursor()}
       />
-      {!isMapLoaded && <LoadingOverlay />}
+      
+      {!isMapLoaded && <LoadingOverlay isDarkMode={isDarkMode} />}
       
       {isMapLoaded && mapInstance && (
         <>
@@ -275,15 +326,17 @@ const MapComponent = () => {
             isPlaying={isPlaying}
             polygon={polygon}
             onExpandChange={handlePanelExpandChange}
+            isDarkMode={isDarkMode}
           />
           <MapAdditionalControls
             map={mapInstance}
-            mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+            mapStyle={currentBasemap}
             mapboxAccessToken={MAPBOX_TOKEN}
             polygon={polygon}
             currentDateTime={getCurrentDateTime()}
             aqiThreshold={aqiThreshold}
             onExpandChange={handlePanelExpandChange}
+            isDarkMode={isDarkMode}
           />
         </>
       )}
@@ -303,7 +356,11 @@ const MapComponent = () => {
         finishDrawing={finishDrawing}
         clearPolygon={clearPolygon}
         polygon={polygon}
-        map={mapInstance}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={handleThemeChange}
+        currentBasemap={currentBasemap}
+        setCurrentBasemap={setCurrentBasemap}
+        basemapOptions={BASEMAPS}
       />
     </div>
   );
