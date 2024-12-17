@@ -4,6 +4,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Map as MapIcon, X } from 'lucide-react';
 import { TILESET_INFO } from '../../../utils/map/constants.js';
 import { Tooltip } from '../Tooltip';
+import MapRecorder from './MapRecorder';  
+import { START_DATE, END_DATE, TOTAL_HOURS, MAPBOX_TOKEN } from '../../../utils/map/constants.js'; 
 
 const MapAdditionalControls = ({ 
   map, 
@@ -12,7 +14,11 @@ const MapAdditionalControls = ({
   polygon,
   currentDateTime,
   aqiThreshold,
-  onExpandChange 
+  onExpandChange,
+  isPlaying,        
+  setIsPlaying,       
+  currentHour,       
+  setCurrentHour   
 }) => {
   const [minimapVisible, setMinimapVisible] = useState(false);
   const [minimapViewport, setMinimapViewport] = useState(null);
@@ -227,6 +233,7 @@ const MapAdditionalControls = ({
                   interactive={false}
                   onLoad={handleMinimapLoad}
                 />
+ 
               </div>
             </div>
           )}

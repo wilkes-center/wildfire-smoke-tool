@@ -12,7 +12,6 @@ import LoadingOverlay from './LoadingOverlay';
 import AreaAnalysis from './panels/AreaAnalysis';
 
 
-
 const BASEMAPS = {
   light: {
     url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
@@ -51,7 +50,7 @@ const MapComponent = () => {
   useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
   const [viewport, setViewport] = useState(baseViewport);
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
-  const [aqiThreshold, setAqiThreshold] = useState(0);
+  const [aqiThreshold, setAqiThreshold] = useState(20);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapInstance, setMapInstance] = useState(null);
 
@@ -337,6 +336,10 @@ const MapComponent = () => {
             aqiThreshold={aqiThreshold}
             onExpandChange={handlePanelExpandChange}
             isDarkMode={isDarkMode}
+            isPlaying={isPlaying}           
+            setIsPlaying={setIsPlaying}    
+            currentHour={currentHour}       
+            setCurrentHour={setCurrentHour}
           />
         </>
       )}
@@ -361,6 +364,7 @@ const MapComponent = () => {
         currentBasemap={currentBasemap}
         setCurrentBasemap={setCurrentBasemap}
         basemapOptions={BASEMAPS}
+        mapInstance={mapInstance} 
       />
     </div>
   );

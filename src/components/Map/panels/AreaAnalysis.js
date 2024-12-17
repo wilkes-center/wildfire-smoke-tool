@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid,  Legend, ResponsiveContainer } from 'recharts';
-import { BarChart2, X } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart2, X, Download } from 'lucide-react';
 import calculateAreaStats from '../../../utils/map/calculateAreaStats';
 import { Tooltip } from '../Tooltip';
 
@@ -65,7 +65,7 @@ const LegendContent = () => (
   </div>
 );
 
-const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
+const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon, onExpandChange }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState('chart');
   const [error, setError] = useState(null);
@@ -92,6 +92,49 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
     return '#7e0023';
   };
 
+  const handleChartDownload = useCallback(() => {
+    const svg = document.querySelector('.recharts-wrapper svg');
+    if (!svg) return;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = svg.width.baseVal.value;
+      canvas.height = svg.height.baseVal.value;
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      
+      const link = document.createElement('a');
+      link.download = `aqi-analysis-${currentDateTime.date}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  }, [currentDateTime]);
+
+  const handleTableDownload = useCallback(() => {
+    if (!accumulatedData.length) return;
+
+    const headers = ['Time', 'Average AQI', 'Max AQI', 'Min AQI'];
+    const csvContent = [
+      headers.join(','),
+      ...accumulatedData.map(row => 
+        [row.time, row.averageAQI, row.maxAQI, row.minAQI].join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `aqi-data-${currentDateTime.date}.csv`;
+    link.click();
+  }, [accumulatedData, currentDateTime]);
+
   const updateAreaStats = useCallback(() => {
     if (map && polygon) {
       setError(null);
@@ -109,7 +152,6 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
         })
         .catch(err => {
           console.error('Error calculating area stats:', err);
-          setError('Failed to calculate area statistics');
           setError('Failed to calculate area statistics');
           setAreaStats([]);
         });
@@ -137,17 +179,18 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
 
   useEffect(() => {
     if (polygon) {
-      // Short delay to allow Area Overview to expand first
-      setTimeout(() => setIsExpanded(true), 100);
+      setTimeout(() => {
+        setIsExpanded(true);
+        onExpandChange?.(true);
+      }, 100);
     } else {
       setIsExpanded(false);
       setAccumulatedData([]);
       setAreaStats([]);
       setError(null);
+      onExpandChange?.(false);
     }
-  }, [polygon]);
-
-
+  }, [polygon, onExpandChange]);
 
   return (
     <div 
@@ -182,7 +225,6 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
         </button>
       </Tooltip>
 
-  
       {isExpanded && (
         <div
           style={{
@@ -207,39 +249,61 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
                     {currentDateTime.date} {currentDateTime.hour.toString().padStart(2, '0')}:00
                   </div>
                 </div>
-  
+
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setActiveTab('chart')}
-                    className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                      activeTab === 'chart'
-                        ? 'bg-blue-500/70 text-white'
-                        : 'bg-gray-100/50 text-gray-600 hover:bg-gray-200/50'
-                    }`}
-                  >
-                    Chart
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('table')}
-                    className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                      activeTab === 'table'
-                        ? 'bg-blue-500/70 text-white'
-                        : 'bg-gray-100/50 text-gray-600 hover:bg-gray-200/50'
-                    }`}
-                  >
-                    Table
-                  </button>
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => setActiveTab('chart')}
+                      className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                        activeTab === 'chart'
+                          ? 'bg-blue-500/70 text-white'
+                          : 'bg-gray-100/50 text-gray-600 hover:bg-gray-200/50'
+                      }`}
+                    >
+                      Chart
+                    </button>
+                    {activeTab === 'chart' && (
+                      <button
+                        onClick={handleChartDownload}
+                        className="ml-1 p-1 rounded-md hover:bg-gray-200/50"
+                        title="Download Chart"
+                      >
+                        <Download className="w-4 h-4 text-gray-600" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => setActiveTab('table')}
+                      className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                        activeTab === 'table'
+                          ? 'bg-blue-500/70 text-white'
+                          : 'bg-gray-100/50 text-gray-600 hover:bg-gray-200/50'
+                      }`}
+                    >
+                      Table
+                    </button>
+                    {activeTab === 'table' && (
+                      <button
+                        onClick={handleTableDownload}
+                        className="ml-1 p-1 rounded-md hover:bg-gray-200/50"
+                        title="Download CSV"
+                      >
+                        <Download className="w-4 h-4 text-gray-600" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-  
+
             <div className="px-1">
               {error && (
                 <div className="mb-4 p-4 bg-red-50/50 text-red-700 rounded-lg border border-red-200/50">
                   {error}
                 </div>
               )}
-  
+
               {activeTab === 'chart' && accumulatedData.length > 0 && (
                 <div className="h-[320px] w-full relative bg-white/30">
                   <ResponsiveContainer>
@@ -291,7 +355,7 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
                   <LegendContent />
                 </div>
               )}
-  
+
               {activeTab === 'table' && accumulatedData.length > 0 && (
                 <div className="max-h-[320px] overflow-auto">
                   <table className="w-full">
@@ -306,14 +370,14 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
                     <tbody>
                       {accumulatedData.map((data, index) => (
                         <tr key={index} className="border-b border-gray-200/40 hover:bg-gray-50/30">
-                          <td className="py-2 px-4">{data.time}</td>
+                          <td className="py-2 px-4 text-gray-800">{data.time}</td>
                           <td className="py-2 px-4">
                             <div className="flex items-center gap-2">
                               <div 
                                 className="w-2 h-2 rounded-full" 
                                 style={{ backgroundColor: getAQIColor(data.averageAQI) }}
                               />
-                              <span>{data.averageAQI.toFixed(2)}</span>
+                              <span className="text-gray-800">{data.averageAQI.toFixed(2)}</span>
                             </div>
                           </td>
                           <td className="py-2 px-4">
@@ -322,7 +386,7 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
                                 className="w-2 h-2 rounded-full" 
                                 style={{ backgroundColor: getAQIColor(data.maxAQI) }}
                               />
-                              <span>{data.maxAQI.toFixed(2)}</span>
+                              <span className="text-gray-800">{data.maxAQI.toFixed(2)}</span>
                             </div>
                           </td>
                           <td className="py-2 px-4">
@@ -331,7 +395,7 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
                                 className="w-2 h-2 rounded-full" 
                                 style={{ backgroundColor: getAQIColor(data.minAQI) }}
                               />
-                              <span>{data.minAQI.toFixed(2)}</span>
+                              <span className="text-gray-800">{data.minAQI.toFixed(2)}</span>
                             </div>
                           </td>
                         </tr>
@@ -340,12 +404,17 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon,  }) => {
                   </table>
                 </div>
               )}
+
+              {accumulatedData.length === 0 && !error && (
+                <div className="h-[320px] flex items-center justify-center text-gray-500">
+                  <p>No data available for the selected area</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
     </div>
-
   );
 };
 

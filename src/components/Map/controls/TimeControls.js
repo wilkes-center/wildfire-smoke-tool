@@ -19,7 +19,9 @@ export const TimeControls = ({
   };
 
   const handleNextHour = () => {
+    console.log('Before next:', currentHour);
     setCurrentHour(Math.min(TOTAL_HOURS - 1, currentHour + 1));
+    console.log('After next:', currentHour + 1);
   };
 
   return (

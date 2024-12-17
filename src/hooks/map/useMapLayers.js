@@ -2,14 +2,14 @@ import { useCallback } from 'react';
 import { TILESET_INFO, START_DATE } from '../../utils/map/constants.js'; 
 
 export const useMapLayers = (mapRef, aqiThreshold, currentHour, isMapLoaded) => {
-    const getCurrentDateTime = useCallback(() => {
-      const currentDate = new Date(START_DATE.getTime() + currentHour * 60 * 60 * 1000);
-      return {
-        date: currentDate.toISOString().split('T')[0],
-        hour: currentDate.getHours(),
-      };
-    }, [currentHour]);
-
+      const getCurrentDateTime = useCallback(() => {
+        const currentDate = new Date(START_DATE.getTime() + currentHour * 60 * 60 * 1000);
+        return {
+          date: currentDate.toISOString().split('T')[0],
+          hour: currentDate.getUTCHours(),  // Change to UTC hours
+        };
+      }, [currentHour]);
+      
       const updateLayers = useCallback((map) => {
         if (!map || !map.getStyle) return;
       

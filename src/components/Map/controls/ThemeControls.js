@@ -42,7 +42,7 @@ export const ThemeControls = ({
         </button>
 
         {showBasemaps && (
-          <div className={`absolute top-full left-0 mt-2 rounded-lg shadow-lg border min-w-[140px] ${
+          <div className={`absolute top-full left-14 -mt-5 rounded-lg shadow-lg border min-w-[140px] ${
             isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
           }`}>
             {Object.values(basemapOptions).map((basemap) => (

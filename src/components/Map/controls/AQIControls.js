@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Gauge } from 'lucide-react';
 
 const AQI_LEVELS = [
   { value: 0, label: 'Good', color: 'bg-green-500', text: 'text-green-700' },
@@ -54,7 +53,6 @@ export const AQIControls = ({
           isDarkMode ? 'bg-gray-800/95 text-gray-200' : 'bg-white/95 text-gray-800'
         }`}
       >
-        <Gauge className="w-5 h-5" />
         <div className="flex items-center gap-2">
           <div className={`w-3 h-3 rounded-full ${getAQIColor(aqiThreshold)}`} />
           <span className="font-medium">{aqiThreshold}+ AQI</span>
