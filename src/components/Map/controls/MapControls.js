@@ -4,6 +4,11 @@ import { ThemeControls } from './ThemeControls';
 import { AQIControls } from './AQIControls';
 import { DrawingControls } from './DrawingControls';
 import { DateTime } from './DateTime';
+import PopulationLayerControl from './PopulationLayerControl';
+import AQILayerControl from './AQILayerControls';
+import PopulationExposureCounter from './PopulationExposureCounter';
+
+
 
 const DEFAULT_VIEW = {
   center: [-98.5795, 39.8283],
@@ -31,13 +36,12 @@ const MapControls = ({
   currentBasemap,
   setCurrentBasemap,
   basemapOptions,
-  mapInstance  // Now properly used
+  mapInstance  
 }) => {
   const dateTime = getCurrentDateTime ? getCurrentDateTime() : { date: '', hour: 0 };
 
   const handleResetView = () => {
     if (mapInstance) {
-      // Using flyTo instead of setViewport for smooth transition
       mapInstance.flyTo({
         center: DEFAULT_VIEW.center,
         zoom: DEFAULT_VIEW.zoom,
@@ -59,12 +63,35 @@ const MapControls = ({
             setCurrentBasemap={setCurrentBasemap}
             basemapOptions={basemapOptions}
           />
+
+          <PopulationLayerControl
+              map={mapInstance}
+              isDarkMode={isDarkMode}
+            />
+
+            {polygon && (
+              <div className={`backdrop-blur-sm rounded-lg shadow-lg px-4 py-3 ${
+                isDarkMode ? 'bg-gray-800/95 text-gray-200' : 'bg-white/95 text-gray-800'
+              }`}>
+                <PopulationExposureCounter
+                  map={mapInstance}
+                  polygon={polygon}
+                  isDarkMode={isDarkMode}
+                  currentDateTime={getCurrentDateTime()}
+                />
+              </div>
+            )}
           
-          <AQIControls
-            aqiThreshold={aqiThreshold}
-            setAqiThreshold={setAqiThreshold}
+          <AQILayerControl
+            map={mapInstance}
             isDarkMode={isDarkMode}
           />
+
+          <AQIControls
+              aqiThreshold={aqiThreshold}
+              setAqiThreshold={setAqiThreshold}
+              isDarkMode={isDarkMode}
+            />
         </div>
 
         {/* Center Controls - DateTime */}

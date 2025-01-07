@@ -10,22 +10,8 @@ import MapControls from './controls';
 import MapAdditionalControls from './panels/MapAdditionalControls';
 import LoadingOverlay from './LoadingOverlay';
 import AreaAnalysis from './panels/AreaAnalysis';
+import {BASEMAPS} from '../../constants/map/basemaps';
 
-
-const BASEMAPS = {
-  light: {
-    url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-    name: 'Light'
-  },
-  dark: {
-    url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-    name: 'Dark'
-  },
-  satellite: {
-    url: 'mapbox://styles/mapbox/satellite-v9',
-    name: 'Satellite'
-  }
-};
 
 const MapComponent = () => {
   // Base viewport config
@@ -39,9 +25,7 @@ const MapComponent = () => {
 
   // Base state
   const mapRef = useRef(null);
-
   const [isPointSelected, setIsPointSelected] = useState(false);
-
 
   const [currentHour, setCurrentHour] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -134,7 +118,7 @@ const MapComponent = () => {
     const point = [lng, lat];
 
     if (drawingMode) {
-      // Handle polygon drawing logic
+      // Handle polygon drawing
       if (e.originalEvent.detail === 2 && tempPolygon.length >= 2) {
         const finalPolygon = [...tempPolygon, tempPolygon[0]];
         setPolygon(finalPolygon);
@@ -207,8 +191,6 @@ const MapComponent = () => {
       mapInstance.getCanvas().style.cursor = '';
     }
   }, [tempPolygon, mapInstance]);
-
-
 
   // Theme handling
   const handleThemeChange = useCallback((darkMode) => {

@@ -1,5 +1,7 @@
 import { TILESET_INFO } from './constants';
 
+
+
 const calculateAreaStats = async (map, polygon) => {
   const stats = [];
 
@@ -57,5 +59,6 @@ const calculateAreaStats = async (map, polygon) => {
 
   return stats;
 };
+
 
 export default calculateAreaStats;

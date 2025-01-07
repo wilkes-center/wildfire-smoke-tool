@@ -1,11 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Map } from 'react-map-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { Map as MapIcon, X } from 'lucide-react';
-import { TILESET_INFO } from '../../../utils/map/constants.js';
+import { Map as MapIcon, X, Download } from 'lucide-react';
+import { TILESET_INFO, TOTAL_HOURS } from '../../../utils/map/constants.js';
 import { Tooltip } from '../Tooltip';
-import MapRecorder from './MapRecorder';  
-import { START_DATE, END_DATE, TOTAL_HOURS, MAPBOX_TOKEN } from '../../../utils/map/constants.js'; 
 
 const MapAdditionalControls = ({ 
   map, 
@@ -18,12 +15,16 @@ const MapAdditionalControls = ({
   isPlaying,        
   setIsPlaying,       
   currentHour,       
-  setCurrentHour   
+  setCurrentHour,
+  isDarkMode
 }) => {
   const [minimapVisible, setMinimapVisible] = useState(false);
   const [minimapViewport, setMinimapViewport] = useState(null);
   const minimapRef = useRef(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingProgress, setRecordingProgress] = useState(0);
+  const framesRef = useRef([]);
   const initializedRef = useRef(false);
 
   // Only run once when polygon is initially created
@@ -40,12 +41,6 @@ const MapAdditionalControls = ({
       onExpandChange?.(false);
     }
   }, [polygon, onExpandChange]);
-
-  const handleExpandToggle = () => {
-    const newExpandedState = !isExpanded;
-    setIsExpanded(newExpandedState);
-    onExpandChange?.(newExpandedState);
-  };
 
   const setupMinimapLayers = (minimap) => {
     if (!minimap || !currentDateTime) return;
@@ -105,6 +100,97 @@ const MapAdditionalControls = ({
     });
   };
 
+  const handleMinimapLoad = () => {
+    const minimap = minimapRef.current?.getMap();
+    if (minimap) {
+      setupMinimapLayers(minimap);
+    }
+  };
+
+  const captureFrame = async () => {
+    if (!minimapRef.current) return null;
+    
+    try {
+      const map = minimapRef.current.getMap();
+      const canvas = map.getCanvas();
+      
+      // Create a new canvas and copy the map
+      const tempCanvas = document.createElement('canvas');
+      const ctx = tempCanvas.getContext('2d');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      ctx.drawImage(canvas, 0, 0);
+      
+      return new Promise((resolve) => {
+        tempCanvas.toBlob((blob) => {
+          resolve(URL.createObjectURL(blob));
+        }, 'image/png');
+      });
+    } catch (error) {
+      console.error('Error capturing frame:', error);
+      return null;
+    }
+  };
+
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const startRecording = async () => {
+    setIsRecording(true);
+    setRecordingProgress(0);
+    framesRef.current = [];
+    
+    // Stop any ongoing playback
+    setIsPlaying(false);
+    setCurrentHour(0);
+    
+    // Wait for initial render
+    await delay(1000);
+    
+    try {
+      // Capture frames
+      for (let hour = 0; hour < TOTAL_HOURS; hour++) {
+        setCurrentHour(hour);
+        await delay(500); // Wait for map update
+        
+        const frameUrl = await captureFrame();
+        if (frameUrl) {
+          framesRef.current.push(frameUrl);
+        }
+        
+        setRecordingProgress((hour + 1) / TOTAL_HOURS * 100);
+      }
+      
+      // Create and download frames as a ZIP file
+      await downloadFrames();
+    } catch (error) {
+      console.error('Recording error:', error);
+    } finally {
+      // Cleanup
+      framesRef.current.forEach(url => URL.revokeObjectURL(url));
+      framesRef.current = [];
+      setIsRecording(false);
+    }
+  };
+
+  const downloadFrames = async () => {
+    try {
+      // Download first frame as PNG
+      if (framesRef.current.length > 0) {
+        const response = await fetch(framesRef.current[0]);
+        const blob = await response.blob();
+        
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'area-overview.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('Error downloading frames:', error);
+    }
+  };
+
   useEffect(() => {
     if (polygon && polygon.length > 0) {
       const bounds = polygon.reduce(
@@ -157,13 +243,6 @@ const MapAdditionalControls = ({
     }
   }, [isExpanded]);
 
-  const handleMinimapLoad = () => {
-    const minimap = minimapRef.current?.getMap();
-    if (minimap) {
-      setupMinimapLayers(minimap);
-    }
-  };
-
   useEffect(() => {
     const minimap = minimapRef.current?.getMap();
     if (minimap && minimap.isStyleLoaded()) {
@@ -193,7 +272,11 @@ const MapAdditionalControls = ({
             position: 'relative',
             backdropFilter: 'blur(8px)',
           }}
-          onClick={polygon ? handleExpandToggle : undefined}
+          onClick={polygon ? () => {
+            const newExpandedState = !isExpanded;
+            setIsExpanded(newExpandedState);
+            onExpandChange?.(newExpandedState);
+          } : undefined}
         >
           {!isExpanded ? (
             <MapIcon className="w-5 h-5 text-gray-600" />
@@ -220,10 +303,21 @@ const MapAdditionalControls = ({
         >
           {polygon && minimapVisible && minimapViewport && (
             <div className="w-full h-full">
-              <div className="border-b border-gray-200/40 px-3 py-2 bg-white/30">
+              <div className="border-b border-gray-200/40 px-3 py-2 bg-white/30 flex justify-between items-center">
                 <h2 className="text-xl font-bold leading-none text-gray-800">Area Overview</h2>
+                {!isRecording && (
+                  <button
+                    onClick={startRecording}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-white bg-blue-500 hover:bg-blue-600 transition-colors text-sm`}
+                    disabled={isRecording}
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Capture</span>
+                  </button>
+                )}
               </div>
-              <div className="h-[360px]">
+              
+              <div className="h-[360px] relative">
                 <Map
                   ref={minimapRef}
                   initialViewState={minimapViewport}
@@ -233,7 +327,18 @@ const MapAdditionalControls = ({
                   interactive={false}
                   onLoad={handleMinimapLoad}
                 />
- 
+                
+                {isRecording && (
+                  <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg p-4">
+                    <div className="text-sm text-gray-600 mb-2">Recording...</div>
+                    <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 transition-all duration-300"
+                        style={{ width: `${recordingProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

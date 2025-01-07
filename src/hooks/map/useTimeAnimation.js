@@ -17,7 +17,6 @@ export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
       const elapsed = timestamp - lastTimestampRef.current;
 
       if (elapsed >= animationDuration) {
-        // Only update if we're not already processing an update
         if (!isAnimatingRef.current) {
           isAnimatingRef.current = true;
           setCurrentHour(prevHour => {
@@ -38,7 +37,7 @@ export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
     };
 
     if (isPlaying && !animationFrameRef.current) {
-      lastTimestampRef.current = 0;  // Reset timestamp when starting new animation
+      lastTimestampRef.current = 0;
       animationFrameRef.current = requestAnimationFrame(animate);
     }
 

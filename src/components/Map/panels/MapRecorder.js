@@ -4,9 +4,7 @@ import { Download } from 'lucide-react';
 
 const MapRecorder = ({ 
   minimapRef, 
-  isPlaying, 
   setIsPlaying, 
-  currentHour, 
   setCurrentHour,
   TOTAL_HOURS,
   isDarkMode 
@@ -22,33 +20,45 @@ const MapRecorder = ({
       return null;
     }
     
-    const map = minimapRef.current.getMap();
-    
     try {
-      // Get the canvas directly from Mapbox GL
+      const map = minimapRef.current.getMap();
+      
+      // Wait for map to finish rendering
+      await new Promise(resolve => {
+        if (map.loaded()) {
+          resolve();
+        } else {
+          map.once('idle', resolve);
+        }
+      });
+      
+      // Get the canvas with all layers
       const canvas = map.getCanvas();
       
-      // Create a new canvas to draw the map
+      // Create a new canvas to compose the frame
       const tempCanvas = document.createElement('canvas');
       const ctx = tempCanvas.getContext('2d');
       
-      // Match dimensions
-      tempCanvas.width = 480;
-      tempCanvas.height = 360;
+      // Match dimensions exactly
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
       
-      // Fill with white background
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+      // Copy the complete map view including basemap and layers
+      ctx.drawImage(canvas, 0, 0);
       
-      // Draw the map canvas
-      ctx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
-      
-      return tempCanvas.toDataURL('image/png');
+      return new Promise((resolve) => {
+        tempCanvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          resolve(url);
+        }, 'image/png');
+      });
     } catch (error) {
       console.error('Error capturing frame:', error);
       return null;
     }
   };
+
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   const startRecording = async () => {
     try {
@@ -64,22 +74,21 @@ const MapRecorder = ({
       // Reset to start
       setCurrentHour(0);
 
-      // Wait for initial map load
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait for initial render
+      await delay(1000);
       
-      console.log('Starting frame capture loop');
-      // Start capturing frames
+      // Capture frames
       for (let hour = 0; hour < TOTAL_HOURS; hour++) {
-        console.log(`Capturing frame for hour ${hour}`);
+        console.log(`Processing hour ${hour}`);
         setCurrentHour(hour);
         
-        // Wait for the map to update
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait for map update and render
+        await delay(500);
         
-        const frame = await captureFrame();
-        if (frame) {
-          console.log(`Successfully captured frame ${hour}`);
-          frames.current.push(frame);
+        const frameUrl = await captureFrame();
+        if (frameUrl) {
+          console.log(`Captured frame ${hour}`);
+          frames.current.push(frameUrl);
         } else {
           console.error(`Failed to capture frame ${hour}`);
         }
@@ -87,16 +96,23 @@ const MapRecorder = ({
         setProgress((hour + 1) / TOTAL_HOURS * 100);
       }
       
-      console.log(`Captured ${frames.current.length} frames`);
       if (frames.current.length === 0) {
         throw new Error('No frames were captured');
       }
       
       // Create and download GIF
       await createGif();
+      
+      // Cleanup frame URLs
+      frames.current.forEach(url => URL.revokeObjectURL(url));
+      frames.current = [];
+      
     } catch (err) {
       console.error('Recording error:', err);
       setError('Failed to create GIF. Please try again.');
+      // Cleanup on error
+      frames.current.forEach(url => URL.revokeObjectURL(url));
+      frames.current = [];
       setIsRecording(false);
     }
   };
@@ -104,68 +120,60 @@ const MapRecorder = ({
   const createGif = async () => {
     try {
       console.log('Starting GIF creation');
+      const map = minimapRef.current.getMap();
+      const canvas = map.getCanvas();
+      
+      // Create GIF with inline worker to avoid path issues
       const gif = new GIF({
         workers: 2,
         quality: 10,
-        width: 480,
-        height: 360,
-        workerScript: '/wildfire-webapp/gif.worker.js',
-        background: '#ffffff'
+        width: canvas.width,
+        height: canvas.height,
+        workerScript: undefined // Let gif.js use inline worker
       });
 
-      console.log('Loading images');
-      // Create and load all images before adding to GIF
+      // Load all frames
       const loadedImages = await Promise.all(
         frames.current.map(
-          (frame, index) => new Promise((resolve, reject) => {
-            console.log(`Loading frame ${index}`);
+          (frameUrl) => new Promise((resolve, reject) => {
             const img = new Image();
-            img.onload = () => {
-              console.log(`Frame ${index} loaded`);
-              resolve(img);
-            };
-            img.onerror = (error) => {
-              console.error(`Frame ${index} failed to load:`, error);
-              reject(error);
-            };
-            img.src = frame;
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = frameUrl;
           })
         )
       );
 
-      console.log('Adding frames to GIF');
-      loadedImages.forEach((img, index) => {
-        console.log(`Adding frame ${index} to GIF`);
+      console.log(`Adding ${loadedImages.length} frames to GIF`);
+      loadedImages.forEach(img => {
         gif.addFrame(img, { 
           delay: 200,
           dispose: 2
         });
       });
 
-      // Add finished event handler before calling render
-      console.log('Rendering GIF');
+      // Render and download
       await new Promise((resolve, reject) => {
         gif.on('finished', blob => {
           try {
-            console.log('GIF rendering complete');
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = 'area-overview.gif';
+            document.body.appendChild(a);
             a.click();
-            
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
             setIsRecording(false);
             setProgress(0);
             resolve();
           } catch (err) {
-            console.error('Error saving GIF:', err);
             reject(err);
           }
         });
 
-        gif.on('progress', progress => {
-          console.log(`GIF rendering progress: ${Math.round(progress * 100)}%`);
+        gif.on('progress', p => {
+          console.log(`GIF encoding progress: ${Math.round(p * 100)}%`);
         });
 
         gif.render();
@@ -181,14 +189,21 @@ const MapRecorder = ({
       {!isRecording ? (
         <button
           onClick={startRecording}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-lg"
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors shadow-lg ${
+            isDarkMode 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-blue-500 text-white'
+          }`}
+          disabled={isRecording}
         >
           <Download className="w-4 h-4" />
           <span>Download GIF</span>
         </button>
       ) : (
-        <div className="bg-white rounded-lg shadow-lg p-4">
-          <div className="text-sm text-gray-600 mb-2">
+        <div className={`rounded-lg shadow-lg p-4 ${
+          isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'
+        }`}>
+          <div className="text-sm mb-2">
             {error ? (
               <span className="text-red-500">{error}</span>
             ) : (

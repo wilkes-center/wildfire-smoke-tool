@@ -21,6 +21,55 @@ const CustomTooltip = ({ active, payload, label }) => {
   }
   return null;
 };
+const getPopulationDensity = (map, geometry) => {
+  if (!map) return 0;
+  
+  // Find population layer by source-layer name
+  const mapStyle = map.getStyle();
+  const populationLayer = mapStyle.layers.find(layer => 
+    layer['source-layer'] === 'US-UT_pd_2020_1km_8bit-24s5pl'
+  );
+
+  if (!populationLayer) {
+    console.log('Population layer not found');
+    return 0;
+  }
+
+  console.log('Using population layer:', populationLayer.id);
+  
+  const populationFeatures = map.querySourceFeatures('population-source', {
+    sourceLayer: 'US-UT_pd_2020_1km_8bit-24s5pl'
+  });
+
+  console.log('Population features found:', populationFeatures);
+
+  if (!populationFeatures.length) {
+    console.log('No population features found');
+    return 0;
+  }
+
+  // Calculate average density from DN values
+  let totalDensity = 0;
+  let count = 0;
+  
+  populationFeatures.forEach(feature => {
+    const density = feature.properties.DN;
+    console.log('Feature DN value:', density);
+    if (density !== undefined && density !== null) {
+      totalDensity += density;
+      count++;
+    }
+  });
+
+  const averageDensity = count > 0 ? totalDensity / count : 0;
+  console.log('Average DN value:', averageDensity);
+  
+  // Convert to people/km² (scaling DN 0-255 to 0-2000 people/km²)
+  const scaledDensity = (averageDensity / 255) * 2000;
+  console.log('Scaled density (people/km²):', scaledDensity);
+  
+  return scaledDensity;
+};
 
 const CustomXAxisTick = ({ x, y, payload }) => {
   const [date, time] = payload.value.split(' ');
@@ -365,41 +414,58 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon, onExpandChange
                         <th className="py-2 px-4 text-left text-gray-600 font-medium">Avg AQI</th>
                         <th className="py-2 px-4 text-left text-gray-600 font-medium">Max AQI</th>
                         <th className="py-2 px-4 text-left text-gray-600 font-medium">Min AQI</th>
+                        <th className="py-2 px-4 text-left text-gray-600 font-medium">Exposure Index</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {accumulatedData.map((data, index) => (
-                        <tr key={index} className="border-b border-gray-200/40 hover:bg-gray-50/30">
-                          <td className="py-2 px-4 text-gray-800">{data.time}</td>
-                          <td className="py-2 px-4">
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-2 h-2 rounded-full" 
-                                style={{ backgroundColor: getAQIColor(data.averageAQI) }}
-                              />
-                              <span className="text-gray-800">{data.averageAQI.toFixed(2)}</span>
-                            </div>
-                          </td>
-                          <td className="py-2 px-4">
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-2 h-2 rounded-full" 
-                                style={{ backgroundColor: getAQIColor(data.maxAQI) }}
-                              />
-                              <span className="text-gray-800">{data.maxAQI.toFixed(2)}</span>
-                            </div>
-                          </td>
-                          <td className="py-2 px-4">
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-2 h-2 rounded-full" 
-                                style={{ backgroundColor: getAQIColor(data.minAQI) }}
-                              />
-                              <span className="text-gray-800">{data.minAQI.toFixed(2)}</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {accumulatedData.map((data, index) => {
+                        // Calculate population density for this time point
+                        const geometry = { type: 'Polygon', coordinates: [polygon] };
+                        const density = getPopulationDensity(map, geometry);
+                        const exposureIndex = Math.round(data.averageAQI * density);
+
+                        return (
+                          <tr key={index} className="border-b border-gray-200/40 hover:bg-gray-50/30">
+                            <td className="py-2 px-4 text-gray-800">{data.time}</td>
+                            <td className="py-2 px-4">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-2 h-2 rounded-full" 
+                                  style={{ backgroundColor: getAQIColor(data.averageAQI) }}
+                                />
+                                <span className="text-gray-800">{data.averageAQI.toFixed(2)}</span>
+                              </div>
+                            </td>
+                            <td className="py-2 px-4">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-2 h-2 rounded-full" 
+                                  style={{ backgroundColor: getAQIColor(data.maxAQI) }}
+                                />
+                                <span className="text-gray-800">{data.maxAQI.toFixed(2)}</span>
+                              </div>
+                            </td>
+                            <td className="py-2 px-4">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-2 h-2 rounded-full" 
+                                  style={{ backgroundColor: getAQIColor(data.minAQI) }}
+                                />
+                                <span className="text-gray-800">{data.minAQI.toFixed(2)}</span>
+                              </div>
+                            </td>
+                            <td className="py-2 px-4">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-2 h-2 rounded-full" 
+                                  style={{ backgroundColor: exposureIndex > 10000 ? '#ff0000' : '#ffa500' }}
+                                />
+                                <span className="text-gray-800">{exposureIndex.toLocaleString()}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
