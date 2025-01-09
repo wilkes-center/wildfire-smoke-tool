@@ -40,14 +40,44 @@ const PopulationLayerControl = ({ map, isDarkMode }) => {
               'interpolate',
               ['linear'],
               ['get', 'DN'],
-              0, 'rgba(240,240,240,0)',
-              50, '#fee8c8',
-              100, '#fdbb84',
-              150, '#fc8d59',
-              200, '#ef6548',
-              255, '#d7301f'
+              0, 'rgba(0,0,0,0)',
+              50, '#2c3440',
+              100, '#3c4959',
+              150, '#4c5c73',
+              200, '#5c708c',
+              255, '#6b84a6'
             ],
-            'fill-opacity': 1
+            'fill-opacity': [
+              'interpolate',
+              ['linear'],
+              ['get', 'DN'],
+              0, 0,
+              50, 0.4,
+              100, 0.6,
+              150, 0.8,
+              200, 0.9,
+              255, 1
+            ],
+            'fill-antialias': true
+          }
+        });
+
+        // Add an outline layer for better visibility
+        map.addLayer({
+          id: `${layerId}-outline`,
+          type: 'line',
+          source: sourceId,
+          'source-layer': 'US-UT_pd_2020_1km_8bit-24s5pl',
+          paint: {
+            'line-color': '#000000',
+            'line-width': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              4, 0.5,
+              8, 1.5
+            ],
+            'line-opacity': 0.3
           }
         });
       }

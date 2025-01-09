@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react';
-import { START_DATE, END_DATE, TOTAL_HOURS, MAPBOX_TOKEN } from '../../../utils/map/constants.js'; 
-
+import { START_DATE, END_DATE, TOTAL_HOURS } from '../../../utils/map/constants.js';
 
 export const TimeControls = ({
   currentHour,
@@ -14,14 +13,26 @@ export const TimeControls = ({
 }) => {
   const [showSpeedOptions, setShowSpeedOptions] = useState(false);
 
+
   const handlePrevHour = () => {
-    setCurrentHour(Math.max(0, currentHour - 1));
+    console.log('TimeControls - handlePrevHour - before:', currentHour);
+    const newHour = Math.max(0, currentHour - 1);
+    console.log('TimeControls - handlePrevHour - setting to:', newHour);
+    setCurrentHour(newHour);
   };
 
   const handleNextHour = () => {
-    console.log('Before next:', currentHour);
-    setCurrentHour(Math.min(TOTAL_HOURS - 1, currentHour + 1));
-    console.log('After next:', currentHour + 1);
+    console.log('TimeControls - handleNextHour - before:', currentHour);
+    const newHour = Math.min(TOTAL_HOURS - 1, currentHour + 1);
+    console.log('TimeControls - handleNextHour - setting to:', newHour);
+    setCurrentHour(newHour);
+  };
+
+  const handleSliderChange = (e) => {
+    console.log('TimeControls - handleSliderChange - before:', currentHour);
+    const newHour = parseInt(e.target.value);
+    console.log('TimeControls - handleSliderChange - setting to:', newHour);
+    setCurrentHour(newHour);
   };
 
   return (
@@ -43,7 +54,7 @@ export const TimeControls = ({
           {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
         </button>
 
-        {/* Playback Speed */}
+        {/* Speed control */}
         <div className="relative">
           <button
             onClick={() => setShowSpeedOptions(!showSpeedOptions)}
@@ -98,13 +109,14 @@ export const TimeControls = ({
           <ChevronLeft className="w-5 h-5" />
         </button>
 
+        {/*Timeline range - handle Slider Change*/}
         <div className="flex-1 h-2 relative">
           <input
             type="range"
             min="0"
             max={TOTAL_HOURS - 1}
             value={currentHour}
-            onChange={(e) => setCurrentHour(parseInt(e.target.value))}
+            onChange={handleSliderChange}
             className={`w-full h-2 rounded-full appearance-none cursor-pointer ${
               isDarkMode ? 'bg-gray-700' : 'bg-blue-100'
             }`}

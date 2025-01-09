@@ -11,6 +11,7 @@ import MapAdditionalControls from './panels/MapAdditionalControls';
 import LoadingOverlay from './LoadingOverlay';
 import AreaAnalysis from './panels/AreaAnalysis';
 import {BASEMAPS} from '../../constants/map/basemaps';
+import { TILESET_INFO } from '../../utils/map/constants.js';
 
 
 const MapComponent = () => {
@@ -20,7 +21,7 @@ const MapComponent = () => {
     longitude: -98.5795,
     zoom: 4,
     minZoom: 4,
-    maxZoom: 8,
+    maxZoom: 15,
   };
 
   // Base state
@@ -67,28 +68,23 @@ const MapComponent = () => {
 
 
   const getCurrentDateTime = useCallback(() => {
-    if (!START_DATE || isNaN(currentHour)) {
-      console.warn('Invalid currentHour or START_DATE:', { currentHour, START_DATE });
+    // Use TILESET_INFO to determine the correct date and hour
+    const hoursPerTileset = 6;
+    const tilesetIndex = Math.floor(currentHour / hoursPerTileset);
+    const hourOffset = currentHour % hoursPerTileset;
+    
+    // Get the tileset for the current time
+    const tileset = TILESET_INFO[tilesetIndex];
+    
+    if (!tileset) {
+      console.warn('No tileset found for hour:', currentHour);
       return { date: '', hour: 0 };
     }
   
-    try {
-      const timestamp = START_DATE.getTime() + (currentHour * 60 * 60 * 1000);
-      const currentDate = new Date(timestamp);
-      
-      // Validate the date is valid before converting to ISO string
-      if (isNaN(currentDate.getTime())) {
-        throw new Error('Invalid date calculation');
-      }
-  
-      return {
-        date: currentDate.toISOString().split('T')[0],
-        hour: currentDate.getHours()
-      };
-    } catch (error) {
-      console.error('Error calculating current date time:', error);
-      return { date: '', hour: 0 };
-    }
+    return {
+      date: tileset.date,
+      hour: tileset.startHour + hourOffset
+    };
   }, [currentHour]);
 
   // Area selection helpers
@@ -210,7 +206,6 @@ const MapComponent = () => {
     getCurrentDateTime
   );
 
-  useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
 
   // Effects
   useEffect(() => {

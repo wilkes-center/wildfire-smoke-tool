@@ -26,7 +26,8 @@ export const ThemeControls = ({
       </button>
 
       <div className={`w-px h-10 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
-
+{/* Modify the placement of the icons on the top-left to place all the icons on the top layer as a title layer*/}
+{/* */}
       {/* Basemap Selector */}
       <div className="relative">
         <button
