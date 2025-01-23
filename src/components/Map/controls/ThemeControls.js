@@ -11,7 +11,7 @@ export const ThemeControls = ({
   const [showBasemaps, setShowBasemaps] = useState(false);
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 flex gap-2">
+    <div className="flex items-center gap-2">
       {/* Dark Mode Toggle */}
       <button
         onClick={() => setIsDarkMode(!isDarkMode)}
@@ -25,9 +25,6 @@ export const ThemeControls = ({
         {isDarkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
       </button>
 
-      <div className={`w-px h-10 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
-{/* Modify the placement of the icons on the top-left to place all the icons on the top layer as a title layer*/}
-{/* */}
       {/* Basemap Selector */}
       <div className="relative">
         <button
@@ -43,7 +40,7 @@ export const ThemeControls = ({
         </button>
 
         {showBasemaps && (
-          <div className={`absolute top-full left-14 -mt-5 rounded-lg shadow-lg border min-w-[140px] ${
+          <div className={`absolute top-full right-0 mt-2 rounded-lg shadow-lg border min-w-[140px] ${
             isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
           }`}>
             {Object.values(basemapOptions).map((basemap) => (

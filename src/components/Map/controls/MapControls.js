@@ -8,8 +8,6 @@ import PopulationLayerControl from './PopulationLayerControl';
 import AQILayerControl from './AQILayerControls';
 import PopulationExposureCounter from './PopulationExposureCounter';
 
-
-
 const DEFAULT_VIEW = {
   center: [-98.5795, 39.8283],
   zoom: 4,
@@ -53,9 +51,18 @@ const MapControls = ({
   return (
     <div className="relative w-full h-full pointer-events-none">
       {/* Top Controls Container */}
-      <div className="fixed top-4 inset-x-4 z-50 flex justify-between items-start gap-4">
-        {/* Left Controls Stack */}
-        <div className="pointer-events-auto flex flex-col gap-2">
+      <div className="fixed top-4 inset-x-4 z-50">
+        {/* Center Controls - DateTime and Theme */}
+        <div className="absolute left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-4">
+        <AQIControls
+            aqiThreshold={aqiThreshold}
+            setAqiThreshold={setAqiThreshold}
+            isDarkMode={isDarkMode}
+          />
+          <DateTime
+            currentDateTime={getCurrentDateTime()}
+            isDarkMode={isDarkMode}
+          />
           <ThemeControls
             isDarkMode={isDarkMode}
             setIsDarkMode={setIsDarkMode}
@@ -63,13 +70,17 @@ const MapControls = ({
             setCurrentBasemap={setCurrentBasemap}
             basemapOptions={basemapOptions}
           />
+        </div>
 
+        {/* Left Controls Stack */}
+        <div className="absolute left-0 pointer-events-auto flex flex-col gap-2">
           <PopulationLayerControl
-              map={mapInstance}
-              isDarkMode={isDarkMode}
-            />
+            map={mapInstance}
+            isDarkMode={isDarkMode}
+          />
 
-            {polygon && (
+          {polygon && (
+            <div className="w-80">
               <div className={`backdrop-blur-sm rounded-lg shadow-lg px-4 py-3 ${
                 isDarkMode ? 'bg-gray-800/95 text-gray-200' : 'bg-white/95 text-gray-800'
               }`}>
@@ -80,26 +91,15 @@ const MapControls = ({
                   currentDateTime={getCurrentDateTime()}
                 />
               </div>
-            )}
+            </div>
+          )}
           
           <AQILayerControl
             map={mapInstance}
             isDarkMode={isDarkMode}
           />
 
-          <AQIControls
-              aqiThreshold={aqiThreshold}
-              setAqiThreshold={setAqiThreshold}
-              isDarkMode={isDarkMode}
-            />
-        </div>
 
-        {/* Center Controls - DateTime */}
-        <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2">
-          <DateTime
-            currentDateTime={getCurrentDateTime()}
-            isDarkMode={isDarkMode}
-          />
         </div>
       </div>
 

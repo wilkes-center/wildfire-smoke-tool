@@ -12,10 +12,9 @@ import LoadingOverlay from './LoadingOverlay';
 import AreaAnalysis from './panels/AreaAnalysis';
 import {BASEMAPS} from '../../constants/map/basemaps';
 import { TILESET_INFO } from '../../utils/map/constants.js';
-
+import DrawingTooltip from './DrawingTooltip';
 
 const MapComponent = () => {
-  // Base viewport config
   const baseViewport = {
     latitude: 39.8283,
     longitude: -98.5795,
@@ -267,7 +266,7 @@ const MapComponent = () => {
           source: sourceId,
           paint: {
             'line-color': isDarkMode ? '#60A5FA' : '#3B82F6',
-            'line-width': 2,
+            'line-width': 3,
           }
         });
       } catch (error) {
@@ -279,7 +278,7 @@ const MapComponent = () => {
   }, [mapInstance, polygon, tempPolygon, isDarkMode]);
 
   return (
-    <div className={`relative w-screen h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+    <div className={`fixed inset-0 overflow-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
       <Map
         {...viewport}
         style={{ width: '100%', height: '100%' }}
@@ -320,31 +319,35 @@ const MapComponent = () => {
           />
         </>
       )}
-      
-      <MapControls
-        currentHour={currentHour}
-        setCurrentHour={setCurrentHour}
-        aqiThreshold={aqiThreshold}
-        setAqiThreshold={setAqiThreshold}
-        isPlaying={isPlaying}
-        setIsPlaying={setIsPlaying}
-        playbackSpeed={playbackSpeed}
-        setPlaybackSpeed={setPlaybackSpeed}
-        getCurrentDateTime={getCurrentDateTime}
-        drawingMode={drawingMode}
-        startDrawing={startDrawing}
-        finishDrawing={finishDrawing}
-        clearPolygon={clearPolygon}
-        polygon={polygon}
-        isDarkMode={isDarkMode}
-        setIsDarkMode={handleThemeChange}
-        currentBasemap={currentBasemap}
-        setCurrentBasemap={setCurrentBasemap}
-        basemapOptions={BASEMAPS}
-        mapInstance={mapInstance} 
-      />
-    </div>
-  );
+            <DrawingTooltip 
+            drawingMode={drawingMode} 
+            tempPolygon={tempPolygon}
+          />
+
+          <MapControls
+            currentHour={currentHour}
+            setCurrentHour={setCurrentHour}
+            aqiThreshold={aqiThreshold}
+            setAqiThreshold={setAqiThreshold}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+            playbackSpeed={playbackSpeed}
+            setPlaybackSpeed={setPlaybackSpeed}
+            getCurrentDateTime={getCurrentDateTime}
+            drawingMode={drawingMode}
+            startDrawing={startDrawing}
+            finishDrawing={finishDrawing}
+            clearPolygon={clearPolygon}
+            polygon={polygon}
+            isDarkMode={isDarkMode}
+            setIsDarkMode={handleThemeChange}
+            currentBasemap={currentBasemap}
+            setCurrentBasemap={setCurrentBasemap}
+            basemapOptions={BASEMAPS}
+            mapInstance={mapInstance} 
+          />
+      </div>
+    );
 };
 
 export default MapComponent;
