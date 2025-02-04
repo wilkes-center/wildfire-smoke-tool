@@ -2,15 +2,16 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Map from 'react-map-gl';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { START_DATE, END_DATE, TOTAL_HOURS, MAPBOX_TOKEN } from '../../utils/map/constants.js'; 
-
+import { START_DATE, MAPBOX_TOKEN } from '../../utils/map/constants.js'; 
+import { fetchCensusPopulation, getPopulationLayerConfig, getPopupContent } from '../../utils/map/census-api';
+import { getSelectedCensusTracts } from '../../utils/map/censusAnalysis';
 import { useMapLayers } from '../../hooks/map/useMapLayers';
 import { useTimeAnimation } from '../../hooks/map/useTimeAnimation';
 import MapControls from './controls'; 
 import MapAdditionalControls from './panels/MapAdditionalControls';
 import LoadingOverlay from './LoadingOverlay';
 import AreaAnalysis from './panels/AreaAnalysis';
-import {BASEMAPS} from '../../constants/map/basemaps';
+import { BASEMAPS } from '../../constants/map/basemaps';
 import { TILESET_INFO } from '../../utils/map/constants.js';
 import DrawingTooltip from './DrawingTooltip';
 
@@ -20,7 +21,7 @@ const MapComponent = () => {
     longitude: -98.5795,
     zoom: 4,
     minZoom: 4,
-    maxZoom: 15,
+    maxZoom: 8,
   };
 
   // Base state
@@ -33,8 +34,7 @@ const MapComponent = () => {
 
   useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
   const [viewport, setViewport] = useState(baseViewport);
-  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
-  const [aqiThreshold, setAqiThreshold] = useState(20);
+  const [aqiThreshold, setAqiThreshold] = useState(1);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapInstance, setMapInstance] = useState(null);
 
@@ -47,13 +47,6 @@ const MapComponent = () => {
   const [polygon, setPolygon] = useState(null);
   const [tempPolygon, setTempPolygon] = useState([]);
 
-  // Map event handlers
-  const handleMapLoad = useCallback(() => {
-    setIsMapLoaded(true);
-    if (mapRef.current) {
-      setMapInstance(mapRef.current.getMap());
-    }
-  }, []);
 
   const handleMapInteraction = useCallback((evt) => {
     if (isMapLoaded) {
@@ -61,30 +54,94 @@ const MapComponent = () => {
     }
   }, [isMapLoaded]);
 
-  const handlePanelExpandChange = useCallback((expanded) => {
-    setIsPanelExpanded(expanded);
+
+
+  const setupPopulationLayers = async (map) => {
+    try {
+      console.log('Setting up population layers...');
+      // Get configuration
+      const config = getPopulationLayerConfig();
+      
+      // Add source if it doesn't exist
+      if (!map.getSource(config.source.id)) {
+        console.log('Adding census source:', config.source.id);
+        map.addSource(config.source.id, config.source);
+      }
+  
+      // Add layers
+      for (const layer of config.layers) {
+        if (!map.getLayer(layer.id)) {
+          console.log('Adding census layer:', layer.id);
+          map.addLayer(layer);
+        }
+      }
+  
+      // Add census tracts visualization first
+      console.log('Census layers added, fetching population data...');
+  
+      try {
+        // Fetch population data
+        const populationData = await fetchCensusPopulation();
+        console.log('Population data fetched successfully');
+        return populationData;
+      } catch (error) {
+        console.error('Failed to fetch population data:', error);
+        // Continue with map display even if population data fetch fails
+        return null;
+      }
+  
+    } catch (error) {
+      console.error('Error setting up population layers:', error);
+      throw error;
+    }
+  };
+  
+  // Update your handleMapLoad
+  const handleMapLoad = useCallback(() => {
+    console.log('Map loaded, initializing...');
+    setIsMapLoaded(true);
+    if (mapRef.current) {
+      const map = mapRef.current.getMap();
+      setMapInstance(map);
+      
+      // Setup population layers
+      setupPopulationLayers(map).catch(error => {
+        console.error('Failed to setup population layers:', error);
+        // Map can still function without population data
+      });
+    }
   }, []);
 
-
   const getCurrentDateTime = useCallback(() => {
-    // Use TILESET_INFO to determine the correct date and hour
-    const hoursPerTileset = 6;
-    const tilesetIndex = Math.floor(currentHour / hoursPerTileset);
-    const hourOffset = currentHour % hoursPerTileset;
-    
-    // Get the tileset for the current time
-    const tileset = TILESET_INFO[tilesetIndex];
-    
-    if (!tileset) {
-      console.warn('No tileset found for hour:', currentHour);
-      return { date: '', hour: 0 };
+    // Calculate the actual date and hour from START_DATE
+    const msPerHour = 60 * 60 * 1000;
+    const currentDate = new Date(START_DATE.getTime() + (currentHour * msPerHour));
+    const date = currentDate.toISOString().split('T')[0];
+    const hour = currentDate.getUTCHours();
+
+    // Find the correct tileset for this date and hour
+    const currentTileset = TILESET_INFO.find(tileset => 
+        tileset.date === date && 
+        hour >= tileset.startHour && 
+        hour < tileset.startHour + 3
+    );
+
+    if (!currentTileset) {
+        console.warn('No tileset found for:', { date, hour, currentHour });
+        return { date: '', hour: 0 };
     }
-  
-    return {
-      date: tileset.date,
-      hour: tileset.startHour + hourOffset
-    };
-  }, [currentHour]);
+
+    // For debugging
+    /* console.log('Tileset match:', {
+        date,
+        hour,
+        tilesetId: currentTileset.id,
+        tilesetStart: currentTileset.startHour,
+        tilesetEnd: currentTileset.startHour + 3
+    }); */
+
+    return { date, hour };
+}, [currentHour]);
 
   // Area selection helpers
   const createCirclePolygon = useCallback((center, radiusDegrees) => {
@@ -102,8 +159,7 @@ const MapComponent = () => {
     return coords;
   }, []);
 
-  // Map click handler
-  const handleMapClick = useCallback((e) => {
+  const handleMapClick = useCallback(async (e) => {
     // If a point is already selected, ignore new clicks
     if (isPointSelected && !drawingMode) {
       return;
@@ -120,6 +176,16 @@ const MapComponent = () => {
         setDrawingMode(false);
         setTempPolygon([]);
         setIsPlaying(true);
+        
+        // Get census data for the selected area
+        if (mapInstance) {
+          try {
+            const censusData = await getSelectedCensusTracts(mapInstance, finalPolygon);
+            console.log('Selected area census data:', censusData);
+          } catch (error) {
+            console.error('Error fetching census data:', error);
+          }
+        }
         return;
       }
       setTempPolygon(prev => [...prev, point]);
@@ -130,12 +196,20 @@ const MapComponent = () => {
       setIsPointSelected(true);
       setIsPlaying(true);
 
-      // Auto-zoom to selection
+      // Get census data for the circle area
       if (mapInstance) {
-        const bounds = circlePolygon.reduce(
-          (bounds, coord) => bounds.extend(coord),
-          new mapboxgl.LngLatBounds(point, point)
-        );
+        try {
+          const censusData = await getSelectedCensusTracts(mapInstance, circlePolygon);
+          console.log('Selected area census data:', censusData);
+        } catch (error) {
+          console.error('Error fetching census data:', error);
+        }
+
+        // Create bounds for auto-zoom
+        const bounds = new mapboxgl.LngLatBounds();
+        circlePolygon.forEach(coord => {
+          bounds.extend(coord);
+        });
         
         mapInstance.fitBounds(bounds, {
           padding: 50,
@@ -146,7 +220,7 @@ const MapComponent = () => {
     }
   }, [drawingMode, isPointSelected, tempPolygon, mapInstance, createCirclePolygon, setIsPlaying]);
 
-  // Update the clearPolygon function
+
   const clearPolygon = useCallback(() => {
     setPolygon(null);
     setTempPolygon([]);
@@ -300,7 +374,6 @@ const MapComponent = () => {
             currentDateTime={getCurrentDateTime()}
             isPlaying={isPlaying}
             polygon={polygon}
-            onExpandChange={handlePanelExpandChange}
             isDarkMode={isDarkMode}
           />
           <MapAdditionalControls
@@ -310,7 +383,6 @@ const MapComponent = () => {
             polygon={polygon}
             currentDateTime={getCurrentDateTime()}
             aqiThreshold={aqiThreshold}
-            onExpandChange={handlePanelExpandChange}
             isDarkMode={isDarkMode}
             isPlaying={isPlaying}           
             setIsPlaying={setIsPlaying}    
@@ -319,7 +391,7 @@ const MapComponent = () => {
           />
         </>
       )}
-            <DrawingTooltip 
+          <DrawingTooltip 
             drawingMode={drawingMode} 
             tempPolygon={tempPolygon}
           />

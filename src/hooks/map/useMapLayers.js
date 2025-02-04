@@ -1,111 +1,139 @@
 import { useCallback } from 'react';
-import { TILESET_INFO, START_DATE } from '../../utils/map/constants.js'; 
+import { TILESET_INFO, START_DATE, MAPBOX_TOKEN } from '../../utils/map/constants.js';
 
-export const useMapLayers = (mapRef, aqiThreshold, currentHour, isMapLoaded) => {
-      const getCurrentDateTime = useCallback(() => {
-        const currentDate = new Date(START_DATE.getTime() + currentHour * 60 * 60 * 1000);
-        return {
-          date: currentDate.toISOString().split('T')[0],
-          hour: currentDate.getUTCHours(),  // Change to UTC hours
-        };
-      }, [currentHour]);
+export const useMapLayers = (mapRef, pm25Threshold, currentHour, isMapLoaded) => {
+  const getCurrentDateTime = useCallback(() => {
+    const msPerHour = 60 * 60 * 1000;
+    const currentDate = new Date(START_DATE.getTime() + (currentHour * msPerHour));
+    const date = currentDate.toISOString().split('T')[0];
+    const hour = currentDate.getUTCHours();
+
+    const currentTileset = TILESET_INFO.find(tileset => 
+        tileset.date === date && 
+        hour >= tileset.startHour && 
+        hour < tileset.endHour
+    );
+
+    if (!currentTileset) {
+        console.warn('No tileset found for:', { date, hour, currentHour });
+        return { date: '', hour: 0 };
+    }
+
+    return { date, hour };
+  }, [currentHour]);
+
+  const updateLayers = useCallback((map) => {
+    if (!map || !map.getStyle) return;
+
+    try {
+      // Add Census Tract Layer if it doesn't exist
+      const censusSourceId = 'census-tracts-source';
+      const censusLayerId = 'census-tracts-layer';
+
+      if (!map.getSource(censusSourceId)) {
+        map.addSource(censusSourceId, {
+          type: 'vector',
+          url: 'mapbox://pkulandh.2fbjphk5'
+        });
+      }
+
+      if (!map.getLayer(censusLayerId)) {
+        map.addLayer({
+          id: censusLayerId,
+          type: 'line',
+          source: censusSourceId,
+          'source-layer': 'CensusTracts_Utah-d9h86e',
+          paint: {
+            'line-color': '#6B7280',
+            'line-width': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              4, 0.5,
+              8, 1
+            ],
+            'line-opacity': 0.6
+          },
+          layout: {
+            'visibility': 'visible'
+          }
+        });
+      }
+
+      // Update AQI layers
+      const { date, hour } = getCurrentDateTime();
       
-      const updateLayers = useCallback((map) => {
-        if (!map || !map.getStyle) return;
-      
-        try {
-          const { date, hour } = getCurrentDateTime();
-          const currentTime = new Date(`${date}T${String(hour).padStart(2, '0')}:00:00`);
-      
-          TILESET_INFO.forEach((tileset, index) => {
-            const sourceId = `source-${tileset.id}`;
-            const layerId = `layer-${tileset.id}`;
-      
-            if (!map.getSource(sourceId)) {
-              map.addSource(sourceId, {
-                type: 'vector',
-                url: `mapbox://${tileset.id}`,
-              });
-            }
-      
-            if (!map.getLayer(layerId)) {
-                map.addLayer({
-                  id: layerId,
-                  type: 'circle',
-                  source: sourceId,
-                  'source-layer': tileset.layer,
-                  paint: {
-                    'circle-radius': [
-                      'interpolate',
-                      ['exponential', 3],
-                      ['zoom'],
-                      4, 25,
-                      5, 30,
-                      6, 35,
-                      7, 40,
-                      8, 45,
-                    ],
-                    'circle-color': [
-                      'interpolate',
-                      ['linear'],
-                      ['to-number', ['get', 'AQI'], 0],
-                      0, '#00e400',
-                      51, '#ffff00',
-                      101, '#ff7e00',
-                      151, '#ff0000',
-                      201, '#8f3f97',
-                      301, '#7e0023',
-                      500, '#7e0023'
-                    ],
-                    'circle-blur': 0.9,
-                    'circle-opacity': 0.15, // Reduced from 0.3 to 0.15
-                  },
-                });
-              }
-      
-            const layerStartTime = new Date(`${tileset.date}T${String(tileset.startHour).padStart(2, '0')}:00:00`);
-            const layerEndTime = new Date(layerStartTime.getTime() + 6 * 60 * 60 * 1000);
-            
-            const extendedStartTime = new Date(layerStartTime.getTime() - 60 * 60 * 1000);
-            const extendedEndTime = new Date(layerEndTime.getTime() + 60 * 60 * 1000);
-      
-            if (currentTime >= extendedStartTime && currentTime < extendedEndTime) {
-              const currentHourInTileset = (currentTime.getTime() - layerStartTime.getTime()) / (60 * 60 * 1000);
-              const formattedTime = `${tileset.date}T${String(tileset.startHour + Math.floor(currentHourInTileset)).padStart(2, '0')}:00:00`;
-      
-              const filter = [
-                'all',
-                ['==', ['get', 'time'], formattedTime],
-                ['>=', ['to-number', ['get', 'AQI']], aqiThreshold]
-              ];
-      
-              map.setFilter(layerId, filter);
-      
-    
-              let opacity;
-              if (currentTime < layerStartTime) {
-                opacity = 1 - (layerStartTime - currentTime) / (60 * 60 * 1000);
-              } else if (currentTime >= layerEndTime) {
-                opacity = 1 - (currentTime - layerEndTime) / (60 * 60 * 1000);
-              } else {
-                opacity = 1;
-              }
-      
-              opacity = Math.max(0, Math.min(1, opacity));
-      
-              // Multiply the calculated opacity by 0.15 to maintain relative transparency
-              map.setPaintProperty(layerId, 'circle-opacity', opacity * 0.15);
-              map.setLayoutProperty(layerId, 'visibility', 'visible');
-            } else {
-              map.setLayoutProperty(layerId, 'visibility', 'none');
-            }
+      TILESET_INFO.forEach((tileset) => {
+        const sourceId = `source-${tileset.id}`;
+        const layerId = `layer-${tileset.id}`;
+
+        if (!map.getSource(sourceId)) {
+          map.addSource(sourceId, {
+            type: 'vector',
+            tiles: [`https://api.mapbox.com/v4/${tileset.id}/{z}/{x}/{y}.vector.pbf?access_token=${MAPBOX_TOKEN}`],
+            minzoom: 2,
+            maxzoom: 8
           });
-      
-        } catch (error) {
-          console.error('Error updating layers:', error);
         }
-      }, [aqiThreshold, getCurrentDateTime]);
-    
+
+        if (!map.getLayer(layerId)) {
+          map.addLayer({
+            id: layerId,
+            type: 'circle',
+            source: sourceId,
+            'source-layer': tileset.layer,
+            paint: {
+              'circle-radius': [
+                'interpolate',
+                ['exponential', 2],
+                ['zoom'],
+                4, 15,
+                5, 20,
+                6, 25,
+                7, 30,
+                8, 35
+              ],
+              'circle-color': [
+                'interpolate',
+                ['linear'],
+                ['coalesce', ['to-number', ['get', 'PM25'], 0], 0],
+                0, '#00e400',
+                12.1, '#ffff00',
+                35.5, '#ff7e00',
+                55.5, '#ff0000',
+                150.5, '#8f3f97',
+                250.5, '#7e0023'
+              ],
+              'circle-blur': 0.9,
+              'circle-opacity': 0.15
+            }
+          }, 'census-tracts-layer'); // Add AQI layers below census tracts
+        }
+
+        const isActiveChunk = tileset.date === date && 
+                            hour >= tileset.startHour && 
+                            hour < tileset.endHour;
+
+        if (isActiveChunk) {
+          const timeString = `${date}T${String(hour).padStart(2, '0')}:00:00`;
+          
+          const filter = [
+            'all',
+            ['==', ['get', 'time'], timeString],
+            ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+          ];
+
+          map.setFilter(layerId, filter);
+          map.setLayoutProperty(layerId, 'visibility', 'visible');
+        } else {
+          map.setLayoutProperty(layerId, 'visibility', 'none');
+        }
+      });
+
+    } catch (error) {
+      console.error('Error updating layers:', error);
+    }
+  }, [pm25Threshold, getCurrentDateTime]);
 
   return { updateLayers };
 };

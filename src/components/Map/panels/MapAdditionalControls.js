@@ -221,7 +221,7 @@ const MapAdditionalControls = ({
       const viewport = {
         ...center,
         zoom: Math.min(Math.max(zoom, 3), 10),
-        minZoom: 4,
+        minZoom: 2,
         maxZoom: 7
       };
 

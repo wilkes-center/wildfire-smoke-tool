@@ -1,12 +1,8 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { TimeControls } from './TimeControls';
 import { ThemeControls } from './ThemeControls';
-import { AQIControls } from './AQIControls';
 import { DrawingControls } from './DrawingControls';
 import { DateTime } from './DateTime';
-import PopulationLayerControl from './PopulationLayerControl';
-import AQILayerControl from './AQILayerControls';
-import PopulationExposureCounter from './PopulationExposureCounter';
 
 const DEFAULT_VIEW = {
   center: [-98.5795, 39.8283],
@@ -17,8 +13,6 @@ const DEFAULT_VIEW = {
 const MapControls = ({
   currentHour,
   setCurrentHour,
-  aqiThreshold,
-  setAqiThreshold,
   isPlaying,
   setIsPlaying,
   playbackSpeed,
@@ -36,6 +30,7 @@ const MapControls = ({
   basemapOptions,
   mapInstance  
 }) => {
+
   const dateTime = getCurrentDateTime ? getCurrentDateTime() : { date: '', hour: 0 };
 
   const handleResetView = () => {
@@ -54,11 +49,6 @@ const MapControls = ({
       <div className="fixed top-4 inset-x-4 z-50">
         {/* Center Controls - DateTime and Theme */}
         <div className="absolute left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-4">
-        <AQIControls
-            aqiThreshold={aqiThreshold}
-            setAqiThreshold={setAqiThreshold}
-            isDarkMode={isDarkMode}
-          />
           <DateTime
             currentDateTime={getCurrentDateTime()}
             isDarkMode={isDarkMode}
@@ -74,32 +64,15 @@ const MapControls = ({
 
         {/* Left Controls Stack */}
         <div className="absolute left-0 pointer-events-auto flex flex-col gap-2">
-          <PopulationLayerControl
-            map={mapInstance}
-            isDarkMode={isDarkMode}
-          />
-
           {polygon && (
             <div className="w-80">
               <div className={`backdrop-blur-sm rounded-lg shadow-lg px-4 py-3 ${
                 isDarkMode ? 'bg-gray-800/95 text-gray-200' : 'bg-white/95 text-gray-800'
               }`}>
-                <PopulationExposureCounter
-                  map={mapInstance}
-                  polygon={polygon}
-                  isDarkMode={isDarkMode}
-                  currentDateTime={getCurrentDateTime()}
-                />
+
               </div>
             </div>
           )}
-          
-          <AQILayerControl
-            map={mapInstance}
-            isDarkMode={isDarkMode}
-          />
-
-
         </div>
       </div>
 

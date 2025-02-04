@@ -1,6 +1,6 @@
 import { TimeControls } from './TimeControls';
 import { ThemeControls } from './ThemeControls';
-import { AQIControls } from './AQIControls';
+import { PM25Controls } from './PM25Controls';
 import { DrawingControls } from './DrawingControls';
 import { DateTime } from './DateTime';
 import MapControls from './MapControls';
@@ -8,7 +8,7 @@ import MapControls from './MapControls';
 export {
   TimeControls,
   ThemeControls,
-  AQIControls,
+  PM25Controls,
   DrawingControls,
   DateTime,
   MapControls

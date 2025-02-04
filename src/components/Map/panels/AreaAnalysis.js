@@ -125,9 +125,9 @@ const AreaAnalysis = ({ map, currentDateTime, isPlaying, polygon, onExpandChange
     return stats.flatMap(tilesetStats =>
       tilesetStats.hourlyData.map(hourData => ({
         time: `${tilesetStats.date} ${String(hourData.hour).padStart(2, '0')}:00`,
-        averageAQI: hourData.averageAQI,
-        maxAQI: hourData.maxAQI,
-        minAQI: hourData.minAQI
+        averagePM25: hourData.averagePM25,
+        maxPM25: hourData.maxPM25,
+        minPM25: hourData.minPM25
       }))
     ).sort((a, b) => new Date(a.time) - new Date(b.time));
   }, []);

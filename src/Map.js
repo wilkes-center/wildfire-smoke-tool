@@ -35,8 +35,8 @@ const MapComponent = () => {
   const [viewport, setViewport] = useState({
     latitude: 31.8283,
     longitude: -98.5795,
-    zoom: 3,
-    minZoom: 3,
+    zoom: 2,
+    minZoom: 2,
     maxZoom: 8,
   });
 
