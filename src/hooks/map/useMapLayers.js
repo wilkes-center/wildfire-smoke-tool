@@ -33,7 +33,7 @@ export const useMapLayers = (mapRef, pm25Threshold, currentHour, isMapLoaded) =>
       if (!map.getSource(censusSourceId)) {
         map.addSource(censusSourceId, {
           type: 'vector',
-          url: 'mapbox://pkulandh.2fbjphk5'
+          url: 'mapbox://pkulandh.Utah_CT'
         });
       }
 
@@ -42,7 +42,7 @@ export const useMapLayers = (mapRef, pm25Threshold, currentHour, isMapLoaded) =>
           id: censusLayerId,
           type: 'line',
           source: censusSourceId,
-          'source-layer': 'CensusTracts_Utah-d9h86e',
+          'source-layer': 'Utah_CT_layer',
           paint: {
             'line-color': '#6B7280',
             'line-width': [
@@ -52,10 +52,11 @@ export const useMapLayers = (mapRef, pm25Threshold, currentHour, isMapLoaded) =>
               4, 0.5,
               8, 1
             ],
-            'line-opacity': 0.6
+            'line-opacity': 0,  // Set initial opacity to 0 to make tracts invisible
+            'line-width': 0  // Set line width to 0 to ensure no lines are visible
           },
           layout: {
-            'visibility': 'visible'
+            'visibility': 'none'  // Change visibility to none
           }
         });
       }
@@ -91,7 +92,9 @@ export const useMapLayers = (mapRef, pm25Threshold, currentHour, isMapLoaded) =>
                 5, 20,
                 6, 25,
                 7, 30,
-                8, 35
+                8, 50,
+                9, 80,
+                10, 100
               ],
               'circle-color': [
                 'interpolate',
@@ -107,7 +110,7 @@ export const useMapLayers = (mapRef, pm25Threshold, currentHour, isMapLoaded) =>
               'circle-blur': 0.9,
               'circle-opacity': 0.15
             }
-          }, 'census-tracts-layer'); // Add AQI layers below census tracts
+          }, 'census-tracts-layer'); 
         }
 
         const isActiveChunk = tileset.date === date && 

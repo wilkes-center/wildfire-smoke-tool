@@ -1,128 +1,138 @@
-// src/utils/map/censusAnalysis.js
+const getSelectedCensusTracts = async (map, polygon) => {
+  if (!map || !polygon) return [];
 
-const CENSUS_API_KEY = process.env.REACT_APP_CENSUS_API_KEY;
-const UTAH_FIPS = '49'; // Utah state FIPS code
-
-export const getSelectedCensusTracts = async (map, polygon) => {
-    if (!map || !polygon) return [];
-  
-    try {
-      // Get all features from the census tracts layer
-      const features = map.queryRenderedFeatures({
-        layers: ['census-tracts-layer']
-      });
-
-      // Debug: Log the first feature's complete properties
-      console.log('First feature complete properties:', features[0]?.properties);
-      
-      // Filter features that intersect with the selected area
-      const selectedFeatures = features.filter(feature => {
-        return feature.geometry && feature.properties;
-      });
-
-      // Extract and log GEOIDs from map features
-      const tractIds = [...new Set(selectedFeatures.map(f => {
-        const geoid = f.properties.GEOID;
-        console.log('Map Feature GEOID:', geoid);
-        return geoid;
-      }))];
-
-      console.log('Selected tract IDs from map:', tractIds);
-      
-      if (tractIds.length === 0) {
-        console.log('No census tracts found in selection');
-        return {};
+  try {
+      // First verify the layer exists
+      if (!map.getLayer('census-tracts-layer')) {
+          console.error('Census tracts layer not found');
+          return { tracts: {}, summary: { totalPopulation: 0 }};
       }
 
-      // Fetch from Census API
-      const baseUrl = 'https://api.census.gov/data/2020/acs/acs5';
-      const apiKey = process.env.REACT_APP_CENSUS_API_KEY;
-      
-      const variables = [
-        'B01003_001E',  // Total Population
-        'B19013_001E',  // Median Household Income
-        'B25077_001E'   // Median Home Value
-      ];
-      
-      const url = `${baseUrl}?get=${variables.join(',')}&for=tract:*&in=state:49&key=${apiKey}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      const [headers, ...rows] = data;
-
-      // Process the response
-      const populationData = {};
-      let totalPopulation = 0;
-      let totalIncome = 0;
-      let totalHomeValue = 0;
-      let validTractCount = 0;
-
-      // Log a few rows of Census API data for comparison
-      console.log('Sample Census API rows:', rows.slice(0, 3).map(row => {
-        const state = row[headers.indexOf('state')];
-        const county = row[headers.indexOf('county')];
-        const tract = row[headers.indexOf('tract')];
-        const geoid = `${state}${county.padStart(3, '0')}${tract.padStart(6, '0')}`;
-        return {
-          rawRow: row,
-          constructedGeoid: geoid,
-          population: row[headers.indexOf('B01003_001E')]
-        };
-      }));
-
-      rows.forEach(row => {
-        const state = row[headers.indexOf('state')];
-        const county = row[headers.indexOf('county')];
-        const tract = row[headers.indexOf('tract')];
-        const geoid = `${state}${county.padStart(3, '0')}${tract.padStart(6, '0')}`;
-        
-        // Check if this tract is in our selected area
-        if (tractIds.includes(geoid)) {
-          console.log('Found matching tract:', geoid);
-          
-          const population = parseInt(row[headers.indexOf('B01003_001E')]) || 0;
-          const income = parseInt(row[headers.indexOf('B19013_001E')]) || 0;
-          const homeValue = parseInt(row[headers.indexOf('B25077_001E')]) || 0;
-
-          populationData[geoid] = {
-            population,
-            medianIncome: income,
-            medianHomeValue: homeValue,
-            state,
-            county,
-            tract
-          };
-
-          totalPopulation += population;
-          if (income > 0) {
-            totalIncome += income;
-            validTractCount++;
-          }
-          if (homeValue > 0) {
-            totalHomeValue += homeValue;
-          }
-        }
+      // Get all features without filtering
+      const features = map.queryRenderedFeatures({
+          layers: ['census-tracts-layer']
       });
 
-      // Log final matching stats
-      console.log('Matching Statistics:', {
-        totalTractsFromMap: tractIds.length,
-        matchedTracts: Object.keys(populationData).length,
-        sampleMapGeoid: tractIds[0],
-        sampleApiGeoid: Object.keys(populationData)[0]
+      // Filter features within bounds
+      const bounds = polygon.reduce((bounds, coord) => ({
+          minLng: Math.min(bounds.minLng, coord[0]),
+          maxLng: Math.max(bounds.maxLng, coord[0]),
+          minLat: Math.min(bounds.minLat, coord[1]),
+          maxLat: Math.max(bounds.maxLat, coord[1])
+      }), {
+          minLng: Infinity,
+          maxLng: -Infinity,
+          minLat: Infinity,
+          maxLat: -Infinity
+      });
+
+      const filteredFeatures = features.filter(feature => {
+          const lon = parseFloat(feature.properties.INTPTLON20);
+          const lat = parseFloat(feature.properties.INTPTLAT20);
+          
+          return !isNaN(lon) && !isNaN(lat) &&
+                 lon >= bounds.minLng && lon <= bounds.maxLng &&
+                 lat >= bounds.minLat && lat <= bounds.maxLat;
+      });
+
+      // Create a stable ID for this polygon to avoid recreating the highlight layer
+      const polygonId = polygon.map(coord => coord.join(',')).join('|');
+      const highlightSourceId = `highlight-source-${polygonId}`;
+      const highlightLayerId = `highlight-layer-${polygonId}`;
+
+      // Only create highlight layers if they don't exist
+      if (!map.getSource(highlightSourceId)) {
+          // Create GeoJSON for the filtered features
+          const geojson = {
+              type: 'FeatureCollection',
+              features: filteredFeatures.map(feature => ({
+                  type: 'Feature',
+                  geometry: feature.geometry,
+                  properties: {
+                      GEOID20: feature.properties.GEOID20
+                  }
+              }))
+          };
+
+          // Add source and layers for highlighting
+          map.addSource(highlightSourceId, {
+              type: 'geojson',
+              data: geojson
+          });
+
+          // Add fill layer
+          map.addLayer({
+              id: highlightLayerId,
+              type: 'fill',
+              source: highlightSourceId,
+              paint: {
+                  'fill-color': '#8B5CF6',
+                  'fill-opacity': 0.3,
+                  'fill-outline-color': '#7C3AED'
+              }
+          });
+      }
+
+      // Extract GEOIDs
+      const tractIds = [...new Set(filteredFeatures.map(f => f.properties.GEOID20))].filter(id => id);
+
+      if (tractIds.length === 0) {
+          console.log('No census tracts found in selection');
+          return {
+              tracts: {},
+              summary: { totalPopulation: 0 }
+          };
+      }
+
+      // Fetch only population data from Census API
+      const baseUrl = 'https://api.census.gov/data/2020/acs/acs5';
+      const url = `${baseUrl}?get=B01003_001E&for=tract:*&in=state:49&key=${process.env.REACT_APP_CENSUS_API_KEY}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      // Process Census API response
+      const [headers, ...rows] = data;
+      const populationData = {};
+      let totalPopulation = 0;
+
+      rows.forEach(row => {
+          const state = row[headers.indexOf('state')];
+          const county = row[headers.indexOf('county')];
+          const tract = row[headers.indexOf('tract')];
+          const geoid = `${state}${county.padStart(3, '0')}${tract.padStart(6, '0')}`;
+          
+          if (tractIds.includes(geoid)) {
+              const population = parseInt(row[headers.indexOf('B01003_001E')]) || 0;
+              populationData[geoid] = { population };
+              totalPopulation += population;
+          }
       });
 
       return {
-        tracts: populationData,
-        summary: {
-          totalPopulation,
-          averageMedianIncome: validTractCount > 0 ? Math.round(totalIncome / validTractCount) : 0,
-          averageMedianHomeValue: validTractCount > 0 ? Math.round(totalHomeValue / validTractCount) : 0,
-          tractCount: validTractCount
-        }
+          tracts: populationData,
+          summary: { totalPopulation }
       };
 
-    } catch (error) {
+  } catch (error) {
       console.error('Error in getSelectedCensusTracts:', error);
       throw error;
-    }
+  }
 };
+
+// Add cleanup function to be called when removing the polygon
+export const cleanupHighlightLayers = (map, polygon) => {
+  if (!map || !polygon) return;
+  
+  const polygonId = polygon.map(coord => coord.join(',')).join('|');
+  const highlightSourceId = `highlight-source-${polygonId}`;
+  const highlightLayerId = `highlight-layer-${polygonId}`;
+
+  if (map.getLayer(highlightLayerId)) {
+      map.removeLayer(highlightLayerId);
+  }
+  if (map.getSource(highlightSourceId)) {
+      map.removeSource(highlightSourceId);
+  }
+};
+
+export default getSelectedCensusTracts;

@@ -10,18 +10,18 @@ export const getPopulationLayerConfig = () => ({
   source: {
     id: 'census-tracts-source',
     type: 'vector',
-    url: 'mapbox://pkulandh.2fbjphk5'
+    url: 'mapbox://pkulandh.Utah_CT'
   },
   layers: [
     {
       id: 'census-tracts-layer',
       type: 'line',
       source: 'census-tracts-source',
-      'source-layer': 'CensusTracts_Utah-d9h86e',
+      'source-layer': 'Utah_CT_layer',
       paint: {
         'line-color': '#666',
-        'line-width': 1,
-        'line-opacity': 0.5
+        'line-width': 0,
+        'line-opacity': 0
       },
       layout: {
         visibility: 'visible'
@@ -31,7 +31,7 @@ export const getPopulationLayerConfig = () => ({
       id: 'census-tracts-layer-hover',
       type: 'line',
       source: 'census-tracts-source',
-      'source-layer': 'CensusTracts_Utah-d9h86e',
+      'source-layer': 'Utah_CT_layer',
       paint: {
         'line-color': '#000',
         'line-width': 2

@@ -3,6 +3,7 @@ import { TimeControls } from './TimeControls';
 import { ThemeControls } from './ThemeControls';
 import { DrawingControls } from './DrawingControls';
 import { DateTime } from './DateTime';
+import PM25ThresholdSlider from './PM25ThresholdSlider';
 
 const DEFAULT_VIEW = {
   center: [-98.5795, 39.8283],
@@ -28,7 +29,9 @@ const MapControls = ({
   currentBasemap,
   setCurrentBasemap,
   basemapOptions,
-  mapInstance  
+  mapInstance,
+  pm25Threshold,
+  setPM25Threshold
 }) => {
 
   const dateTime = getCurrentDateTime ? getCurrentDateTime() : { date: '', hour: 0 };
@@ -49,6 +52,11 @@ const MapControls = ({
       <div className="fixed top-4 inset-x-4 z-50">
         {/* Center Controls - DateTime and Theme */}
         <div className="absolute left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-4">
+          <PM25ThresholdSlider 
+            pm25Threshold={pm25Threshold}
+            setPM25Threshold={setPM25Threshold}
+            isDarkMode={isDarkMode}
+          />
           <DateTime
             currentDateTime={getCurrentDateTime()}
             isDarkMode={isDarkMode}
@@ -62,18 +70,7 @@ const MapControls = ({
           />
         </div>
 
-        {/* Left Controls Stack */}
-        <div className="absolute left-0 pointer-events-auto flex flex-col gap-2">
-          {polygon && (
-            <div className="w-80">
-              <div className={`backdrop-blur-sm rounded-lg shadow-lg px-4 py-3 ${
-                isDarkMode ? 'bg-gray-800/95 text-gray-200' : 'bg-white/95 text-gray-800'
-              }`}>
 
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Bottom Controls Container */}

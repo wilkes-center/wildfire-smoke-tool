@@ -4,7 +4,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { START_DATE, MAPBOX_TOKEN } from '../../utils/map/constants.js'; 
 import { fetchCensusPopulation, getPopulationLayerConfig, getPopupContent } from '../../utils/map/census-api';
-import { getSelectedCensusTracts } from '../../utils/map/censusAnalysis';
+import getSelectedCensusTracts, { cleanupHighlightLayers } from '../../utils/map/censusAnalysis';
 import { useMapLayers } from '../../hooks/map/useMapLayers';
 import { useTimeAnimation } from '../../hooks/map/useTimeAnimation';
 import MapControls from './controls'; 
@@ -14,17 +14,18 @@ import AreaAnalysis from './panels/AreaAnalysis';
 import { BASEMAPS } from '../../constants/map/basemaps';
 import { TILESET_INFO } from '../../utils/map/constants.js';
 import DrawingTooltip from './DrawingTooltip';
+import PopulationExposureCounter from './controls/PopulationExposureCounter';
+import PM25ThresholdSlider from './controls/PM25ThresholdSlider';
 
 const MapComponent = () => {
   const baseViewport = {
     latitude: 39.8283,
     longitude: -98.5795,
-    zoom: 4,
-    minZoom: 4,
-    maxZoom: 8,
+    zoom: 5,
+    minZoom: 5,
+    maxZoom: 9,
   };
 
-  // Base state
   const mapRef = useRef(null);
   const [isPointSelected, setIsPointSelected] = useState(false);
 
@@ -34,7 +35,8 @@ const MapComponent = () => {
 
   useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
   const [viewport, setViewport] = useState(baseViewport);
-  const [aqiThreshold, setAqiThreshold] = useState(1);
+  const [pm25Threshold, setPM25Threshold] = useState(0);
+  const [aqiThreshold, setAqiThreshold] = useState(0);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapInstance, setMapInstance] = useState(null);
 
@@ -76,7 +78,6 @@ const MapComponent = () => {
         }
       }
   
-      // Add census tracts visualization first
       console.log('Census layers added, fetching population data...');
   
       try {
@@ -160,16 +161,31 @@ const MapComponent = () => {
   }, []);
 
   const handleMapClick = useCallback(async (e) => {
-    // If a point is already selected, ignore new clicks
-    if (isPointSelected && !drawingMode) {
-      return;
-    }
-
     const { lng, lat } = e.lngLat;
     const point = [lng, lat];
-
+  
+    // Handle point selection mode (when not in drawing mode)
+    if (!drawingMode) {
+      if (!isPointSelected) {
+        const circlePolygon = createCirclePolygon(point, 0.1);
+        setPolygon(circlePolygon);
+        setIsPointSelected(true);
+        setIsPlaying(true);
+  
+        if (mapInstance) {
+          try {
+            const censusData = await getSelectedCensusTracts(mapInstance, circlePolygon);
+            console.log('Selected area census data:', censusData);
+          } catch (error) {
+            console.error('Error fetching census data:', error);
+          }
+        }
+      }
+      return;
+    }
+  
+    // Handle polygon drawing mode
     if (drawingMode) {
-      // Handle polygon drawing
       if (e.originalEvent.detail === 2 && tempPolygon.length >= 2) {
         const finalPolygon = [...tempPolygon, tempPolygon[0]];
         setPolygon(finalPolygon);
@@ -177,60 +193,43 @@ const MapComponent = () => {
         setTempPolygon([]);
         setIsPlaying(true);
         
-        // Get census data for the selected area
         if (mapInstance) {
           try {
             const censusData = await getSelectedCensusTracts(mapInstance, finalPolygon);
             console.log('Selected area census data:', censusData);
+            // Removed zoom/fit bounds logic to maintain current view
           } catch (error) {
             console.error('Error fetching census data:', error);
           }
         }
         return;
       }
+  
       setTempPolygon(prev => [...prev, point]);
-    } else {
-      // Single point selection
-      const circlePolygon = createCirclePolygon(point, 0.1);
-      setPolygon(circlePolygon);
-      setIsPointSelected(true);
-      setIsPlaying(true);
-
-      // Get census data for the circle area
-      if (mapInstance) {
-        try {
-          const censusData = await getSelectedCensusTracts(mapInstance, circlePolygon);
-          console.log('Selected area census data:', censusData);
-        } catch (error) {
-          console.error('Error fetching census data:', error);
-        }
-
-        // Create bounds for auto-zoom
-        const bounds = new mapboxgl.LngLatBounds();
-        circlePolygon.forEach(coord => {
-          bounds.extend(coord);
-        });
-        
-        mapInstance.fitBounds(bounds, {
-          padding: 50,
-          maxZoom: 7,
-          duration: 1000
-        });
-      }
     }
-  }, [drawingMode, isPointSelected, tempPolygon, mapInstance, createCirclePolygon, setIsPlaying]);
+  }, [
+    drawingMode,
+    isPointSelected,
+    tempPolygon,
+    mapInstance,
+    createCirclePolygon,
+    setIsPlaying
+  ]);
 
 
   const clearPolygon = useCallback(() => {
+    if (polygon) {
+      cleanupHighlightLayers(mapInstance, polygon);
+    }
     setPolygon(null);
     setTempPolygon([]);
     setDrawingMode(false);
-    setIsPointSelected(false); // Reset point selection state
     setIsPlaying(false);
+    setIsPointSelected(false);
     if (mapInstance) {
       mapInstance.getCanvas().style.cursor = '';
     }
-  }, [mapInstance, setIsPlaying]);
+  }, [mapInstance, polygon, setIsPlaying]);
 
   // Update cursor based on whether point selection is allowed
   const getCursor = useCallback(() => {
@@ -273,7 +272,7 @@ const MapComponent = () => {
   // Hooks
   const { updateLayers } = useMapLayers(
     mapRef, 
-    aqiThreshold, 
+    pm25Threshold, 
     currentHour, 
     isMapLoaded, 
     getCurrentDateTime
@@ -285,7 +284,7 @@ const MapComponent = () => {
     if (mapInstance && isMapLoaded) {
       updateLayers(mapInstance);
     }
-  }, [updateLayers, isMapLoaded, mapInstance, currentHour, aqiThreshold]);
+  }, [updateLayers, isMapLoaded, mapInstance, currentHour, pm25Threshold]);
 
   // Polygon rendering effect
   useEffect(() => {
@@ -369,6 +368,27 @@ const MapComponent = () => {
       
       {isMapLoaded && mapInstance && (
         <>
+          {/* Left side overlays container */}
+          <div className="fixed top-4 left-4 z-50">
+            <div className="flex flex-col gap-2">
+              {polygon && (
+                <div className="w-80">
+                  <div className={`backdrop-blur-sm rounded-lg shadow-lg px-4 py-3 ${
+                    isDarkMode ? 'bg-gray-800/95 text-gray-200' : 'bg-white/95 text-gray-800'
+                  }`}>
+                    <PopulationExposureCounter
+                      map={mapInstance}
+                      polygon={polygon}
+                      isDarkMode={isDarkMode}
+                      currentDateTime={getCurrentDateTime()}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right side overlays */}
           <AreaAnalysis 
             map={mapInstance} 
             currentDateTime={getCurrentDateTime()}
@@ -391,35 +411,38 @@ const MapComponent = () => {
           />
         </>
       )}
-          <DrawingTooltip 
-            drawingMode={drawingMode} 
-            tempPolygon={tempPolygon}
-          />
 
-          <MapControls
-            currentHour={currentHour}
-            setCurrentHour={setCurrentHour}
-            aqiThreshold={aqiThreshold}
-            setAqiThreshold={setAqiThreshold}
-            isPlaying={isPlaying}
-            setIsPlaying={setIsPlaying}
-            playbackSpeed={playbackSpeed}
-            setPlaybackSpeed={setPlaybackSpeed}
-            getCurrentDateTime={getCurrentDateTime}
-            drawingMode={drawingMode}
-            startDrawing={startDrawing}
-            finishDrawing={finishDrawing}
-            clearPolygon={clearPolygon}
-            polygon={polygon}
-            isDarkMode={isDarkMode}
-            setIsDarkMode={handleThemeChange}
-            currentBasemap={currentBasemap}
-            setCurrentBasemap={setCurrentBasemap}
-            basemapOptions={BASEMAPS}
-            mapInstance={mapInstance} 
-          />
-      </div>
-    );
+      <DrawingTooltip 
+        drawingMode={drawingMode} 
+        tempPolygon={tempPolygon}
+      />
+
+      <MapControls
+        currentHour={currentHour}
+        setCurrentHour={setCurrentHour}
+        aqiThreshold={aqiThreshold}
+        setAqiThreshold={setAqiThreshold}
+        isPlaying={isPlaying}
+        setIsPlaying={setIsPlaying}
+        playbackSpeed={playbackSpeed}
+        setPlaybackSpeed={setPlaybackSpeed}
+        getCurrentDateTime={getCurrentDateTime}
+        drawingMode={drawingMode}
+        startDrawing={startDrawing}
+        finishDrawing={finishDrawing}
+        clearPolygon={clearPolygon}
+        polygon={polygon}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={handleThemeChange}
+        currentBasemap={currentBasemap}
+        setCurrentBasemap={setCurrentBasemap}
+        basemapOptions={BASEMAPS}
+        mapInstance={mapInstance} 
+        pm25Threshold={pm25Threshold} 
+        setPM25Threshold={setPM25Threshold} 
+      />
+    </div>
+);
 };
 
 export default MapComponent;

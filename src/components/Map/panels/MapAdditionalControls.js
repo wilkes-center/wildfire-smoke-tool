@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Map } from 'react-map-gl';
 import { Map as MapIcon, X, Download } from 'lucide-react';
 import { TILESET_INFO, TOTAL_HOURS } from '../../../utils/map/constants.js';
@@ -26,37 +26,43 @@ const MapAdditionalControls = ({
   const [recordingProgress, setRecordingProgress] = useState(0);
   const framesRef = useRef([]);
   const initializedRef = useRef(false);
+  const layersInitializedRef = useRef(false);
 
-  // Only run once when polygon is initially created
+  // Reset initialization flags when polygon changes
   useEffect(() => {
-    if (polygon && !initializedRef.current) {
-      initializedRef.current = true;
-      setTimeout(() => {
-        setIsExpanded(true);
-        onExpandChange?.(true);
-      }, 100);
-    } else if (!polygon) {
+    if (!polygon) {
       initializedRef.current = false;
-      setIsExpanded(false);
-      onExpandChange?.(false);
+      layersInitializedRef.current = false;
     }
-  }, [polygon, onExpandChange]);
+  }, [polygon]);
 
-  const setupMinimapLayers = (minimap) => {
-    if (!minimap || !currentDateTime) return;
+  const setupMinimapLayers = useCallback((minimap) => {
+    if (!minimap || !currentDateTime || layersInitializedRef.current) return;
 
-    TILESET_INFO.forEach((tileset) => {
-      const sourceId = `minimap-source-${tileset.id}`;
-      const layerId = `minimap-layer-${tileset.id}`;
+    try {
+      // Clean up existing layers first
+      TILESET_INFO.forEach((tileset) => {
+        const sourceId = `minimap-source-${tileset.id}`;
+        const layerId = `minimap-layer-${tileset.id}`;
 
-      if (!minimap.getSource(sourceId)) {
+        if (minimap.getLayer(layerId)) {
+          minimap.removeLayer(layerId);
+        }
+        if (minimap.getSource(sourceId)) {
+          minimap.removeSource(sourceId);
+        }
+      });
+
+      // Add new layers
+      TILESET_INFO.forEach((tileset) => {
+        const sourceId = `minimap-source-${tileset.id}`;
+        const layerId = `minimap-layer-${tileset.id}`;
+
         minimap.addSource(sourceId, {
           type: 'vector',
           url: `mapbox://${tileset.id}`,
         });
-      }
 
-      if (!minimap.getLayer(layerId)) {
         minimap.addLayer({
           id: layerId,
           type: 'circle',
@@ -65,48 +71,125 @@ const MapAdditionalControls = ({
           paint: {
             'circle-radius': [
               'interpolate',
-              ['exponential', 3],
+              ['exponential', 2],
               ['zoom'],
-              4, 25,
-              5, 30,
-              6, 35,
-              7, 40,
-              8, 45,
+              4, 15,
+              5, 20,
+              6, 25,
+              7, 30,
+              8, 50,
+              9, 80,
+              10, 100
             ],
             'circle-color': [
               'interpolate',
               ['linear'],
-              ['to-number', ['get', 'AQI'], 0],
+              ['coalesce', ['to-number', ['get', 'PM25'], 0], 0],
               0, '#00e400',
-              51, '#ffff00',
-              101, '#ff7e00',
-              151, '#ff0000',
-              201, '#8f3f97',
-              301, '#7e0023',
-              500, '#7e0023'
+              12.1, '#ffff00',
+              35.5, '#ff7e00',
+              55.5, '#ff0000',
+              150.5, '#8f3f97',
+              250.5, '#7e0023'
             ],
             'circle-blur': 0.9,
-            'circle-opacity': 0.15,
-          },
+            'circle-opacity': 0.15
+          }
         });
-      }
 
-      const time = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
-      minimap.setFilter(layerId, [
-        'all',
-        ['==', ['get', 'time'], time],
-        ['>=', ['to-number', ['get', 'AQI']], aqiThreshold]
-      ]);
-    });
-  };
+        const time = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
+        const filter = [
+          'all',
+          ['==', ['get', 'time'], time],
+          ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], aqiThreshold]
+        ];
+        minimap.setFilter(layerId, filter);
+      });
 
-  const handleMinimapLoad = () => {
+      layersInitializedRef.current = true;
+    } catch (error) {
+      console.error('Error setting up minimap layers:', error);
+    }
+  }, [currentDateTime, aqiThreshold]);
+
+  const handleMinimapLoad = useCallback(() => {
     const minimap = minimapRef.current?.getMap();
-    if (minimap) {
+    if (!minimap) return;
+
+    minimap.on('style.load', () => {
+      console.log('Style loaded, reinitializing layers');
+      layersInitializedRef.current = false;
+      setupMinimapLayers(minimap);
+    });
+
+    if (minimap.isStyleLoaded()) {
       setupMinimapLayers(minimap);
     }
-  };
+  }, [setupMinimapLayers]);
 
+  // Update layers when time or threshold changes
+  useEffect(() => {
+    const minimap = minimapRef.current?.getMap();
+    if (minimap && minimap.isStyleLoaded()) {
+      const time = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
+      
+      TILESET_INFO.forEach((tileset) => {
+        const layerId = `minimap-layer-${tileset.id}`;
+        if (minimap.getLayer(layerId)) {
+          const filter = [
+            'all',
+            ['==', ['get', 'time'], time],
+            ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], aqiThreshold]
+          ];
+          minimap.setFilter(layerId, filter);
+        }
+      });
+    }
+  }, [currentDateTime, aqiThreshold]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      const minimap = minimapRef.current?.getMap();
+      if (minimap) {
+        TILESET_INFO.forEach((tileset) => {
+          const sourceId = `minimap-source-${tileset.id}`;
+          const layerId = `minimap-layer-${tileset.id}`;
+
+          if (minimap.getLayer(layerId)) {
+            minimap.removeLayer(layerId);
+          }
+          if (minimap.getSource(sourceId)) {
+            minimap.removeSource(sourceId);
+          }
+        });
+      }
+    };
+  }, []);
+
+  
+  // Update the layers when time or threshold changes
+  const updateMinimapLayers = (minimap) => {
+    if (!minimap || !currentDateTime) return;
+  
+    try {
+      TILESET_INFO.forEach((tileset) => {
+        const layerId = `minimap-layer-${tileset.id}`;
+        if (!minimap.getLayer(layerId)) return;
+  
+        const time = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
+        const filter = [
+          'all',
+          ['==', ['get', 'time'], time],
+          ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], aqiThreshold]
+        ];
+        minimap.setFilter(layerId, filter);
+      });
+    } catch (error) {
+      console.error('Error updating minimap layers:', error);
+    }
+  };
+  
   const captureFrame = async () => {
     if (!minimapRef.current) return null;
     
@@ -190,7 +273,21 @@ const MapAdditionalControls = ({
       console.error('Error downloading frames:', error);
     }
   };
+  
+  useEffect(() => {
+    if (polygon) {
+      // Always expand when a new polygon is drawn
+      setIsExpanded(true);
+      onExpandChange?.(true);
+      initializedRef.current = true;
+    } else {
+      setIsExpanded(false);
+      onExpandChange?.(false);
+      initializedRef.current = false;
+    }
+  }, [polygon, onExpandChange]);
 
+  // Calculate and set viewport when polygon changes
   useEffect(() => {
     if (polygon && polygon.length > 0) {
       const bounds = polygon.reduce(
@@ -222,7 +319,7 @@ const MapAdditionalControls = ({
         ...center,
         zoom: Math.min(Math.max(zoom, 3), 10),
         minZoom: 2,
-        maxZoom: 7
+        maxZoom: 9
       };
 
       setMinimapViewport(viewport);
@@ -232,6 +329,7 @@ const MapAdditionalControls = ({
     }
   }, [polygon]);
 
+  // Handle minimap resize when expanded
   useEffect(() => {
     if (minimapRef.current) {
       const minimap = minimapRef.current.getMap();
@@ -243,40 +341,77 @@ const MapAdditionalControls = ({
     }
   }, [isExpanded]);
 
+  // Add polygon overlay to minimap
+  useEffect(() => {
+    const minimap = minimapRef.current?.getMap();
+    if (!minimap || !polygon) return;
+
+    const sourceId = 'minimap-polygon-source';
+    const layerId = 'minimap-polygon-layer';
+
+    const addPolygonLayer = () => {
+      if (minimap.getSource(sourceId)) {
+        minimap.removeLayer(layerId);
+        minimap.removeSource(sourceId);
+      }
+
+      minimap.addSource(sourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [polygon]
+          }
+        }
+      });
+
+      minimap.addLayer({
+        id: layerId,
+        type: 'line',
+        source: sourceId,
+        paint: {
+          'line-color': '#3B82F6',
+          'line-width': 2
+        }
+      });
+    };
+
+    if (minimap.isStyleLoaded()) {
+      addPolygonLayer();
+    } else {
+      minimap.once('style.load', addPolygonLayer);
+    }
+
+    return () => {
+      if (minimap.getLayer(layerId)) {
+        minimap.removeLayer(layerId);
+      }
+      if (minimap.getSource(sourceId)) {
+        minimap.removeSource(sourceId);
+      }
+    };
+  }, [polygon]);
+
+  // Update layers when time or threshold changes
   useEffect(() => {
     const minimap = minimapRef.current?.getMap();
     if (minimap && minimap.isStyleLoaded()) {
-      setupMinimapLayers(minimap);
+      updateMinimapLayers(minimap);
     }
   }, [currentDateTime, aqiThreshold]);
 
   return (
-    <div 
-      style={{ 
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        zIndex: 1000
-      }}
-    >
+    <div className="fixed top-4 right-4 z-50">
       <Tooltip content="Draw polygon to view area overview" position="left">
         <button
-          className="bg-white/70 rounded-lg shadow-md hover:bg-gray-50/70 transition-colors"
-          style={{
-            width: '48px',
-            height: '48px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: polygon ? 'pointer' : 'default',
-            position: 'relative',
-            backdropFilter: 'blur(8px)',
-          }}
+          className="bg-white/70 rounded-lg shadow-md hover:bg-gray-50/70 transition-colors w-12 h-12 flex items-center justify-center backdrop-blur-sm"
           onClick={polygon ? () => {
             const newExpandedState = !isExpanded;
             setIsExpanded(newExpandedState);
             onExpandChange?.(newExpandedState);
           } : undefined}
+          disabled={!polygon}
         >
           {!isExpanded ? (
             <MapIcon className="w-5 h-5 text-gray-600" />
@@ -286,62 +421,47 @@ const MapAdditionalControls = ({
         </button>
       </Tooltip>
       
-      {isExpanded && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '56px',
-            right: '0px',
-            width: '480px',
-            height: '400px',
-            backgroundColor: 'rgba(255, 255, 255, 0.4)',
-            backdropFilter: 'blur(8px)',
-            borderRadius: '6px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            overflow: 'hidden',
-          }}
-        >
-          {polygon && minimapVisible && minimapViewport && (
-            <div className="w-full h-full">
-              <div className="border-b border-gray-200/40 px-3 py-2 bg-white/30 flex justify-between items-center">
-                <h2 className="text-xl font-bold leading-none text-gray-800">Area Overview</h2>
-                {!isRecording && (
-                  <button
-                    onClick={startRecording}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-white bg-blue-500 hover:bg-blue-600 transition-colors text-sm`}
-                    disabled={isRecording}
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Capture</span>
-                  </button>
-                )}
-              </div>
-              
-              <div className="h-[360px] relative">
-                <Map
-                  ref={minimapRef}
-                  initialViewState={minimapViewport}
-                  style={{ width: '100%', height: '100%' }}
-                  mapStyle={mapStyle}
-                  mapboxAccessToken={mapboxAccessToken}
-                  interactive={false}
-                  onLoad={handleMinimapLoad}
-                />
-                
-                {isRecording && (
-                  <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg p-4">
-                    <div className="text-sm text-gray-600 mb-2">Recording...</div>
-                    <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 transition-all duration-300"
-                        style={{ width: `${recordingProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+      {isExpanded && minimapVisible && minimapViewport && (
+        <div className="absolute top-14 right-0 w-[480px] h-[400px] bg-white/40 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden">
+          <div className="w-full h-full">
+            <div className="border-b border-gray-200/40 px-3 py-2 bg-white/30 flex justify-between items-center">
+              <h2 className="text-xl font-bold leading-none text-gray-800">Area Overview</h2>
+              {!isRecording && (
+                <button
+                  onClick={startRecording}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-white bg-blue-500 hover:bg-blue-600 transition-colors text-sm"
+                  disabled={isRecording}
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Capture</span>
+                </button>
+              )}
             </div>
-          )}
+            
+            <div className="h-[360px] relative">
+              <Map
+                ref={minimapRef}
+                initialViewState={minimapViewport}
+                style={{ width: '100%', height: '100%' }}
+                mapStyle={mapStyle}
+                mapboxAccessToken={mapboxAccessToken}
+                interactive={false}
+                onLoad={handleMinimapLoad}
+              />
+              
+              {isRecording && (
+                <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg p-4">
+                  <div className="text-sm text-gray-600 mb-2">Recording...</div>
+                  <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 transition-all duration-300"
+                      style={{ width: `${recordingProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
