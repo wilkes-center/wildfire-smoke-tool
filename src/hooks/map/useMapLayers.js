@@ -1,7 +1,11 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { TILESET_INFO, START_DATE, MAPBOX_TOKEN } from '../../utils/map/constants.js';
 
 export const useMapLayers = (mapRef, pm25Threshold, currentHour, isMapLoaded) => {
+  const loadedSourcesRef = useRef(new Set());
+  const loadedLayersRef = useRef(new Set());
+  const previousChunkRef = useRef(null);
+
   const getCurrentDateTime = useCallback(() => {
     const msPerHour = 60 * 60 * 1000;
     const currentDate = new Date(START_DATE.getTime() + (currentHour * msPerHour));
@@ -11,7 +15,7 @@ export const useMapLayers = (mapRef, pm25Threshold, currentHour, isMapLoaded) =>
     const currentTileset = TILESET_INFO.find(tileset => 
         tileset.date === date && 
         hour >= tileset.startHour && 
-        hour < tileset.endHour
+        hour <= tileset.endHour
     );
 
     if (!currentTileset) {
@@ -22,121 +26,161 @@ export const useMapLayers = (mapRef, pm25Threshold, currentHour, isMapLoaded) =>
     return { date, hour };
   }, [currentHour]);
 
+  const preloadTileset = useCallback((map, tileset) => {
+    const sourceId = `source-${tileset.id}`;
+    const layerId = `layer-${tileset.id}`;
+
+    if (!loadedSourcesRef.current.has(sourceId) && !map.getSource(sourceId)) {
+      try {
+        map.addSource(sourceId, {
+          type: 'vector',
+          url: `mapbox://${tileset.id}`
+        });
+        loadedSourcesRef.current.add(sourceId);
+      } catch (sourceError) {
+        console.error(`Error adding source ${sourceId}:`, sourceError);
+      }
+    }
+
+    if (!loadedLayersRef.current.has(layerId) && !map.getLayer(layerId)) {
+      try {
+        map.addLayer({
+          id: layerId,
+          type: 'circle',
+          source: sourceId,
+          'source-layer': tileset.layer,
+          paint: {
+            'circle-radius': [
+              'interpolate',
+              ['exponential', 2],
+              ['zoom'],
+              4, 2,
+              5, 5,
+              6, 10,
+              7, 25,
+              8, 50,
+              9, 90
+            ],
+            'circle-color': [
+              'interpolate',
+              ['linear'],
+              ['coalesce', ['to-number', ['get', 'PM25'], 0], 0],
+              0, '#00e400',
+              12.1, '#ffff00',
+              35.5, '#ff7e00',
+              55.5, '#ff0000',
+              150.5, '#8f3f97',
+              250.5, '#7e0023'
+            ],
+            'circle-blur': 0.9,
+            'circle-opacity': 0.4
+          },
+          layout: {
+            'visibility': 'none'
+          }
+        });
+        loadedLayersRef.current.add(layerId);
+      } catch (layerError) {
+        console.error(`Error adding layer ${layerId}:`, layerError);
+      }
+    }
+  }, []);
+
+  const getNextTileset = useCallback((currentDate, currentHour) => {
+    const nextHour = currentHour + 1;
+    const nextDate = new Date(currentDate);
+    if (nextHour >= 24) {
+      nextDate.setDate(nextDate.getDate() + 1);
+    }
+    
+    return TILESET_INFO.find(tileset => 
+      tileset.date === nextDate.toISOString().split('T')[0] && 
+      (nextHour % 24) >= tileset.startHour && 
+      (nextHour % 24) <= tileset.endHour
+    );
+  }, []);
+
   const updateLayers = useCallback((map) => {
     if (!map || !map.getStyle) return;
 
     try {
-      // Add Census Tract Layer if it doesn't exist
-      const censusSourceId = 'census-tracts-source';
-      const censusLayerId = 'census-tracts-layer';
-
-      if (!map.getSource(censusSourceId)) {
-        map.addSource(censusSourceId, {
-          type: 'vector',
-          url: 'mapbox://pkulandh.Utah_CT'
-        });
-      }
-
-      if (!map.getLayer(censusLayerId)) {
-        map.addLayer({
-          id: censusLayerId,
-          type: 'line',
-          source: censusSourceId,
-          'source-layer': 'Utah_CT_layer',
-          paint: {
-            'line-color': '#6B7280',
-            'line-width': [
-              'interpolate',
-              ['linear'],
-              ['zoom'],
-              4, 0.5,
-              8, 1
-            ],
-            'line-opacity': 0,  // Set initial opacity to 0 to make tracts invisible
-            'line-width': 0  // Set line width to 0 to ensure no lines are visible
-          },
-          layout: {
-            'visibility': 'none'  // Change visibility to none
-          }
-        });
-      }
-
-      // Update AQI layers
       const { date, hour } = getCurrentDateTime();
       
-      TILESET_INFO.forEach((tileset) => {
-        const sourceId = `source-${tileset.id}`;
-        const layerId = `layer-${tileset.id}`;
+      // Get current and next tilesets
+      const currentTileset = TILESET_INFO.find(tileset => 
+        tileset.date === date && 
+        hour >= tileset.startHour && 
+        hour <= tileset.endHour
+      );
 
-        if (!map.getSource(sourceId)) {
-          map.addSource(sourceId, {
-            type: 'vector',
-            tiles: [`https://api.mapbox.com/v4/${tileset.id}/{z}/{x}/{y}.vector.pbf?access_token=${MAPBOX_TOKEN}`],
-            minzoom: 2,
-            maxzoom: 8
-          });
+      if (currentTileset) {
+        // Preload current and next tilesets
+        preloadTileset(map, currentTileset);
+        const nextTileset = getNextTileset(new Date(date), hour);
+        if (nextTileset) {
+          preloadTileset(map, nextTileset);
         }
 
-        if (!map.getLayer(layerId)) {
-          map.addLayer({
-            id: layerId,
-            type: 'circle',
-            source: sourceId,
-            'source-layer': tileset.layer,
-            paint: {
-              'circle-radius': [
-                'interpolate',
-                ['exponential', 2],
-                ['zoom'],
-                4, 15,
-                5, 20,
-                6, 25,
-                7, 30,
-                8, 50,
-                9, 80,
-                10, 100
-              ],
-              'circle-color': [
-                'interpolate',
-                ['linear'],
-                ['coalesce', ['to-number', ['get', 'PM25'], 0], 0],
-                0, '#00e400',
-                12.1, '#ffff00',
-                35.5, '#ff7e00',
-                55.5, '#ff0000',
-                150.5, '#8f3f97',
-                250.5, '#7e0023'
-              ],
-              'circle-blur': 0.9,
-              'circle-opacity': 0.15
+        const currentLayerId = `layer-${currentTileset.id}`;
+        const timeString = `${date}T${String(hour).padStart(2, '0')}:00:00`;
+
+        // Handle chunk transition
+        const isChunkTransition = previousChunkRef.current && 
+                                previousChunkRef.current !== currentTileset.id &&
+                                hour === currentTileset.startHour;
+
+        if (isChunkTransition) {
+          // Show both previous and current chunks during transition
+          const prevLayerId = `layer-${previousChunkRef.current}`;
+          const prevTimeString = `${date}T${String(hour - 1).padStart(2, '0')}:00:00`;
+
+          // Update and show previous layer
+          try {
+            map.setFilter(prevLayerId, [
+              'all',
+              ['==', ['get', 'time'], prevTimeString],
+              ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+            ]);
+            map.setLayoutProperty(prevLayerId, 'visibility', 'visible');
+          } catch (error) {
+            console.error(`Error updating previous layer ${prevLayerId}:`, error);
+          }
+
+          // Hide previous layer after a short delay
+          setTimeout(() => {
+            if (map.getLayer(prevLayerId)) {
+              map.setLayoutProperty(prevLayerId, 'visibility', 'none');
             }
-          }, 'census-tracts-layer'); 
+          }, 100);
         }
 
-        const isActiveChunk = tileset.date === date && 
-                            hour >= tileset.startHour && 
-                            hour < tileset.endHour;
-
-        if (isActiveChunk) {
-          const timeString = `${date}T${String(hour).padStart(2, '0')}:00:00`;
-          
-          const filter = [
+        // Update current layer
+        try {
+          map.setFilter(currentLayerId, [
             'all',
             ['==', ['get', 'time'], timeString],
             ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
-          ];
-
-          map.setFilter(layerId, filter);
-          map.setLayoutProperty(layerId, 'visibility', 'visible');
-        } else {
-          map.setLayoutProperty(layerId, 'visibility', 'none');
+          ]);
+          map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
+        } catch (error) {
+          console.error(`Error updating current layer ${currentLayerId}:`, error);
         }
-      });
+
+        // Hide other layers
+        loadedLayersRef.current.forEach(id => {
+          if (id !== currentLayerId && (!isChunkTransition || id !== `layer-${previousChunkRef.current}`)) {
+            map.setLayoutProperty(id, 'visibility', 'none');
+          }
+        });
+
+        // Update previous chunk reference
+        previousChunkRef.current = currentTileset.id;
+      }
 
     } catch (error) {
       console.error('Error updating layers:', error);
     }
-  }, [pm25Threshold, getCurrentDateTime]);
+  }, [pm25Threshold, getCurrentDateTime, preloadTileset, getNextTileset]);
 
   return { updateLayers };
 };

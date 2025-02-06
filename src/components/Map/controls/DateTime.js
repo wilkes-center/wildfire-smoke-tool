@@ -2,7 +2,6 @@ import React from 'react';
 import { Calendar, Clock } from 'lucide-react';
 
 export const DateTime = ({ currentDateTime, isDarkMode }) => {
-  // Add safety check for currentDateTime
   if (!currentDateTime || !currentDateTime.date) {
     return null;
   }

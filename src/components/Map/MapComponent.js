@@ -16,13 +16,14 @@ import { TILESET_INFO } from '../../utils/map/constants.js';
 import DrawingTooltip from './DrawingTooltip';
 import PopulationExposureCounter from './controls/PopulationExposureCounter';
 import PM25ThresholdSlider from './controls/PM25ThresholdSlider';
+import  handleEnhancedMapClick  from './controls/handleEnhancedMapClick.js';
 
 const MapComponent = () => {
   const baseViewport = {
     latitude: 39.8283,
     longitude: -98.5795,
-    zoom: 5,
-    minZoom: 5,
+    zoom: 4,
+    minZoom: 4,
     maxZoom: 9,
   };
 
@@ -35,8 +36,7 @@ const MapComponent = () => {
 
   useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
   const [viewport, setViewport] = useState(baseViewport);
-  const [pm25Threshold, setPM25Threshold] = useState(0);
-  const [aqiThreshold, setAqiThreshold] = useState(0);
+  const [pm25Threshold, setPM25Threshold] = useState(1);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapInstance, setMapInstance] = useState(null);
 
@@ -124,7 +124,7 @@ const MapComponent = () => {
     const currentTileset = TILESET_INFO.find(tileset => 
         tileset.date === date && 
         hour >= tileset.startHour && 
-        hour < tileset.startHour + 3
+        hour < tileset.startHour + 2
     );
 
     if (!currentTileset) {
@@ -161,33 +161,13 @@ const MapComponent = () => {
   }, []);
 
   const handleMapClick = useCallback(async (e) => {
-    const { lng, lat } = e.lngLat;
-    const point = [lng, lat];
-  
-    // Handle point selection mode (when not in drawing mode)
-    if (!drawingMode) {
-      if (!isPointSelected) {
-        const circlePolygon = createCirclePolygon(point, 0.1);
-        setPolygon(circlePolygon);
-        setIsPointSelected(true);
-        setIsPlaying(true);
-  
-        if (mapInstance) {
-          try {
-            const censusData = await getSelectedCensusTracts(mapInstance, circlePolygon);
-            console.log('Selected area census data:', censusData);
-          } catch (error) {
-            console.error('Error fetching census data:', error);
-          }
-        }
-      }
-      return;
-    }
-  
-    // Handle polygon drawing mode
+    // If in drawing mode, handle polygon drawing
     if (drawingMode) {
+      const { lng, lat } = e.lngLat;
+      
+      // Handle double click to complete polygon
       if (e.originalEvent.detail === 2 && tempPolygon.length >= 2) {
-        const finalPolygon = [...tempPolygon, tempPolygon[0]];
+        const finalPolygon = [...tempPolygon, tempPolygon[0]]; // Close the polygon
         setPolygon(finalPolygon);
         setDrawingMode(false);
         setTempPolygon([]);
@@ -197,7 +177,6 @@ const MapComponent = () => {
           try {
             const censusData = await getSelectedCensusTracts(mapInstance, finalPolygon);
             console.log('Selected area census data:', censusData);
-            // Removed zoom/fit bounds logic to maintain current view
           } catch (error) {
             console.error('Error fetching census data:', error);
           }
@@ -205,14 +184,39 @@ const MapComponent = () => {
         return;
       }
   
-      setTempPolygon(prev => [...prev, point]);
+      // Add point to temporary polygon
+      setTempPolygon(prev => [...prev, [lng, lat]]);
+      return;
+    }
+  
+    // Handle regular map clicks (point selection)
+    if (!isPointSelected && mapInstance) {
+      try {
+        // Use the enhanced click handler
+        const selection = await handleEnhancedMapClick(e, mapInstance, {
+          initialZoomLevel: 7,
+          zoomDuration: 1000,
+          selectionDelay: 500,
+          selectionRadius: 0.1
+        });
+  
+        // Set the polygon from the selection
+        setPolygon(selection.polygon);
+        setIsPointSelected(true);
+        setIsPlaying(true);
+  
+        // Get census data for the selected area
+        const censusData = await getSelectedCensusTracts(mapInstance, selection.polygon);
+        console.log('Selected area census data:', censusData);
+      } catch (error) {
+        console.error('Error handling map click:', error);
+      }
     }
   }, [
     drawingMode,
     isPointSelected,
     tempPolygon,
     mapInstance,
-    createCirclePolygon,
     setIsPlaying
   ]);
 
@@ -402,7 +406,6 @@ const MapComponent = () => {
             mapboxAccessToken={MAPBOX_TOKEN}
             polygon={polygon}
             currentDateTime={getCurrentDateTime()}
-            aqiThreshold={aqiThreshold}
             isDarkMode={isDarkMode}
             isPlaying={isPlaying}           
             setIsPlaying={setIsPlaying}    
@@ -420,8 +423,6 @@ const MapComponent = () => {
       <MapControls
         currentHour={currentHour}
         setCurrentHour={setCurrentHour}
-        aqiThreshold={aqiThreshold}
-        setAqiThreshold={setAqiThreshold}
         isPlaying={isPlaying}
         setIsPlaying={setIsPlaying}
         playbackSpeed={playbackSpeed}
