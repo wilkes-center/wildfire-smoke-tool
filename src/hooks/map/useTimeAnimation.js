@@ -4,10 +4,10 @@ import { TOTAL_HOURS } from '../../utils/map/constants.js';
 export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
   const animationFrameRef = useRef(null);
   const lastTimestampRef = useRef(0);
-  const isAnimatingRef = useRef(false);  // Add this to track animation state
+  const isAnimatingRef = useRef(false);
 
   useEffect(() => {
-    const animationDuration = 1000 / playbackSpeed;
+    const animationDuration = 1000 / playbackSpeed; // ms per hour
 
     const animate = (timestamp) => {
       if (!lastTimestampRef.current) {

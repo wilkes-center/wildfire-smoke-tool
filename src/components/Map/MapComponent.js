@@ -17,37 +17,41 @@ import DrawingTooltip from './DrawingTooltip';
 import PopulationExposureCounter from './controls/PopulationExposureCounter';
 import PM25ThresholdSlider from './controls/PM25ThresholdSlider';
 import  handleEnhancedMapClick  from './controls/handleEnhancedMapClick.js';
+import ZoomControls from './controls/ZoomControls';
 
 const MapComponent = () => {
-  const baseViewport = {
+  const mapRef = useRef(null);
+  const needsLayerReinitRef = useRef(false);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapInstance, setMapInstance] = useState(null);
+  const [isPointSelected, setIsPointSelected] = useState(false);
+  const [currentHour, setCurrentHour] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [viewport, setViewport] = useState({
     latitude: 39.8283,
     longitude: -98.5795,
     zoom: 4,
     minZoom: 4,
     maxZoom: 9,
-  };
-
-  const mapRef = useRef(null);
-  const [isPointSelected, setIsPointSelected] = useState(false);
-
-  const [currentHour, setCurrentHour] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-
-  useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
-  const [viewport, setViewport] = useState(baseViewport);
-  const [pm25Threshold, setPM25Threshold] = useState(1);
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const [mapInstance, setMapInstance] = useState(null);
-
-  // Theme and basemap state
+  });
+  const [pm25Threshold, setPM25Threshold] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentBasemap, setCurrentBasemap] = useState(BASEMAPS.light.url);
-
-  // Area selection state
   const [drawingMode, setDrawingMode] = useState(false);
   const [polygon, setPolygon] = useState(null);
   const [tempPolygon, setTempPolygon] = useState([]);
+
+  useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
+
+  const handleThemeChange = useCallback((darkMode) => {
+    setIsDarkMode(darkMode);
+    needsLayerReinitRef.current = true;
+    // Auto switch basemap if not in satellite mode
+    if (currentBasemap !== BASEMAPS.satellite.url) {
+      setCurrentBasemap(darkMode ? BASEMAPS.darkMatter.url : BASEMAPS.light.url);
+    }
+  }, [currentBasemap]);
 
 
   const handleMapInteraction = useCallback((evt) => {
@@ -56,93 +60,115 @@ const MapComponent = () => {
     }
   }, [isMapLoaded]);
 
-
-
-  const setupPopulationLayers = async (map) => {
+  const setupCensusLayers = useCallback((map, isDarkMode) => {
+    if (!map || !map.getStyle()) return;
+    
     try {
-      console.log('Setting up population layers...');
-      // Get configuration
-      const config = getPopulationLayerConfig();
-      
       // Add source if it doesn't exist
-      if (!map.getSource(config.source.id)) {
-        console.log('Adding census source:', config.source.id);
-        map.addSource(config.source.id, config.source);
+      if (!map.getSource('census-tracts')) {
+        map.addSource('census-tracts', {
+          type: 'vector',
+          url: 'mapbox://pkulandh.Utah_CT'
+        });
       }
-  
-      // Add layers
-      for (const layer of config.layers) {
-        if (!map.getLayer(layer.id)) {
-          console.log('Adding census layer:', layer.id);
-          map.addLayer(layer);
-        }
+
+      // Setup the base census tract layer
+      if (!map.getLayer('census-tracts-layer')) {
+        map.addLayer({
+          id: 'census-tracts-layer',
+          type: 'fill',
+          source: 'census-tracts',
+          'source-layer': 'Utah_CT_layer',
+          paint: {
+            'fill-color': isDarkMode ? '#374151' : '#6B7280',
+            'fill-opacity': 0,
+            'fill-outline-color': isDarkMode ? '#4B5563' : '#374151'
+          }
+        });
+      } else {
+        map.setPaintProperty('census-tracts-layer', 'fill-color', isDarkMode ? '#374151' : '#6B7280');
+        map.setPaintProperty('census-tracts-layer', 'fill-opacity', 0);
+        map.setPaintProperty('census-tracts-layer', 'fill-outline-color', isDarkMode ? '#4B5563' : '#374151');
       }
-  
-      console.log('Census layers added, fetching population data...');
-  
-      try {
-        // Fetch population data
-        const populationData = await fetchCensusPopulation();
-        console.log('Population data fetched successfully');
-        return populationData;
-      } catch (error) {
-        console.error('Failed to fetch population data:', error);
-        // Continue with map display even if population data fetch fails
-        return null;
+
+      // Setup the outline layer
+      if (!map.getLayer('census-tracts-outline')) {
+        map.addLayer({
+          id: 'census-tracts-outline',
+          type: 'line',
+          source: 'census-tracts',
+          'source-layer': 'Utah_CT_layer',
+          paint: {
+            'line-color': isDarkMode ? '#4B5563' : '#374151',
+            'line-width': 1,
+            'line-opacity': 0
+          }
+        });
+      } else {
+        map.setPaintProperty('census-tracts-outline', 'line-color', isDarkMode ? '#4B5563' : '#374151');
+        map.setPaintProperty('census-tracts-outline', 'line-opacity', 0);
       }
-  
+
+      console.log('Census tract layers setup complete');
     } catch (error) {
-      console.error('Error setting up population layers:', error);
-      throw error;
+      console.error('Error setting up census tract layers:', error);
     }
-  };
-  
-  // Update your handleMapLoad
+  }, []);
+
+// Update the highlight colors for selected areas to be more visible
+const getHighlightColors = (isDarkMode) => ({
+  fill: {
+    color: isDarkMode ? '#6D28D9' : '#8B5CF6',
+    opacity: isDarkMode ? 0.5 : 0.4, // Increased opacity for better visibility
+    outlineColor: isDarkMode ? '#9F7AEA' : '#7C3AED'
+  },
+  boundary: {
+    color: isDarkMode ? '#A78BFA' : '#7C3AED',
+    width: 2, // Increased width for better visibility
+    opacity: isDarkMode ? 1 : 0.8 // Increased opacity for better visibility
+  }
+});
   const handleMapLoad = useCallback(() => {
     console.log('Map loaded, initializing...');
     setIsMapLoaded(true);
     if (mapRef.current) {
       const map = mapRef.current.getMap();
       setMapInstance(map);
-      
-      // Setup population layers
-      setupPopulationLayers(map).catch(error => {
-        console.error('Failed to setup population layers:', error);
-        // Map can still function without population data
-      });
+      setupCensusLayers(map, isDarkMode);
     }
-  }, []);
+  }, [isDarkMode]);
+  
 
   const getCurrentDateTime = useCallback(() => {
-    // Calculate the actual date and hour from START_DATE
     const msPerHour = 60 * 60 * 1000;
     const currentDate = new Date(START_DATE.getTime() + (currentHour * msPerHour));
     const date = currentDate.toISOString().split('T')[0];
     const hour = currentDate.getUTCHours();
-
-    // Find the correct tileset for this date and hour
+  
     const currentTileset = TILESET_INFO.find(tileset => 
-        tileset.date === date && 
-        hour >= tileset.startHour && 
-        hour < tileset.startHour + 2
+      tileset.date === date && 
+      hour >= tileset.startHour && 
+      hour <= tileset.endHour
     );
-
+  
     if (!currentTileset) {
-        console.warn('No tileset found for:', { date, hour, currentHour });
-        return { date: '', hour: 0 };
+      console.warn('No tileset found for:', { date, hour, currentHour });
+      return { date: '', hour: 0 };
     }
-
-    // For debugging
-    /* console.log('Tileset match:', {
-        date,
-        hour,
-        tilesetId: currentTileset.id,
-        tilesetStart: currentTileset.startHour,
-        tilesetEnd: currentTileset.startHour + 3
-    }); */
-
+  
     return { date, hour };
-}, [currentHour]);
+  }, [currentHour]);
+
+  const { updateLayers } = useMapLayers(
+    mapRef,
+    pm25Threshold,
+    currentHour,
+    isMapLoaded,
+    getCurrentDateTime,
+    isDarkMode,
+    needsLayerReinitRef
+  );
+
 
   // Area selection helpers
   const createCirclePolygon = useCallback((center, radiusDegrees) => {
@@ -175,7 +201,7 @@ const MapComponent = () => {
         
         if (mapInstance) {
           try {
-            const censusData = await getSelectedCensusTracts(mapInstance, finalPolygon);
+            const censusData = await getSelectedCensusTracts(mapInstance, polygon, isDarkMode);
             console.log('Selected area census data:', censusData);
           } catch (error) {
             console.error('Error fetching census data:', error);
@@ -264,31 +290,30 @@ const MapComponent = () => {
     }
   }, [tempPolygon, mapInstance]);
 
-  // Theme handling
-  const handleThemeChange = useCallback((darkMode) => {
-    setIsDarkMode(darkMode);
-    // Auto switch basemap if not in satellite mode
-    if (currentBasemap !== BASEMAPS.satellite.url) {
-      setCurrentBasemap(darkMode ? BASEMAPS.dark.url : BASEMAPS.light.url);
-    }
-  }, [currentBasemap]);
+  useEffect(() => {
+    if (!mapInstance) return;
 
-  // Hooks
-  const { updateLayers } = useMapLayers(
-    mapRef, 
-    pm25Threshold, 
-    currentHour, 
-    isMapLoaded, 
-    getCurrentDateTime
-  );
+    const handleStyleData = () => {
+      if (needsLayerReinitRef.current) {
+        console.log('Reinitializing layers after style change');
+        setupCensusLayers(mapInstance, isDarkMode);
+        updateLayers(mapInstance);
+        needsLayerReinitRef.current = false;
+      }
+    };
+
+    mapInstance.on('styledata', handleStyleData);
+    return () => mapInstance.off('styledata', handleStyleData);
+  }, [mapInstance, isDarkMode, setupCensusLayers, updateLayers]);
 
 
-  // Effects
   useEffect(() => {
     if (mapInstance && isMapLoaded) {
       updateLayers(mapInstance);
+      setupCensusLayers(mapInstance, isDarkMode);
     }
-  }, [updateLayers, isMapLoaded, mapInstance, currentHour, pm25Threshold]);
+  }, [mapInstance, isMapLoaded, updateLayers, setupCensusLayers, isDarkMode]);
+
 
   // Polygon rendering effect
   useEffect(() => {
@@ -372,6 +397,7 @@ const MapComponent = () => {
       
       {isMapLoaded && mapInstance && (
         <>
+        <ZoomControls map={mapInstance} isDarkMode={isDarkMode} />
           {/* Left side overlays container */}
           <div className="fixed top-4 left-4 z-50">
             <div className="flex flex-col gap-2">
@@ -393,13 +419,13 @@ const MapComponent = () => {
           </div>
 
           {/* Right side overlays */}
-          <AreaAnalysis 
-            map={mapInstance} 
-            currentDateTime={getCurrentDateTime()}
-            isPlaying={isPlaying}
-            polygon={polygon}
-            isDarkMode={isDarkMode}
-          />
+          <AreaAnalysis
+              map={mapInstance}
+              currentDateTime={getCurrentDateTime()}
+              isPlaying={isPlaying}
+              polygon={polygon}
+              isDarkMode={isDarkMode}
+            />
           <MapAdditionalControls
             map={mapInstance}
             mapStyle={currentBasemap}

@@ -8,6 +8,11 @@ export const BASEMAPS = {
     name: 'Dark Navy',
     isDark: true
   },
+  darkMatter: {
+    url: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+    name: 'Dark Matter',
+    isDark: true
+  },
   satellite: {
     url: 'mapbox://styles/mapbox/satellite-v9',
     name: 'Satellite'

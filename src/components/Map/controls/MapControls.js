@@ -75,10 +75,10 @@ const MapControls = ({
 
       {/* Bottom Controls Container */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl pointer-events-auto">
-        <div className={`backdrop-blur-md rounded-2xl shadow-lg ${
+        <div className={`backdrop-blur-md rounded-2xl shadow-lg border-2 border-[#DC4A23] ${
           isDarkMode 
-            ? 'bg-gray-900/90 border border-gray-800' 
-            : 'bg-white/90 border border-gray-100'
+            ? 'bg-gray-900/90' 
+            : 'bg-white/90'
         }`}>
           <div className="px-6 py-4">
             <div className="flex items-center justify-between gap-6">

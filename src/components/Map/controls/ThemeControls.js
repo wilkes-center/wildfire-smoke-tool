@@ -17,8 +17,8 @@ export const ThemeControls = ({
         onClick={() => setIsDarkMode(!isDarkMode)}
         className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
           isDarkMode 
-            ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' 
-            : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+            ? 'bg-gray-800 text-red-400 hover:bg-gray-700' 
+            : 'bg-gray-50 text-red-500 hover:bg-gray-100'
         }`}
         title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
       >
@@ -31,8 +31,8 @@ export const ThemeControls = ({
           onClick={() => setShowBasemaps(!showBasemaps)}
           className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
             isDarkMode 
-              ? 'bg-gray-800 text-gray-200 hover:bg-gray-700' 
-              : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+              ? 'bg-gray-800 text-purple-400 hover:bg-gray-700' 
+              : 'bg-gray-50 text-purple-500 hover:bg-gray-100'
           }`}
           title="Change map style"
         >
