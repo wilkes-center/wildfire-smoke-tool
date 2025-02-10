@@ -1,5 +1,4 @@
-import React from 'react';
-import { Wind } from 'lucide-react';
+import React, { useState } from 'react';
 
 const PM25_LEVELS = [
   { value: 0, label: 'Good', color: '#00e400', position: 0 },
@@ -16,6 +15,8 @@ const PM25ThresholdSlider = ({
   setPM25Threshold, 
   isDarkMode 
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const valueToPosition = (value) => {
     for (let i = 0; i < PM25_LEVELS.length - 1; i++) {
       const currentLevel = PM25_LEVELS[i];
@@ -63,24 +64,29 @@ const PM25ThresholdSlider = ({
   const sliderPosition = valueToPosition(pm25Threshold);
 
   return (
-    <div className={`backdrop-blur-sm rounded-lg shadow-sm px-3 py-2 ${
-      isDarkMode ? 'bg-gray-800/90 text-gray-200' : 'bg-white/90 text-gray-800'
-    }`}>
-      <div className="flex items-center gap-3">
-        <Wind className="w-4 h-4" style={{ color: currentLevel?.color }} />
-        <div className="flex-1 min-w-[140px]">
-          <div className="flex justify-between items-center mb-1.5">
-            <span className="text-xs font-medium">PM2.5</span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium" style={{ color: currentLevel?.color }}>
-                {currentLevel?.label}
-              </span>
-              <span className="text-xs font-medium" style={{ color: currentLevel?.color }}>
-                {pm25Threshold.toFixed(1)}
-              </span>
-            </div>
-          </div>
-          
+    <div 
+      onClick={() => setIsExpanded(!isExpanded)}
+      className={`backdrop-blur-sm rounded-xl shadow-lg px-6 py-3 flex items-center cursor-pointer transition-all duration-300 ${
+        isDarkMode ? 'bg-gray-800/95 text-gray-200' : 'bg-white/95 text-gray-800'
+      }`}
+    >
+      <div className="text-xl font-medium">
+        PM2.5
+      </div>
+      <div className={`w-px h-6 mx-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
+      <div className="text-xl font-medium flex items-center gap-2">
+        <span style={{ color: currentLevel?.color }}>
+          {pm25Threshold.toFixed(0)}+
+        </span>
+      </div>
+
+      {isExpanded && (
+        <div className="absolute left-0 right-0 top-full mt-2 backdrop-blur-sm rounded-xl shadow-lg px-6 py-4 cursor-default"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)'
+          }}
+        >
           <div className="relative">
             {/* Plain slider track with filled portion */}
             <div className={`absolute w-full h-1 rounded-lg ${
@@ -123,7 +129,7 @@ const PM25ThresholdSlider = ({
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

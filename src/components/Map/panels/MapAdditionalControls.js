@@ -19,129 +19,135 @@ const MapAdditionalControls = ({
   const minimapRef = useRef(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const layersInitializedRef = useRef(false);
+  const previousLayersRef = useRef(new Set());
 
-  // Auto-expand when polygon is selected
+  // Auto-expand when polygon is drawn
   useEffect(() => {
     if (polygon) {
       setIsExpanded(true);
       onExpandChange?.(true);
+      setMinimapVisible(true);
     } else {
       setIsExpanded(false);
       onExpandChange?.(false);
+      setMinimapVisible(false);
     }
   }, [polygon, onExpandChange]);
 
   const setupMinimapLayers = useCallback((minimap) => {
-    if (!minimap || !currentDateTime) return;
+    if (!minimap || !map || !currentDateTime) return;
 
     try {
-      console.log('Setting up minimap layers with datetime:', currentDateTime);
-      // Clean up existing layers
-      TILESET_INFO.forEach((tileset) => {
-        const sourceId = `minimap-source-${tileset.id}`;
-        const layerId = `minimap-layer-${tileset.id}`;
+      // Get all visible layers from the main map
+      const style = map.getStyle();
+      const visibleLayers = style.layers.filter(layer => 
+        layer.id.startsWith('layer-') && 
+        map.getLayoutProperty(layer.id, 'visibility') === 'visible'
+      );
 
+      // Clean up existing layers
+      previousLayersRef.current.forEach(layerId => {
         if (minimap.getLayer(layerId)) {
           minimap.removeLayer(layerId);
         }
+        const sourceId = layerId.replace('layer', 'source');
         if (minimap.getSource(sourceId)) {
           minimap.removeSource(sourceId);
         }
       });
+      previousLayersRef.current.clear();
 
-      // Add new layers with matching styles from main map
-      TILESET_INFO.forEach((tileset) => {
-        const sourceId = `minimap-source-${tileset.id}`;
-        const layerId = `minimap-layer-${tileset.id}`;
+      // Mirror each visible layer from the main map
+      visibleLayers.forEach(layer => {
+        const sourceId = layer.source;
+        const minimapSourceId = `minimap-${sourceId}`;
+        const minimapLayerId = `minimap-${layer.id}`;
 
-        minimap.addSource(sourceId, {
-          type: 'vector',
-          url: `mapbox://${tileset.id}`,
-        });
+        // Add source if it doesn't exist
+        if (!minimap.getSource(minimapSourceId)) {
+          const sourceData = style.sources[sourceId];
+          minimap.addSource(minimapSourceId, sourceData);
+        }
 
-        minimap.addLayer({
-          id: layerId,
-          type: 'circle',
-          source: sourceId,
-          'source-layer': tileset.layer,
-          paint: {
-            'circle-radius': [
-              'interpolate',
-              ['exponential', 2],
-              ['zoom'],
-              4, 4,
-              5, 8,
-              6, 16,
-              7, 32,
-              8, 64,
-              9, 96
-            ],
-            'circle-color': [
-              'interpolate',
-              ['linear'],
-              ['coalesce', ['to-number', ['get', 'AQI'], 0], 0],
-              0, '#00e400',
-              51, '#ffff00',
-              101, '#ff7e00',
-              151, '#ff0000',
-              201, '#8f3f97',
-              301, '#7e0023'
-            ],
-            'circle-blur': 0.9,
-            'circle-opacity': 0.4
+        // Add layer with synchronized properties
+        if (!minimap.getLayer(minimapLayerId)) {
+          const layerConfig = {
+            ...layer,
+            id: minimapLayerId,
+            source: minimapSourceId,
+            paint: {
+              ...layer.paint,
+              'circle-radius': [
+                'interpolate',
+                ['exponential', 2],
+                ['zoom'],
+                4, 2,
+                5, 5,
+                6, 10,
+                7, 25,
+                8, 50,
+                9, 90
+              ]
+            }
+          };
+          minimap.addLayer(layerConfig);
+          previousLayersRef.current.add(minimapLayerId);
+
+          // Mirror the filter from the main map
+          const filter = map.getFilter(layer.id);
+          if (filter) {
+            minimap.setFilter(minimapLayerId, filter);
           }
-        });
-
-        const time = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
-        // Initial filter just checks time
-        const filter = [
-          'all',
-          ['==', ['get', 'time'], time]
-        ];
-        minimap.setFilter(layerId, filter);
+        }
       });
 
-      console.log('Successfully set up minimap layers');
       layersInitializedRef.current = true;
     } catch (error) {
       console.error('Error setting up minimap layers:', error);
     }
-  }, [currentDateTime]);
+  }, [map, currentDateTime]);
 
-  const handleMinimapLoad = useCallback(() => {
-    const minimap = minimapRef.current?.getMap();
-    if (!minimap) return;
-
-    minimap.on('style.load', () => {
-      console.log('Minimap style loaded, initializing layers');
-      layersInitializedRef.current = false;
-      setupMinimapLayers(minimap);
-    });
-
-    if (minimap.isStyleLoaded()) {
-      setupMinimapLayers(minimap);
-    }
-  }, [setupMinimapLayers]);
-
-  // Update layers when time or threshold changes
+  // Handle minimap load and updates
   useEffect(() => {
     const minimap = minimapRef.current?.getMap();
-    if (minimap && minimap.isStyleLoaded()) {
-      const time = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
-      
-      TILESET_INFO.forEach((tileset) => {
-        const layerId = `minimap-layer-${tileset.id}`;
-        if (minimap.getLayer(layerId)) {
-          const filter = [
-            'all',
-            ['==', ['get', 'time'], time],
-            ['>=', ['coalesce', ['to-number', ['get', 'AQI'], 0], 0], pm25Threshold]
-          ];
-          minimap.setFilter(layerId, filter);
-        }
-      });
+    if (!minimap || !map) return;
+
+    const handleStyleLoad = () => {
+      setupMinimapLayers(minimap);
+    };
+
+    const handleMainMapUpdate = () => {
+      if (minimap.isStyleLoaded()) {
+        setupMinimapLayers(minimap);
+      }
+    };
+
+    if (minimap.isStyleLoaded()) {
+      handleStyleLoad();
+    } else {
+      minimap.once('style.load', handleStyleLoad);
     }
-  }, [currentDateTime, pm25Threshold]);
+
+    // Listen for relevant changes on the main map
+    map.on('sourcedata', handleMainMapUpdate);
+    map.on('styledata', handleMainMapUpdate);
+
+    return () => {
+      map.off('sourcedata', handleMainMapUpdate);
+      map.off('styledata', handleMainMapUpdate);
+      if (minimap) {
+        previousLayersRef.current.forEach(layerId => {
+          if (minimap.getLayer(layerId)) {
+            minimap.removeLayer(layerId);
+          }
+          const sourceId = layerId.replace('layer', 'source');
+          if (minimap.getSource(sourceId)) {
+            minimap.removeSource(sourceId);
+          }
+        });
+      }
+    };
+  }, [map, setupMinimapLayers]);
 
   // Calculate and set viewport when polygon changes
   useEffect(() => {
@@ -164,22 +170,17 @@ const MapAdditionalControls = ({
       const latSpan = bounds.maxLat - bounds.minLat;
       const lngSpan = bounds.maxLng - bounds.minLng;
       const padding = 0.4;
-      const paddedLatSpan = latSpan * (1 + padding);
-      const paddedLngSpan = lngSpan * (1 + padding);
-
-      const latZoom = Math.log2(180 / (paddedLatSpan + 0.0001));
-      const lngZoom = Math.log2(360 / (paddedLngSpan + 0.0001));
-      const zoom = Math.min(latZoom, lngZoom);
+      
+      // Calculate zoom level based on the larger span
+      const maxSpan = Math.max(latSpan * (1 + padding), lngSpan * (1 + padding));
+      const zoom = Math.min(Math.max(Math.log2(360 / maxSpan) - 1, 3), 9);
 
       setMinimapViewport({
         ...center,
-        zoom: Math.min(Math.max(zoom, 3), 10),
-        minZoom: 2,
-        maxZoom: 9
+        zoom,
+        bearing: 0,
+        pitch: 0
       });
-      setMinimapVisible(true);
-    } else {
-      setMinimapVisible(false);
     }
   }, [polygon]);
 
@@ -239,7 +240,9 @@ const MapAdditionalControls = ({
     <div className="fixed top-4 right-4 z-50">
       <Tooltip content="View area overview" position="left">
         <button
-          className="bg-white/70 rounded-lg shadow-md hover:bg-gray-50/70 transition-colors w-12 h-12 flex items-center justify-center backdrop-blur-sm"
+          className={`bg-white/70 rounded-lg shadow-md hover:bg-gray-50/70 transition-colors w-12 h-12 flex items-center justify-center backdrop-blur-sm ${
+            !polygon ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
           onClick={() => {
             const newExpandedState = !isExpanded;
             setIsExpanded(newExpandedState);
@@ -270,7 +273,6 @@ const MapAdditionalControls = ({
                 mapStyle={mapStyle}
                 mapboxAccessToken={mapboxAccessToken}
                 interactive={false}
-                onLoad={handleMinimapLoad}
               />
             </div>
           </div>
