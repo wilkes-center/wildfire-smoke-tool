@@ -67,6 +67,48 @@ export const useMapLayers = (
     return Array.from(tilesets);
   }, []);
 
+  const updateLayerColors = useCallback((map) => {
+    if (!map || !map.getStyle()) return;
+
+    const { date, hour } = getCurrentDateTime();
+    const currentTileset = TILESET_INFO.find(tileset => 
+      tileset.date === date && 
+      hour >= tileset.startHour && 
+      hour <= tileset.endHour
+    );
+
+    if (!currentTileset) return;
+
+    const currentLayerId = `layer-${currentTileset.id}`;
+    const timeString = `${date}T${String(hour).padStart(2, '0')}:00:00`;
+
+    loadedLayersRef.current.forEach(layerId => {
+      if (map.getLayer(layerId)) {
+        // Update colors for all layers
+        map.setPaintProperty(
+          layerId,
+          'circle-color',
+          getPM25ColorInterpolation(isDarkMode)
+        );
+        map.setPaintProperty(
+          layerId,
+          'circle-opacity',
+          isDarkMode ? 0.6 : 0.4
+        );
+
+        // Ensure current layer remains visible with correct filter
+        if (layerId === currentLayerId) {
+          map.setFilter(layerId, [
+            'all',
+            ['==', ['get', 'time'], timeString],
+            ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+          ]);
+          map.setLayoutProperty(layerId, 'visibility', 'visible');
+        }
+      }
+    });
+  }, [isDarkMode, getCurrentDateTime, pm25Threshold]);
+
   // Cleanup old chunks that are no longer needed
   const cleanupOldChunks = useCallback((map, currentTilesetId) => {
     if (!map || !map.getStyle()) return;
@@ -115,10 +157,6 @@ export const useMapLayers = (
     if (!map || !map.getStyle()) return;
 
     try {
-      if (needsLayerReinitRef.current || loadedLayersRef.current.size === 0) {
-        initializeLayers(map);
-      }
-
       // Clean up existing layers first
       loadedLayersRef.current.forEach(layerId => {
         if (map.getLayer(layerId)) {
@@ -180,7 +218,7 @@ export const useMapLayers = (
               ],
               'circle-color': getPM25ColorInterpolation(isDarkMode),
               'circle-blur': 0.85,
-              'circle-opacity': isDarkMode ? 0.6 : 0.4 // Increased opacity in dark mode for better visibility
+              'circle-opacity': isDarkMode ? 0.6 : 0.4
             },
             layout: {
               'visibility': 'none'
@@ -191,10 +229,13 @@ export const useMapLayers = (
         }
       });
 
+      // Update colors for all layers
+      updateLayerColors(map);
+
     } catch (error) {
       console.error('Error initializing layers:', error);
     }
-  }, [getCurrentDateTime, getRelevantTilesets]);
+  }, [getCurrentDateTime, getRelevantTilesets, isDarkMode, updateLayerColors]);
 
   // Update layer visibility and filters
   const updateLayers = useCallback((map) => {
@@ -255,7 +296,7 @@ export const useMapLayers = (
               ],
               'circle-color': getPM25ColorInterpolation(isDarkMode),
               'circle-blur': 0.85,
-              'circle-opacity': isDarkMode ? 0.6 : 0.4 // Increased opacity in dark mode for better visibility
+              'circle-opacity': isDarkMode ? 0.6 : 0.4
             },
             layout: {
               'visibility': 'none'
@@ -314,28 +355,47 @@ export const useMapLayers = (
 
       previousChunkRef.current = currentTileset.id;
 
+      // Ensure colors are consistent with current theme
+      updateLayerColors(map);
+
     } catch (error) {
       console.error('Error updating layers:', error);
     }
-  }, [getCurrentDateTime, getRelevantTilesets, cleanupOldChunks, pm25Threshold]);
+  }, [getCurrentDateTime, getRelevantTilesets, cleanupOldChunks, pm25Threshold, isDarkMode, updateLayerColors]);
 
-  // Handle style changes (e.g., theme changes)
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !isMapLoaded) return;
+
+    // Force immediate update of colors and visibility
+    updateLayerColors(map);
+  }, [isDarkMode, isMapLoaded, updateLayerColors]);
+
+  // Handle style changes
   useEffect(() => {
     const map = mapRef.current?.getMap();
     if (!map) return;
 
     const handleStyleData = () => {
-      console.log('Style loaded, reinitializing layers');
-      initializeLayers(map);
-      updateLayers(map);
+      if (needsLayerReinitRef.current) {
+        console.log('Reinitializing layers after style change');
+        initializeLayers(map);
+        updateLayers(map);
+        needsLayerReinitRef.current = false;
+      }
     };
 
-    map.on('style.load', handleStyleData);
+    map.on('styledata', handleStyleData);
+    return () => map.off('styledata', handleStyleData);
+  }, [initializeLayers, updateLayers]);
 
-    return () => {
-      map.off('style.load', handleStyleData);
-    };
-  }, [mapRef, initializeLayers, updateLayers, isDarkMode]);
+  // Handle initial layer setup and updates
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !isMapLoaded) return;
+
+    updateLayers(map);
+  }, [isMapLoaded, updateLayers, currentHour]);
 
   return { updateLayers, initializeLayers };
 };

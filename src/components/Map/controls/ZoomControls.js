@@ -27,50 +27,58 @@ const ZoomControls = ({ map, isDarkMode }) => {
   };
 
   return (
-    <div className="fixed left-4 bottom-4 z-50 flex flex-col items-center">
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-1 ${
+    <div className="fixed left-4 bottom-4 z-50">
+      <div className={`flex flex-col items-center gap-1 p-1 rounded-lg backdrop-blur-md ${
         isDarkMode 
-          ? 'bg-gray-900/70 text-gray-300' 
-          : 'bg-white/70 text-gray-600'
-      } backdrop-blur-sm shadow-lg`}>
-        {map ? Math.round(map.getZoom() * 10) / 10 : '0.0'}
-      </div>
-      
-      <button
-        onClick={handleZoomIn}
-        className={`w-10 h-10 rounded-lg flex items-center justify-center mb-1 ${
+          ? 'bg-gray-900/90 border border-purple-500/30' 
+          : 'bg-white/90 border border-purple-500/20'
+      }`}>
+        <button
+          onClick={handleZoomIn}
+          className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
+            isDarkMode 
+              ? 'hover:bg-purple-500/20 text-purple-400' 
+              : 'hover:bg-purple-100 text-purple-600'
+          }`}
+          aria-label="Zoom in"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+        
+        <div className={`text-sm font-medium px-2 py-1 rounded-md ${
           isDarkMode 
-            ? 'bg-gray-900/70 hover:bg-gray-800/70 text-gray-300' 
-            : 'bg-white/70 hover:bg-gray-50/70 text-gray-600'
-        } backdrop-blur-sm shadow-lg transition-colors`}
-        aria-label="Zoom in"
-      >
-        <Plus className="w-5 h-5" />
-      </button>
-      
-      <button
-        onClick={handleZoomOut}
-        className={`w-10 h-10 rounded-lg flex items-center justify-center mb-1 ${
-          isDarkMode 
-            ? 'bg-gray-900/70 hover:bg-gray-800/70 text-gray-300' 
-            : 'bg-white/70 hover:bg-gray-50/70 text-gray-600'
-        } backdrop-blur-sm shadow-lg transition-colors`}
-        aria-label="Zoom out"
-      >
-        <Minus className="w-5 h-5" />
-      </button>
+            ? 'bg-purple-500/10 text-purple-400' 
+            : 'bg-purple-100 text-purple-600'
+        }`}>
+          {map ? Math.round(map.getZoom() * 10) / 10 : '0.0'}
+        </div>
+        
+        <button
+          onClick={handleZoomOut}
+          className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
+            isDarkMode 
+              ? 'hover:bg-purple-500/20 text-purple-400' 
+              : 'hover:bg-purple-100 text-purple-600'
+          }`}
+          aria-label="Zoom out"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
 
-      <button
-        onClick={handleReset}
-        className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-          isDarkMode 
-            ? 'bg-gray-900/70 hover:bg-gray-800/70 text-gray-300' 
-            : 'bg-white/70 hover:bg-gray-50/70 text-gray-600'
-        } backdrop-blur-sm shadow-lg transition-colors`}
-        aria-label="Reset map view"
-      >
-        <Compass className="w-5 h-5" />
-      </button>
+        <div className={`w-full h-px ${isDarkMode ? 'bg-purple-500/20' : 'bg-purple-200'}`} />
+
+        <button
+          onClick={handleReset}
+          className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
+            isDarkMode 
+              ? 'hover:bg-purple-500/20 text-purple-400' 
+              : 'hover:bg-purple-100 text-purple-600'
+          }`}
+          aria-label="Reset map view"
+        >
+          <Compass className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 };

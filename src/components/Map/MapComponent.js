@@ -15,8 +15,7 @@ import { BASEMAPS } from '../../constants/map/basemaps';
 import { TILESET_INFO } from '../../utils/map/constants.js';
 import DrawingTooltip from './DrawingTooltip';
 import PopulationExposureCounter from './controls/PopulationExposureCounter';
-import PM25ThresholdSlider from './controls/PM25ThresholdSlider';
-import  handleEnhancedMapClick  from './controls/handleEnhancedMapClick.js';
+import handleEnhancedMapClick  from './controls/handleEnhancedMapClick.js';
 import ZoomControls from './controls/ZoomControls';
 
 const MapComponent = () => {
@@ -31,8 +30,8 @@ const MapComponent = () => {
   const [viewport, setViewport] = useState({
     latitude: 39.8283,
     longitude: -98.5795,
-    zoom: 4,
-    minZoom: 4,
+    zoom: 4.5,
+    minZoom: 4.5,
     maxZoom: 9,
   });
   const [pm25Threshold, setPM25Threshold] = useState(0);
@@ -47,7 +46,6 @@ const MapComponent = () => {
   const handleThemeChange = useCallback((darkMode) => {
     setIsDarkMode(darkMode);
     needsLayerReinitRef.current = true;
-    // Auto switch basemap if not in satellite mode
     if (currentBasemap !== BASEMAPS.satellite.url) {
       setCurrentBasemap(darkMode ? BASEMAPS.darkMatter.url : BASEMAPS.light.url);
     }
@@ -72,7 +70,6 @@ const MapComponent = () => {
         });
       }
 
-      // Setup the base census tract layer
       if (!map.getLayer('census-tracts-layer')) {
         map.addLayer({
           id: 'census-tracts-layer',
@@ -91,7 +88,6 @@ const MapComponent = () => {
         map.setPaintProperty('census-tracts-layer', 'fill-outline-color', isDarkMode ? '#4B5563' : '#374151');
       }
 
-      // Setup the outline layer
       if (!map.getLayer('census-tracts-outline')) {
         map.addLayer({
           id: 'census-tracts-outline',
@@ -115,19 +111,7 @@ const MapComponent = () => {
     }
   }, []);
 
-// Update the highlight colors for selected areas to be more visible
-const getHighlightColors = (isDarkMode) => ({
-  fill: {
-    color: isDarkMode ? '#6D28D9' : '#8B5CF6',
-    opacity: isDarkMode ? 0.5 : 0.4, // Increased opacity for better visibility
-    outlineColor: isDarkMode ? '#9F7AEA' : '#7C3AED'
-  },
-  boundary: {
-    color: isDarkMode ? '#A78BFA' : '#7C3AED',
-    width: 2, // Increased width for better visibility
-    opacity: isDarkMode ? 1 : 0.8 // Increased opacity for better visibility
-  }
-});
+
   const handleMapLoad = useCallback(() => {
     console.log('Map loaded, initializing...');
     setIsMapLoaded(true);
@@ -169,23 +153,6 @@ const getHighlightColors = (isDarkMode) => ({
     needsLayerReinitRef
   );
 
-
-  // Area selection helpers
-  const createCirclePolygon = useCallback((center, radiusDegrees) => {
-    const points = 64;
-    const coords = [];
-    
-    for (let i = 0; i <= points; i++) {
-      const angle = (i * 360) / points;
-      const dx = radiusDegrees * Math.cos((angle * Math.PI) / 180);
-      const dy = radiusDegrees * Math.sin((angle * Math.PI) / 180);
-      coords.push([center[0] + dx, center[1] + dy]);
-    }
-    
-    coords.push(coords[0]);
-    return coords;
-  }, []);
-
   const handleMapClick = useCallback(async (e) => {
     // If in drawing mode, handle polygon drawing
     if (drawingMode) {
@@ -215,18 +182,15 @@ const getHighlightColors = (isDarkMode) => ({
       return;
     }
   
-    // Handle regular map clicks (point selection)
     if (!isPointSelected && mapInstance) {
       try {
-        // Use the enhanced click handler
         const selection = await handleEnhancedMapClick(e, mapInstance, {
           initialZoomLevel: 7,
           zoomDuration: 1000,
           selectionDelay: 500,
           selectionRadius: 0.1
         });
-  
-        // Set the polygon from the selection
+
         setPolygon(selection.polygon);
         setIsPointSelected(true);
         setIsPlaying(true);
@@ -245,7 +209,6 @@ const getHighlightColors = (isDarkMode) => ({
     mapInstance,
     setIsPlaying
   ]);
-
 
   const clearPolygon = useCallback(() => {
     if (polygon) {
@@ -397,7 +360,8 @@ const getHighlightColors = (isDarkMode) => ({
       
       {isMapLoaded && mapInstance && (
         <>
-        <ZoomControls map={mapInstance} isDarkMode={isDarkMode} />
+          <ZoomControls map={mapInstance} isDarkMode={isDarkMode} />
+  
           {/* Left side overlays container */}
           <div className="fixed top-4 left-4 z-50">
             <div className="flex flex-col gap-2">
@@ -417,15 +381,18 @@ const getHighlightColors = (isDarkMode) => ({
               )}
             </div>
           </div>
-
-          {/* Right side overlays */}
+  
+          {/* Right side panels */}
           <AreaAnalysis
-              map={mapInstance}
-              currentDateTime={getCurrentDateTime()}
-              isPlaying={isPlaying}
-              polygon={polygon}
-              isDarkMode={isDarkMode}
-            />
+            map={mapInstance}
+            currentDateTime={getCurrentDateTime()}
+            isPlaying={isPlaying}
+            polygon={polygon}
+            isDarkMode={isDarkMode}
+            onExpandChange={(expanded) => {
+            }}
+          />
+  
           <MapAdditionalControls
             map={mapInstance}
             mapStyle={currentBasemap}
@@ -433,43 +400,46 @@ const getHighlightColors = (isDarkMode) => ({
             polygon={polygon}
             currentDateTime={getCurrentDateTime()}
             isDarkMode={isDarkMode}
-            isPlaying={isPlaying}           
-            setIsPlaying={setIsPlaying}    
-            currentHour={currentHour}       
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+            currentHour={currentHour}
             setCurrentHour={setCurrentHour}
+            onExpandChange={(expanded) => {
+            }}
+          />
+  
+          <DrawingTooltip 
+            drawingMode={drawingMode} 
+            tempPolygon={tempPolygon}
+          />
+  
+          {/* Bottom controls */}
+          <MapControls
+            currentHour={currentHour}
+            setCurrentHour={setCurrentHour}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+            playbackSpeed={playbackSpeed}
+            setPlaybackSpeed={setPlaybackSpeed}
+            getCurrentDateTime={getCurrentDateTime}
+            drawingMode={drawingMode}
+            startDrawing={startDrawing}
+            finishDrawing={finishDrawing}
+            clearPolygon={clearPolygon}
+            polygon={polygon}
+            isDarkMode={isDarkMode}
+            setIsDarkMode={handleThemeChange}
+            currentBasemap={currentBasemap}
+            setCurrentBasemap={setCurrentBasemap}
+            basemapOptions={BASEMAPS}
+            mapInstance={mapInstance}
+            pm25Threshold={pm25Threshold}
+            setPM25Threshold={setPM25Threshold}
           />
         </>
       )}
-
-      <DrawingTooltip 
-        drawingMode={drawingMode} 
-        tempPolygon={tempPolygon}
-      />
-
-      <MapControls
-        currentHour={currentHour}
-        setCurrentHour={setCurrentHour}
-        isPlaying={isPlaying}
-        setIsPlaying={setIsPlaying}
-        playbackSpeed={playbackSpeed}
-        setPlaybackSpeed={setPlaybackSpeed}
-        getCurrentDateTime={getCurrentDateTime}
-        drawingMode={drawingMode}
-        startDrawing={startDrawing}
-        finishDrawing={finishDrawing}
-        clearPolygon={clearPolygon}
-        polygon={polygon}
-        isDarkMode={isDarkMode}
-        setIsDarkMode={handleThemeChange}
-        currentBasemap={currentBasemap}
-        setCurrentBasemap={setCurrentBasemap}
-        basemapOptions={BASEMAPS}
-        mapInstance={mapInstance} 
-        pm25Threshold={pm25Threshold} 
-        setPM25Threshold={setPM25Threshold} 
-      />
     </div>
-);
+  );
 };
 
 export default MapComponent;

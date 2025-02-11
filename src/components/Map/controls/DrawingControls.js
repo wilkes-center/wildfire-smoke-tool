@@ -43,14 +43,16 @@ export const DrawingControls = ({
   return (
     <button
       onClick={clearPolygon}
-      className={`h-10 px-4 rounded-lg flex items-center gap-2 transition-colors ${
+      className={`h-12 px-6 rounded-lg flex items-center gap-2 transition-colors ${
         isDarkMode
-          ? 'hover:bg-gray-700 text-gray-300'
-          : 'hover:bg-gray-100 text-gray-600'
+          ? 'bg-red-900/20 hover:bg-red-900/30 text-red-400'
+          : 'bg-red-50 hover:bg-red-100 text-red-600'
       }`}
     >
       <X className="w-5 h-5" />
-      <span className="font-medium">Clear</span>
+      <span className="font-medium">Clear Area Selection</span>
     </button>
   );
 };
+
+export default DrawingControls;

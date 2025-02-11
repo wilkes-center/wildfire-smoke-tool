@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BarChart2, X } from 'lucide-react';
 import calculateAreaStats from '../../../utils/map/calculateAreaStats';
+import ThemedPanel from './ThemedPanel';
 
 const CustomTooltip = ({ active, payload, label, isDarkMode }) => {
   if (active && payload && payload.length) {
@@ -320,131 +321,110 @@ const AreaAnalysis = ({
     }
   }, [polygon, onExpandChange]);
 
+  const handleClose = () => {
+    const newState = !isExpanded;
+    setIsExpanded(newState);
+    onExpandChange?.(newState);
+  };
+
+  const handleToggleExpand = () => {
+    const newState = !isExpanded;
+    setIsExpanded(newState);
+    onExpandChange?.(newState);
+  };
+
+  const headerActions = (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => setActiveTab('chart')}
+        className={`px-3 py-1 rounded-md text-sm transition-colors ${
+          activeTab === 'chart'
+            ? isDarkMode
+              ? 'bg-blue-500/70 text-white'
+              : 'bg-blue-500/70 text-white'
+            : isDarkMode
+              ? 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
+              : 'bg-gray-100/50 text-gray-600 hover:bg-gray-200/50'
+        }`}
+      >
+        Chart
+      </button>
+      <button
+        onClick={() => setActiveTab('table')}
+        className={`px-3 py-1 rounded-md text-sm transition-colors ${
+          activeTab === 'table'
+            ? isDarkMode
+              ? 'bg-blue-500/70 text-white'
+              : 'bg-blue-500/70 text-white'
+            : isDarkMode
+              ? 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
+              : 'bg-gray-100/50 text-gray-600 hover:bg-gray-200/50'
+        }`}
+      >
+        Table
+      </button>
+    </div>
+  );
+
   return (
     <div style={{ 
       position: 'fixed',
-      top: isExpanded ? '490px' : '80px',
+      top: isExpanded ? '450px' : '20px',
       right: '20px',
+      width: isExpanded ? '480px' : '48px',
       zIndex: 1000,
       transition: 'all 0.3s ease-in-out'
     }}>
-      <button
-        className={`rounded-lg shadow-md transition-colors w-12 h-12 flex items-center justify-center backdrop-blur-sm ${
-          isDarkMode 
-            ? 'bg-gray-900/70 hover:bg-gray-800/70' 
-            : 'bg-white/70 hover:bg-gray-50/70'
-        }`}
-        onClick={() => polygon && setIsExpanded(!isExpanded)}
-        disabled={!polygon}
-        title={polygon ? "View area statistics" : "Draw an area to view statistics"}
+      <ThemedPanel
+        title="Area Statistics"
+        subtitle={`${currentDateTime.date} ${currentDateTime.hour.toString().padStart(2, '0')}:00`}
+        headerActions={headerActions}
+        icon={BarChart2}
+        isExpanded={isExpanded}
+        onClose={handleToggleExpand}
+        isDarkMode={isDarkMode}
+        order={1} 
       >
-        {!isExpanded ? (
-          <BarChart2 className={`w-5 h-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-        ) : (
-          <X className={`w-5 h-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-        )}
-      </button>
-
-      {isExpanded && (
-        <div className={`absolute top-14 right-0 w-[480px] h-[400px] rounded-lg shadow-lg overflow-hidden border-2 border-[#DC4A23] ${
-          isDarkMode 
-            ? 'bg-gray-900/40 backdrop-blur-sm' 
-            : 'bg-white/40 backdrop-blur-sm'
-        }`}>
-          <div className="w-full h-full">
-            <div className={`border-b px-3 py-2 ${
+        <div className="px-1">
+          {error && (
+            <div className={`mb-4 p-4 rounded-lg border ${
               isDarkMode 
-                ? 'border-gray-700/40 bg-gray-900/30' 
-                : 'border-gray-200/40 bg-white/30'
+                ? 'bg-red-900/50 text-red-300 border-red-800/50' 
+                : 'bg-red-50/50 text-red-700 border-red-200/50'
             }`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className={`text-xl font-bold leading-none ${
-                    isDarkMode ? 'text-gray-100' : 'text-gray-800'
-                  }`}>
-                    Area Statistics
-                  </h2>
-                  <div className={`text-sm mt-0.5 ${
-                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
-                    {currentDateTime.date} {currentDateTime.hour.toString().padStart(2, '0')}:00
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setActiveTab('chart')}
-                    className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                      activeTab === 'chart'
-                        ? isDarkMode
-                          ? 'bg-blue-500/70 text-white'
-                          : 'bg-blue-500/70 text-white'
-                        : isDarkMode
-                          ? 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
-                          : 'bg-gray-100/50 text-gray-600 hover:bg-gray-200/50'
-                    }`}
-                  >
-                    Chart
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('table')}
-                    className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                      activeTab === 'table'
-                        ? isDarkMode
-                          ? 'bg-blue-500/70 text-white'
-                          : 'bg-blue-500/70 text-white'
-                        : isDarkMode
-                          ? 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
-                          : 'bg-gray-100/50 text-gray-600 hover:bg-gray-200/50'
-                    }`}
-                  >
-                    Table
-                  </button>
-                </div>
-              </div>
+              {error}
             </div>
+          )}
 
-            <div className="px-1">
-              {error && (
-                <div className={`mb-4 p-4 rounded-lg border ${
-                  isDarkMode 
-                    ? 'bg-red-900/50 text-red-300 border-red-800/50' 
-                    : 'bg-red-50/50 text-red-700 border-red-200/50'
-                }`}>
-                  {error}
-                </div>
-              )}
-
-              {isLoading && (
-                <div className={`h-[320px] flex items-center justify-center ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}>
-                  <p>Loading statistics...</p>
-                </div>
-              )}
-
-              {!isLoading && !error && data.length > 0 && (
-                <>
-                  {activeTab === 'chart' && (
-                    <StatsChart data={data} isDarkMode={isDarkMode} />
-                  )}
-                  
-                  {activeTab === 'table' && (
-                    <StatsTable data={data} isDarkMode={isDarkMode} />
-                  )}
-                </>
-              )}
-
-              {!isLoading && !error && data.length === 0 && (
-                <div className={`h-[320px] flex items-center justify-center ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}>
-                  <p>No data available for the selected area</p>
-                </div>
-              )}
+          {isLoading && (
+            <div className={`h-[320px] flex items-center justify-center ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              <p>Loading statistics...</p>
             </div>
-          </div>
+          )}
+
+          {!isLoading && !error && data.length > 0 && (
+            <>
+              {activeTab === 'chart' && (
+                <StatsChart data={data} isDarkMode={isDarkMode} />
+              )}
+              
+              {activeTab === 'table' && (
+                <StatsTable data={data} isDarkMode={isDarkMode} />
+              )}
+            </>
+          )}
+
+          {!isLoading && !error && data.length === 0 && (
+            <div className={`h-[320px] flex items-center justify-center ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              <p>No data available for the selected area</p>
+            </div>
+          )}
         </div>
-      )}
+      </ThemedPanel>
     </div>
   );
 };

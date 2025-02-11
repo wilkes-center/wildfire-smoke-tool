@@ -28,113 +28,164 @@ export const TimeControls = ({
     setCurrentHour(newHour);
   };
 
+  // Calculate date marker positions (24 hours apart)
+  const dateMarkers = [24, 48, 72].map(hour => ({
+    hour,
+    position: (hour / (TOTAL_HOURS - 1)) * 100
+  }));
+
   return (
-    <div className="flex items-center gap-4">
-      {/* Play/Pause Controls */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => setIsPlaying(!isPlaying)}
-          className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-            isPlaying 
-              ? isDarkMode
-                ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
-                : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-              : isDarkMode
-                ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                : 'bg-green-50 text-green-600 hover:bg-green-100'
-          }`}
-        >
-          {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-        </button>
+    <div className={`backdrop-blur-md rounded-xl border shadow-lg px-6 py-4 ${
+      isDarkMode 
+        ? 'bg-gray-900/95 border-purple-500/30' 
+        : 'bg-white/95 border-purple-500/20'
+    }`}>
+      <div className="flex items-center gap-4">
+        {/* Play/Pause Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
+              isPlaying 
+                ? isDarkMode
+                  ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
+                  : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
+                : isDarkMode
+                  ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
+                  : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
+            }`}
+          >
+            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+          </button>
 
-        {/* Speed control */}
-        <button
-          onClick={() => setShowSpeedOptions(!showSpeedOptions)}
-          className={`h-9 px-3 rounded-lg text-sm font-medium transition-colors ${
-            isDarkMode
-              ? 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-              : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-          }`}
-        >
-          {playbackSpeed}x
-        </button>
+          {/* Speed control */}
+          <button
+            onClick={() => setShowSpeedOptions(!showSpeedOptions)}
+            className={`h-10 px-4 rounded-lg text-sm font-medium transition-all ${
+              isDarkMode
+                ? 'bg-gray-800 hover:bg-gray-700 text-purple-300'
+                : 'bg-gray-100 hover:bg-gray-200 text-purple-600'
+            }`}
+          >
+            {playbackSpeed}x
+          </button>
 
-        {showSpeedOptions && (
-          <div className={`absolute bottom-full mb-2 rounded-lg shadow-lg border ${
-            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
-          }`}>
-            {[1, 2, 3].map((speed) => (
-              <button
-                key={speed}
-                onClick={() => {
-                  setPlaybackSpeed(speed);
-                  setShowSpeedOptions(false);
-                }}
-                className={`w-full px-4 py-2 text-sm transition-colors ${
-                  playbackSpeed === speed
-                    ? isDarkMode
-                      ? 'bg-blue-500/20 text-blue-400'
-                      : 'bg-blue-50 text-blue-600'
-                    : isDarkMode
-                      ? 'hover:bg-gray-700 text-gray-300'
-                      : 'hover:bg-gray-50 text-gray-600'
-                }`}
-              >
-                {speed}x
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Timeline */}
-      <div className="flex-1 flex items-center gap-2">
-        <button
-          onClick={handlePrevHour}
-          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-            isDarkMode
-              ? 'hover:bg-gray-800 text-gray-400'
-              : 'hover:bg-gray-100 text-gray-400'
-          }`}
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-
-        <div className="relative flex-1 h-2">
-          {/* Slider background */}
-          <div className={`absolute inset-0 rounded-full ${
-            isDarkMode ? 'bg-gray-800' : 'bg-blue-100'
-          }`} />
-
-          {/* Slider filled portion */}
-          <div 
-            className="absolute inset-y-0 left-0 rounded-full bg-blue-500"
-            style={{ 
-              width: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
-              transition: 'width 0.1s ease-out'
-            }}
-          />
-
-          <input
-            type="range"
-            min="0"
-            max={TOTAL_HOURS - 1}
-            value={currentHour}
-            onChange={handleSliderChange}
-            className="absolute inset-0 w-full h-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 hover:[&::-webkit-slider-thumb]:scale-110"
-          />
+          {showSpeedOptions && (
+            <div className={`absolute bottom-full mb-2 rounded-lg shadow-lg border ${
+              isDarkMode ? 'bg-gray-800 border-purple-500/30' : 'bg-white border-purple-500/20'
+            }`}>
+              {[1, 2, 3].map((speed) => (
+                <button
+                  key={speed}
+                  onClick={() => {
+                    setPlaybackSpeed(speed);
+                    setShowSpeedOptions(false);
+                  }}
+                  className={`w-full px-4 py-2 text-sm transition-all ${
+                    playbackSpeed === speed
+                      ? isDarkMode
+                        ? 'bg-purple-500/20 text-purple-300'
+                        : 'bg-purple-100 text-purple-600'
+                      : isDarkMode
+                        ? 'hover:bg-gray-700 text-gray-300'
+                        : 'hover:bg-gray-50 text-gray-600'
+                  }`}
+                >
+                  {speed}x
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        <button
-          onClick={handleNextHour}
-          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-            isDarkMode
-              ? 'hover:bg-gray-800 text-gray-400'
-              : 'hover:bg-gray-100 text-gray-400'
-          }`}
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+        {/* Timeline */}
+        <div className="flex-1 flex items-center gap-2">
+          <button
+            onClick={handlePrevHour}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+              isDarkMode
+                ? 'hover:bg-gray-800 text-purple-400'
+                : 'hover:bg-gray-100 text-purple-500'
+            }`}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+                      <div className="relative flex-1">
+              {/* Current time bubble */}
+              <div 
+                className={`absolute -top-8 py-1 px-2 rounded-lg text-sm font-medium transform -translate-x-1/2 ${
+                  isDarkMode 
+                    ? 'bg-purple-500 text-white' 
+                    : 'bg-purple-500 text-white'
+                }`}
+                style={{ 
+                  left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
+                }}
+              >
+                {String(currentHour % 24).padStart(2, '0')}:00
+              </div>
+
+              {/* Vertical time indicator line */}
+              <div 
+                className={`absolute h-8 w-0.5 -translate-x-1/2 ${
+                  isDarkMode ? 'bg-purple-400' : 'bg-purple-500'
+                }`}
+                style={{ 
+                  left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
+                  top: '-8px'
+                }}
+              />
+
+              {/* Date markers */}
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 pointer-events-none">
+              {dateMarkers.map((marker, index) => (
+                <div
+                  key={index}
+                  className={`absolute w-0.5 h-3 -translate-y-1 ${
+                    isDarkMode ? 'bg-purple-400' : 'bg-purple-500'
+                  }`}
+                  style={{ left: `${marker.position}%` }}
+                />
+              ))}
+            </div>
+
+            {/* Timeline base line */}
+            <div className={`absolute h-0.5 w-full top-1/2 -translate-y-1/2 ${
+              isDarkMode ? 'bg-gray-600' : 'bg-gray-300'
+            }`} />
+
+            {/* Slider filled portion */}
+            <div 
+              className={`absolute h-0.5 left-0 top-1/2 -translate-y-1/2 transition-all ${
+                isDarkMode ? 'bg-purple-500' : 'bg-purple-500'
+              }`}
+              style={{ 
+                width: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
+              }}
+            />
+
+            <input
+              type="range"
+              min="0"
+              max={TOTAL_HOURS - 1}
+              value={currentHour}
+              onChange={handleSliderChange}
+              className="absolute inset-0 w-full h-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-purple-500 hover:[&::-webkit-slider-thumb]:scale-110 transition-transform"
+            />
+          </div>
+
+          <button
+            onClick={handleNextHour}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+              isDarkMode
+                ? 'hover:bg-gray-800 text-purple-400'
+                : 'hover:bg-gray-100 text-purple-500'
+            }`}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
   );
