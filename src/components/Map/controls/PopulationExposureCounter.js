@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Users2 } from 'lucide-react';
 import getSelectedCensusTracts from '../../../utils/map/censusAnalysis';
 import { PM25_LEVELS, TILESET_INFO } from '../../../utils/map/constants';
@@ -8,7 +8,8 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
     censusStats: {
       value: null,
       isLoading: true,
-      error: null
+      error: null,
+      tractCount: 0
     },
     exposureByPM25: {
       value: null,
@@ -16,14 +17,151 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
       error: null
     }
   });
-  
-  const censusDataRef = useRef(null);
-  const lastValidStatsRef = useRef(null);
-  const currentLayerRef = useRef(null);
-  const updateTimeoutRef = useRef(null);
-  const retryTimeoutRef = useRef(null);
 
-  const isPointInPolygon = useCallback((point, polygon) => {
+
+  const getCurrentTilesetInfo = useCallback((date, hour) => {
+    return TILESET_INFO.find(tileset => 
+      tileset.date === date && 
+      hour >= tileset.startHour && 
+      hour <= tileset.endHour
+    );
+  }, []);
+
+  const calculateExposure = useCallback(async () => {
+    if (!map || !polygon || !currentDateTime) {
+      return;
+    }
+
+    try {
+      const currentTileset = getCurrentTilesetInfo(currentDateTime.date, currentDateTime.hour);
+      
+      if (!currentTileset) {
+        console.warn('No tileset found for current datetime:', currentDateTime);
+        return;
+      }
+
+      const layerId = `layer-${currentTileset.id}`;
+      console.log('Querying layer:', layerId);
+
+      if (!map.getLayer(layerId)) {
+        console.warn(`Layer ${layerId} not found in map`);
+        setStats(prev => ({
+          ...prev,
+          exposureByPM25: {
+            value: null,
+            isLoading: false,
+            error: 'Loading data for this time period...'
+          }
+        }));
+        return;
+      }
+
+      const timeString = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
+
+      const bounds = getBoundingBox(polygon);
+      const sw = map.project([bounds.minLng, bounds.minLat]);
+      const ne = map.project([bounds.maxLng, bounds.maxLat]);
+
+      const features = map.queryRenderedFeatures([sw, ne], {
+        layers: [layerId],
+        filter: ['==', ['get', 'time'], timeString]
+      }).filter(feature => {
+        if (!feature.geometry || !feature.geometry.coordinates) return false;
+        return isPointInPolygon(feature.geometry.coordinates, polygon);
+      });
+
+      // Get census tract data
+      const censusData = await getSelectedCensusTracts(map, polygon, isDarkMode);
+      const totalPopulation = censusData.summary.totalPopulation;
+
+      // Initialize exposure categories
+      const exposureByPM25 = PM25_LEVELS.reduce((acc, level) => {
+        acc[level.label] = 0;
+        return acc;
+      }, {});
+
+      let calculatedAvgPM25 = 0;
+
+      if (features.length > 0) {
+        // Calculate average PM2.5
+        calculatedAvgPM25 = features.reduce((sum, feature) => {
+          const pm25 = parseFloat(feature.properties.PM25);
+          return isNaN(pm25) ? sum : sum + pm25;
+        }, 0) / features.length;
+
+        // Find appropriate PM2.5 level
+        const category = PM25_LEVELS.find((level, index) => {
+          const nextLevel = PM25_LEVELS[index + 1];
+          return calculatedAvgPM25 >= level.value && (!nextLevel || calculatedAvgPM25 < nextLevel.value);
+        });
+
+        if (category) {
+          exposureByPM25[category.label] = totalPopulation;
+        }
+      }
+
+      setStats({
+        censusStats: {
+          value: { totalPopulation, avgPM25: calculatedAvgPM25 },
+          isLoading: false,
+          error: null,
+          tractCount: Object.keys(censusData.tracts).length
+        },
+        exposureByPM25: {
+          value: exposureByPM25,
+          isLoading: false,
+          error: null
+        }
+      });
+
+    } catch (error) {
+      console.error('Error calculating exposure:', error);
+      setStats(prev => ({
+        ...prev,
+        exposureByPM25: {
+          value: null,
+          isLoading: false,
+          error: 'Failed to calculate exposure'
+        }
+      }));
+    }
+  }, [map, polygon, currentDateTime, isDarkMode, getCurrentTilesetInfo]);
+
+  useEffect(() => {
+    calculateExposure();
+  }, [calculateExposure]);
+
+  // Helper function to get bounding box
+  const getBoundingBox = (polygon) => {
+    const bounds = {
+      minLng: Infinity,
+      maxLng: -Infinity,
+      minLat: Infinity,
+      maxLat: -Infinity
+    };
+
+    polygon.forEach(([lng, lat]) => {
+      bounds.minLng = Math.min(bounds.minLng, lng);
+      bounds.maxLng = Math.max(bounds.maxLng, lng);
+      bounds.minLat = Math.min(bounds.minLat, lat);
+      bounds.maxLat = Math.max(bounds.maxLat, lat);
+    });
+
+    // Add padding
+    const lngPad = (bounds.maxLng - bounds.minLng) * 0.2;
+    const latPad = (bounds.maxLat - bounds.minLat) * 0.2;
+
+    return {
+      minLng: bounds.minLng - lngPad,
+      maxLng: bounds.maxLng + lngPad,
+      minLat: bounds.minLat - latPad,
+      maxLat: bounds.maxLat + latPad
+    };
+  };
+
+  const isPointInPolygon = (point, polygon) => {
+    if (!Array.isArray(point) || point.length < 2) return false;
+    
     const x = point[0], y = point[1];
     let inside = false;
 
@@ -38,281 +176,90 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
     }
 
     return inside;
-  }, []);
-
-  const fetchCensusData = useCallback(async () => {
-    if (!map || !polygon) return null;
-    try {
-      const data = await getSelectedCensusTracts(map, polygon, isDarkMode);
-      censusDataRef.current = data;
-      return data;
-    } catch (error) {
-      console.error('Error fetching census data:', error);
-      return null;
-    }
-  }, [map, polygon, isDarkMode]);
-
-  const getCurrentTileset = useCallback(() => {
-    if (!currentDateTime) return null;
-    return TILESET_INFO.find(tileset => 
-      tileset.date === currentDateTime.date && 
-      currentDateTime.hour >= tileset.startHour && 
-      currentDateTime.hour <= tileset.endHour
-    );
-  }, [currentDateTime]);
-
-  const queryFeatures = useCallback((layerId, currentTime) => {
-    if (!map || !polygon) return [];
-    
-    try {
-      return map.queryRenderedFeatures(undefined, {
-        layers: [layerId],
-        filter: [
-          'all',
-          ['==', ['get', 'time'], currentTime]
-        ]
-      }).filter(feature => {
-        const coords = feature.geometry.coordinates;
-        return isPointInPolygon(coords, polygon);
-      });
-    } catch (error) {
-      console.error('Error querying features:', error);
-      return [];
-    }
-  }, [map, polygon, isPointInPolygon]);
-
-  const calculateExposure = useCallback(async (retryCount = 0) => {
-    if (!map || !polygon || !currentDateTime || !censusDataRef.current) return;
-
-    try {
-      const currentTime = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
-      const currentTileset = getCurrentTileset();
-
-      if (!currentTileset) {
-        console.warn('No tileset found for current time');
-        return;
-      }
-
-      const layerId = `layer-${currentTileset.id}`;
-      
-      // Check if layer exists and is loaded
-      if (!map.getLayer(layerId) || !map.isStyleLoaded()) {
-        if (retryCount < 3) {
-          // Retry with exponential backoff
-          const delay = Math.min(100 * Math.pow(2, retryCount), 1000);
-          retryTimeoutRef.current = setTimeout(() => {
-            calculateExposure(retryCount + 1);
-          }, delay);
-          return;
-        }
-        // If we've exhausted retries, use last valid stats
-        if (lastValidStatsRef.current) {
-          setStats(lastValidStatsRef.current);
-        }
-        return;
-      }
-
-      currentLayerRef.current = layerId;
-      const features = queryFeatures(layerId, currentTime);
-
-      // Initialize exposure categories
-      const exposureByPM25 = PM25_LEVELS.reduce((acc, category) => {
-        acc[category.label] = 0;
-        return acc;
-      }, {});
-
-      const totalPopulation = censusDataRef.current.summary.totalPopulation;
-      const numTracts = Object.keys(censusDataRef.current.tracts).length;
-
-      if (features.length > 0) {
-        const avgPM25 = features.reduce((sum, feature) => 
-          sum + parseFloat(feature.properties.PM25), 0) / features.length;
-
-        const category = PM25_LEVELS.find((level, index) => {
-          const nextLevel = PM25_LEVELS[index + 1];
-          return avgPM25 >= level.value && (!nextLevel || avgPM25 < nextLevel.value);
-        });
-        
-        if (category) {
-          exposureByPM25[category.label] = totalPopulation;
-        }
-      }
-
-      const newStats = {
-        censusStats: {
-          value: { totalPopulation, numTracts },
-          isLoading: false,
-          error: null
-        },
-        exposureByPM25: {
-          value: exposureByPM25,
-          isLoading: false,
-          error: null
-        }
-      };
-
-      // Only update if the data is valid
-      if (totalPopulation > 0) {
-        lastValidStatsRef.current = newStats;
-        setStats(newStats);
-      } else if (lastValidStatsRef.current) {
-        setStats(lastValidStatsRef.current);
-      }
-
-    } catch (error) {
-      console.error('Error calculating exposure:', error);
-      if (lastValidStatsRef.current) {
-        setStats(lastValidStatsRef.current);
-      }
-    }
-  }, [map, polygon, currentDateTime, getCurrentTileset, queryFeatures]);
-
-  // Handle initial census data loading
-  useEffect(() => {
-    const loadCensusData = async () => {
-      await fetchCensusData();
-      calculateExposure();
-    };
-
-    loadCensusData();
-
-    return () => {
-      censusDataRef.current = null;
-      lastValidStatsRef.current = null;
-    };
-  }, [fetchCensusData, calculateExposure]);
-
-  // Handle updates to time and map
-  useEffect(() => {
-    if (!map || !polygon || !currentDateTime || !censusDataRef.current) return;
-
-    if (updateTimeoutRef.current) {
-      clearTimeout(updateTimeoutRef.current);
-    }
-
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current);
-    }
-
-    updateTimeoutRef.current = setTimeout(() => {
-      calculateExposure();
-    }, 50);
-
-    return () => {
-      if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
-      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-    };
-  }, [map, polygon, currentDateTime, calculateExposure]);
-
-  // Handle map style updates
-  useEffect(() => {
-    if (!map) return;
-
-    const handleStyleData = () => {
-      if (censusDataRef.current) {
-        calculateExposure();
-      }
-    };
-
-    map.on('styledata', handleStyleData);
-
-    return () => {
-      map.off('styledata', handleStyleData);
-    };
-  }, [map, calculateExposure]);
+  };
 
   if (!polygon) return null;
 
-  if (stats.censusStats.error || stats.exposureByPM25.error) {
-    return (
-      <div className={`rounded-lg ${
-        isDarkMode ? 'bg-red-900/20 text-red-300' : 'bg-red-50 text-red-600'
-      } p-4`}>
-        <p className="text-sm">Error calculating population exposure</p>
-      </div>
-    );
-  }
-
-  const maxCategoryPopulation = stats.exposureByPM25.value ? 
-    Math.max(...Object.values(stats.exposureByPM25.value)) : 0;
-
   return (
-    <div className={`backdrop-blur-sm rounded-lg shadow-lg px-4 py-3 border-2 border-purple-500 ${
-      isDarkMode ? 'bg-gray-900/95 text-gray-200' : 'bg-white/95 text-gray-800'
+    <div className={`backdrop-blur-md rounded-xl border-2 border-purple-500 shadow-lg px-6 py-4 ${
+      isDarkMode ? 'bg-gray-900/95' : 'bg-white/95'
     }`}>
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Users2 className="w-5 h-5 text-purple-400" />
-          <div>
-            <div className={`text-sm font-medium ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-600'
-            }`}>Total Population</div>
-            <div className={`text-xl font-semibold ${
-              isDarkMode ? 'text-gray-100' : 'text-gray-900'
-            }`}>
-              {stats.censusStats.isLoading ? (
-                'Calculating...'
-              ) : (
-                <>
-                  {stats.censusStats.value?.totalPopulation?.toLocaleString() || '0'} 
-                  <span className={`text-sm font-normal ml-1 ${
-                    isDarkMode ? 'text-gray-500' : 'text-gray-500'
-                  }`}>
-                    in {stats.censusStats.value?.numTracts || 0} tracts
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Users2 className="w-5 h-5 text-purple-400" />
+        <div>
           <div className={`text-sm font-medium ${
             isDarkMode ? 'text-gray-400' : 'text-gray-600'
-          }`}>Population by PM2.5 Level</div>
-          {!stats.exposureByPM25.isLoading && stats.exposureByPM25.value && (
-            <div className="space-y-2">
-              {PM25_LEVELS.map(category => {
-                const population = stats.exposureByPM25.value[category.label] || 0;
-                if (population === 0) return null;
-
-                const percentage = stats.censusStats.value?.totalPopulation ? 
-                  (population / stats.censusStats.value.totalPopulation * 100).toFixed(1) : 0;
-
-                return (
-                  <div key={category.label} className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className={`font-medium ${
-                        isDarkMode ? 'text-gray-300' : 'text-gray-600'
-                      }`}>
-                        {category.label}
-                      </span>
-                      <div className="text-right">
-                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                          {population.toLocaleString()} ({percentage}%)
-                        </span>
-                        <div className={`text-xs ${
-                          isDarkMode ? 'text-gray-500' : 'text-gray-400'
-                        }`}>
-                          {category.value} μg/m³
-                        </div>
-                      </div>
-                    </div>
-                    <div className={`h-2 w-full rounded-full overflow-hidden ${
-                      isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
-                    }`}>
-                      <div 
-                        className={`h-full ${category.color} transition-all duration-300`}
-                        style={{ width: `${(population / maxCategoryPopulation * 100).toFixed(1)}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          }`}>Total Population</div>
+          <div className={`text-xl font-semibold ${
+            isDarkMode ? 'text-gray-100' : 'text-gray-900'
+          }`}>
+            {stats.censusStats.isLoading ? (
+              'Calculating...'
+            ) : stats.censusStats.error ? (
+              'Error calculating population'
+            ) : (
+              <>
+                {stats.censusStats.value?.totalPopulation?.toLocaleString() || '0'}
+                <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {stats.censusStats.tractCount} Census Tracts
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
+
+      <div className="mt-4">
+        <div className={`text-sm font-medium mb-2 ${
+          isDarkMode ? 'text-gray-400' : 'text-gray-600'
+        }`}>Population by PM2.5 Level</div>
+        
+        {stats.exposureByPM25.error ? (
+          <div className={`text-sm ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+          }`}>
+            {stats.exposureByPM25.error}
+          </div>
+        ) : !stats.exposureByPM25.isLoading && stats.exposureByPM25.value && (
+          <div className={`mt-2 rounded-lg ${
+              isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50/50'
+            } p-3 space-y-2`}>
+            {PM25_LEVELS.map(category => {
+              const population = stats.exposureByPM25.value[category.label] || 0;
+              if (population === 0) return null;
+
+              const percentage = stats.censusStats.value?.totalPopulation ?
+                (population / stats.censusStats.value.totalPopulation * 100).toFixed(1) : 0;
+
+              return (
+                <div key={category.label} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+                      {category.label}
+                    </span>
+                    <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                      {population.toLocaleString()} ({percentage}%)
+                    </span>
+                  </div>
+                  <div className={`h-2 w-full rounded-lg overflow-hidden ${
+                    isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+                  }`}>
+                    <div
+                      className="h-full transition-all duration-300"
+                      style={{
+                        width: `${percentage}%`,
+                        backgroundColor: category.darkColor || category.color
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
     </div>
   );
 };

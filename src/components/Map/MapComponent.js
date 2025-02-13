@@ -1,9 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Map from 'react-map-gl';
-import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { START_DATE, MAPBOX_TOKEN } from '../../utils/map/constants.js'; 
-import { fetchCensusPopulation, getPopulationLayerConfig, getPopupContent } from '../../utils/map/census-api';
 import getSelectedCensusTracts, { cleanupHighlightLayers } from '../../utils/map/censusAnalysis';
 import { useMapLayers } from '../../hooks/map/useMapLayers';
 import { useTimeAnimation } from '../../hooks/map/useTimeAnimation';
@@ -17,6 +15,7 @@ import DrawingTooltip from './DrawingTooltip';
 import PopulationExposureCounter from './controls/PopulationExposureCounter';
 import handleEnhancedMapClick  from './controls/handleEnhancedMapClick.js';
 import ZoomControls from './controls/ZoomControls';
+import { setupCensusLayers, updateCensusLayerColors } from '../../utils/map/censusLayers.js';
 
 const MapComponent = () => {
   const mapRef = useRef(null);
@@ -49,8 +48,12 @@ const MapComponent = () => {
     if (currentBasemap !== BASEMAPS.satellite.url) {
       setCurrentBasemap(darkMode ? BASEMAPS.darkMatter.url : BASEMAPS.light.url);
     }
-  }, [currentBasemap]);
-
+    
+    // Update census layer colors when theme changes
+    if (mapInstance) {
+      updateCensusLayerColors(mapInstance, darkMode);
+    }
+  }, [currentBasemap, mapInstance]);
 
   const handleMapInteraction = useCallback((evt) => {
     if (isMapLoaded) {
@@ -62,20 +65,19 @@ const MapComponent = () => {
     if (!map || !map.getStyle()) return;
     
     try {
-      // Add source if it doesn't exist
       if (!map.getSource('census-tracts')) {
         map.addSource('census-tracts', {
           type: 'vector',
-          url: 'mapbox://pkulandh.Utah_CT'
+          url: 'mapbox://pkulandh.3r0plqr0'
         });
       }
-
+  
       if (!map.getLayer('census-tracts-layer')) {
         map.addLayer({
           id: 'census-tracts-layer',
           type: 'fill',
           source: 'census-tracts',
-          'source-layer': 'Utah_CT_layer',
+          'source-layer': 'cb_2019_us_tract_500k-2qnt3v',
           paint: {
             'fill-color': isDarkMode ? '#374151' : '#6B7280',
             'fill-opacity': 0,
@@ -87,30 +89,12 @@ const MapComponent = () => {
         map.setPaintProperty('census-tracts-layer', 'fill-opacity', 0);
         map.setPaintProperty('census-tracts-layer', 'fill-outline-color', isDarkMode ? '#4B5563' : '#374151');
       }
-
-      if (!map.getLayer('census-tracts-outline')) {
-        map.addLayer({
-          id: 'census-tracts-outline',
-          type: 'line',
-          source: 'census-tracts',
-          'source-layer': 'Utah_CT_layer',
-          paint: {
-            'line-color': isDarkMode ? '#4B5563' : '#374151',
-            'line-width': 1,
-            'line-opacity': 0
-          }
-        });
-      } else {
-        map.setPaintProperty('census-tracts-outline', 'line-color', isDarkMode ? '#4B5563' : '#374151');
-        map.setPaintProperty('census-tracts-outline', 'line-opacity', 0);
-      }
-
+  
       console.log('Census tract layers setup complete');
     } catch (error) {
       console.error('Error setting up census tract layers:', error);
     }
-  }, []);
-
+  });
 
   const handleMapLoad = useCallback(() => {
     console.log('Map loaded, initializing...');
@@ -212,7 +196,7 @@ const MapComponent = () => {
 
   const clearPolygon = useCallback(() => {
     if (polygon) {
-      cleanupHighlightLayers(mapInstance, polygon);
+      cleanupHighlightLayers(mapInstance);
     }
     setPolygon(null);
     setTempPolygon([]);
@@ -255,7 +239,7 @@ const MapComponent = () => {
 
   useEffect(() => {
     if (!mapInstance) return;
-
+  
     const handleStyleData = () => {
       if (needsLayerReinitRef.current) {
         console.log('Reinitializing layers after style change');
@@ -264,7 +248,7 @@ const MapComponent = () => {
         needsLayerReinitRef.current = false;
       }
     };
-
+  
     mapInstance.on('styledata', handleStyleData);
     return () => mapInstance.off('styledata', handleStyleData);
   }, [mapInstance, isDarkMode, setupCensusLayers, updateLayers]);
@@ -276,7 +260,6 @@ const MapComponent = () => {
       setupCensusLayers(mapInstance, isDarkMode);
     }
   }, [mapInstance, isMapLoaded, updateLayers, setupCensusLayers, isDarkMode]);
-
 
   // Polygon rendering effect
   useEffect(() => {

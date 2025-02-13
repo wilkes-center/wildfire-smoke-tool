@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Map from 'react-map-gl';
-import { Map as MapIcon, X } from 'lucide-react';
+import { Map as MapIcon } from 'lucide-react';
 import { TILESET_INFO } from '../../../utils/map/constants.js';
-import { Tooltip } from '../Tooltip';
-import { getPM25ColorInterpolation, NEON_PM25_COLORS } from '../../../utils/map/colors';
+import { getPM25ColorInterpolation } from '../../../utils/map/colors';
 import ThemedPanel from './ThemedPanel';
 const MapAdditionalControls = ({ 
   map, 
@@ -149,37 +148,47 @@ const MapAdditionalControls = ({
     });
   }, [isDarkMode]);
 
-  // Update layer visibility and filters
   const updateLayers = useCallback(() => {
     const minimap = minimapRef.current?.getMap();
     if (!minimap || !currentDateTime || !layersInitializedRef.current) return;
-
+  
     try {
       const time = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
-
+  
       TILESET_INFO.forEach((tileset) => {
         const layerId = `minimap-layer-${tileset.id}`;
         if (!minimap.getLayer(layerId)) return;
-
-        minimap.setFilter(layerId, [
+  
+        // Ensure all filter values are valid and non-undefined
+        const filterExpression = [
           'all',
           ['==', ['get', 'time'], time],
-          ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
-        ]);
-
-        const isCurrentTileset = (
-          tileset.date === currentDateTime.date && 
-          currentDateTime.hour >= tileset.startHour && 
-          currentDateTime.hour <= tileset.endHour
-        );
-
-        minimap.setLayoutProperty(
-          layerId,
-          'visibility',
-          isCurrentTileset ? 'visible' : 'none'
-        );
+          ['>=', 
+            ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], 
+            pm25Threshold || 0 // Provide default value if pm25Threshold is undefined
+          ]
+        ];
+  
+        // Set filter and layer visibility
+        try {
+          minimap.setFilter(layerId, filterExpression);
+  
+          const isCurrentTileset = (
+            tileset.date === currentDateTime.date && 
+            currentDateTime.hour >= tileset.startHour && 
+            currentDateTime.hour <= tileset.endHour
+          );
+  
+          minimap.setLayoutProperty(
+            layerId,
+            'visibility',
+            isCurrentTileset ? 'visible' : 'none'
+          );
+        } catch (error) {
+          console.error(`Error updating layer ${layerId}:`, error);
+        }
       });
-
+  
       // Update colors when layers are updated
       updateLayerColors(minimap);
     } catch (error) {
