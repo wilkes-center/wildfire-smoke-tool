@@ -33,7 +33,7 @@ const MapComponent = () => {
     minZoom: 4.5,
     maxZoom: 9,
   });
-  const [pm25Threshold, setPM25Threshold] = useState(0);
+  const [pm25Threshold, setPM25Threshold] = useState(1);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentBasemap, setCurrentBasemap] = useState(BASEMAPS.light.url);
   const [drawingMode, setDrawingMode] = useState(false);
