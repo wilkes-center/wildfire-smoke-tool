@@ -19,13 +19,11 @@ export const useMapLayers = (
   const MAX_LOADED_CHUNKS = 12;
 
   
-  // Helper function to get relevant tilesets for a given date and hour
   const getRelevantTilesets = useCallback((date, hour, count = CHUNKS_TO_PRELOAD) => {
     const tilesets = new Set();
     let currentDate = new Date(date);
     let currentHour = hour;
 
-    // Add current tileset
     const currentTileset = TILESET_INFO.find(tileset => 
       tileset.date === currentDate.toISOString().split('T')[0] && 
       currentHour >= tileset.startHour && 
@@ -33,7 +31,6 @@ export const useMapLayers = (
     );
     if (currentTileset) tilesets.add(currentTileset);
 
-    // Add future tilesets
     for (let i = 0; i < count; i++) {
       currentHour++;
       if (currentHour >= 24) {
@@ -50,7 +47,6 @@ export const useMapLayers = (
       if (nextTileset) tilesets.add(nextTileset);
     }
 
-    // Add previous tileset for smooth transitions
     currentDate = new Date(date);
     currentHour = hour - 1;
     if (currentHour < 0) {
@@ -58,7 +54,7 @@ export const useMapLayers = (
       currentDate.setDate(currentDate.getDate() - 1);
     }
 
-    const prevTileset = TILESET_INFO.find(tileset => 
+    const prevTileset = TILESET_INFO.find(tileset =>  
       tileset.date === currentDate.toISOString().split('T')[0] && 
       currentHour >= tileset.startHour && 
       currentHour <= tileset.endHour
@@ -75,7 +71,6 @@ export const useMapLayers = (
     const chunksToKeep = new Set([currentTilesetId]);
     const { date, hour } = getCurrentDateTime();
     
-    // Add IDs of chunks we want to keep
     getRelevantTilesets(new Date(date), hour).forEach(tileset => 
       chunksToKeep.add(tileset.id)
     );
@@ -139,8 +134,6 @@ export const useMapLayers = (
           'circle-opacity',
           isDarkMode ? 0.6 : 0.4
         );
-
-        // Ensure current layer remains visible with correct filter
         if (layerId === currentLayerId) {
           map.setFilter(layerId, [
             'all',
@@ -155,12 +148,10 @@ export const useMapLayers = (
 
   
 
-  // Initialize or reinitialize layers
   const initializeLayers = useCallback((map) => {
     if (!map || !map.getStyle()) return;
 
     try {
-      // Clean up existing layers first
       loadedLayersRef.current.forEach(layerId => {
         if (map.getLayer(layerId)) {
           map.removeLayer(layerId);
@@ -173,23 +164,19 @@ export const useMapLayers = (
         }
       });
 
-      // Reset tracking sets
       loadedLayersRef.current.clear();
       loadedSourcesRef.current.clear();
       preloadedChunksRef.current.clear();
       previousChunkRef.current = null;
 
-      // Get current date and time
       const { date, hour } = getCurrentDateTime();
       
-      // Initialize relevant tilesets
       const relevantTilesets = getRelevantTilesets(new Date(date), hour);
       
       relevantTilesets.forEach(tileset => {
         const sourceId = `source-${tileset.id}`;
         const layerId = `layer-${tileset.id}`;
 
-        // Add source
         if (!map.getSource(sourceId)) {
           map.addSource(sourceId, {
             type: 'vector',

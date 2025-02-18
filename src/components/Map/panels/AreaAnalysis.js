@@ -28,69 +28,53 @@ const CustomTooltip = ({ active, payload, label, isDarkMode }) => {
 
 const CustomXAxisTick = ({ x, y, payload, isDarkMode }) => {
   const [date, time] = payload.value.split(' ');
+  const hour = parseInt(time);
+  
+  // Show hour every 3 hours
+  const showHour = hour % 6 === 0;
+  // Show date at midnight
+  const showDate = hour === 0;
 
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <text
-        x={0}
-        y={0}
-        dy={16}
-        textAnchor="end"
-        fill={(isDarkMode ? '#9CA3AF' : '#6B7280')}
-        transform="rotate(-45)"
-        style={{ fontSize: '11px' }}
-      >
-        {time}
-      </text>
-    </g>
+  if (!showHour && !showDate) return null;
+
+  const content = showDate ? (
+    <text
+      x={x}
+      y={y + 35}
+      textAnchor="middle"
+      fill={isDarkMode ? '#9CA3AF' : '#6B7280'}
+      style={{ fontSize: '12px', fontWeight: 'bold' }}
+    >
+      {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+    </text>
+  ) : (
+    <text
+      x={x}
+      y={y + 20}
+      textAnchor="middle"
+      fill={isDarkMode ? '#9CA3AF' : '#6B7280'}
+      style={{ fontSize: '12px' }}
+    >
+      {`${hour}:00`}
+    </text>
   );
+
+  return content;
 };
 
-const LegendContent = ({ isDarkMode }) => (
-  <div className={`absolute top-2 right-2 flex items-center gap-3 px-2 py-1 rounded ${
-    isDarkMode ? 'bg-gray-800/80' : 'bg-white/80'
-  }`}>
-    <div className="flex items-center gap-1">
-      <div className="w-2 h-2 rounded-full bg-[#c52222]"></div>
-      <span className={isDarkMode ? 'text-xs text-gray-400' : 'text-xs text-gray-600'}>Max</span>
-    </div>
-    <div className="flex items-center gap-1">
-      <div className="w-2 h-2 rounded-full bg-[#3B82F6]"></div>
-      <span className={isDarkMode ? 'text-xs text-gray-400' : 'text-xs text-gray-600'}>Avg</span>
-    </div>
-    <div className="flex items-center gap-1">
-      <div className="w-2 h-2 rounded-full bg-[#76f163]"></div>
-      <span className={isDarkMode ? 'text-xs text-gray-400' : 'text-xs text-gray-600'}>Min</span>
-    </div>
-  </div>
+const DateSeparator = ({ x, isDarkMode }) => (
+  <line
+    x1={x}
+    y1={0}
+    x2={x}
+    y2="100%"
+    stroke={isDarkMode ? '#4B5563' : '#E5E7EB'}
+    strokeWidth={1}
+    strokeDasharray="3 3"
+  />
 );
 
-const getPM25Style = (value, isDarkMode) => {
-  if (value <= 12) return {
-    color: '#16a34a',
-    background: isDarkMode ? 'rgba(22, 163, 74, 0.1)' : 'rgba(22, 163, 74, 0.1)'
-  };
-  if (value <= 35.5) return {
-    color: '#ca8a04',
-    background: isDarkMode ? 'rgba(202, 138, 4, 0.1)' : 'rgba(202, 138, 4, 0.1)'
-  };
-  if (value <= 55.5) return {
-    color: '#ea580c',
-    background: isDarkMode ? 'rgba(234, 88, 12, 0.1)' : 'rgba(234, 88, 12, 0.1)'
-  };
-  if (value <= 150.5) return {
-    color: '#dc2626',
-    background: isDarkMode ? 'rgba(220, 38, 38, 0.1)' : 'rgba(220, 38, 38, 0.1)'
-  };
-  if (value <= 250.5) return {
-    color: '#9333ea',
-    background: isDarkMode ? 'rgba(147, 51, 234, 0.1)' : 'rgba(147, 51, 234, 0.1)'
-  };
-  return {
-    color: '#881337',
-    background: isDarkMode ? 'rgba(136, 19, 55, 0.1)' : 'rgba(136, 19, 55, 0.1)'
-  };
-};
+
 
 const StatsTable = ({ data, isDarkMode }) => {
   const headerStyles = {
@@ -177,65 +161,101 @@ const StatsTable = ({ data, isDarkMode }) => {
   );
 };
 
-const StatsChart = ({ data, isDarkMode }) => (
-  <div className={`h-[320px] w-full relative ${
-    isDarkMode ? 'bg-gray-800/30' : 'bg-white/30'
-  }`}>
-    <ResponsiveContainer>
-      <LineChart 
-        data={data} 
-        margin={{ top: 20, right: 10, left: -20, bottom: 25 }}
-      >
-        <CartesianGrid 
-          strokeDasharray="3 3" 
-          stroke={isDarkMode ? '#374151' : '#E5E7EB'} 
-        />
-        <XAxis 
-          dataKey="time"
-          height={45}
-          tick={<CustomXAxisTick isDarkMode={isDarkMode} />}
-          tickMargin={15}
-          axisLine={{ stroke: isDarkMode ? '#374151' : '#E5E7EB' }}
-          interval={0}
-        />
-        <YAxis 
-          tick={{ 
-            fill: isDarkMode ? '#9CA3AF' : '#6B7280', 
-            fontSize: 12 
-          }}
-          domain={[0, 'dataMax + 10']}
-          axisLine={{ stroke: isDarkMode ? '#374151' : '#E5E7EB' }}
-        />
-        <Tooltip content={<CustomTooltip isDarkMode={isDarkMode} />} />
-        <Line 
-          type="monotone" 
-          dataKey="maxPM25"
-          name="Max PM2.5" 
-          stroke="#c52222"
-          strokeWidth={2}
-          dot={false}
-        />
-        <Line 
-          type="monotone" 
-          dataKey="averagePM25"
-          name="Average PM2.5" 
-          stroke="#3B82F6" 
-          strokeWidth={2}
-          dot={false}
-        />
-        <Line 
-          type="monotone" 
-          dataKey="minPM25"
-          name="Min PM2.5" 
-          stroke="#76f163"
-          strokeWidth={2}
-          dot={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
-    <LegendContent isDarkMode={isDarkMode} />
-  </div>
-);
+const AreaStatsChart = ({ data, isDarkMode }) => {
+  // Find date change points
+  const dateChangePoints = data.reduce((acc, item, index) => {
+    if (index === 0) return acc;
+    const [prevDate] = data[index - 1].time.split(' ');
+    const [currentDate] = item.time.split(' ');
+    if (prevDate !== currentDate) {
+      acc.push(index);
+    }
+    return acc;
+  }, []);
+
+  return (
+    <div className={`h-[320px] w-full relative ${
+      isDarkMode ? 'bg-gray-800/30' : 'bg-white/30'
+    }`}>
+      <ResponsiveContainer>
+        <LineChart 
+          data={data}
+          margin={{ top: 20, right: 10, left: -20, bottom: 45 }}
+        >
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            stroke={isDarkMode ? '#374151' : '#E5E7EB'}
+            vertical={false}
+          />
+          {dateChangePoints.map((index) => (
+            <DateSeparator 
+              key={index}
+              x={`${(index / (data.length - 1)) * 100}%`}
+              isDarkMode={isDarkMode}
+            />
+          ))}
+          <XAxis 
+            dataKey="time"
+            height={60}
+            tick={<CustomXAxisTick isDarkMode={isDarkMode} />}
+            interval={0}
+            axisLine={{ stroke: isDarkMode ? '#374151' : '#E5E7EB' }}
+          />
+          <YAxis 
+            tick={{ 
+              fill: isDarkMode ? '#9CA3AF' : '#6B7280',
+              fontSize: 12 
+            }}
+            domain={[0, 'dataMax + 10']}
+            axisLine={{ stroke: isDarkMode ? '#374151' : '#E5E7EB' }}
+          />
+          <Tooltip content={<CustomTooltip isDarkMode={isDarkMode} />} />
+          <Line 
+            type="monotone"
+            dataKey="maxPM25"
+            name="Max PM2.5"
+            stroke="#c52222"
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line 
+            type="monotone"
+            dataKey="averagePM25"
+            name="Average PM2.5"
+            stroke="#3B82F6"
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line 
+            type="monotone"
+            dataKey="minPM25"
+            name="Min PM2.5"
+            stroke="#76f163"
+            strokeWidth={2}
+            dot={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+      
+      <div className={`absolute top-2 right-2 flex items-center gap-3 px-2 py-1 rounded ${
+        isDarkMode ? 'bg-gray-800/80' : 'bg-white/80'
+      }`}>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-[#c52222]"></div>
+          <span className={isDarkMode ? 'text-xs text-gray-400' : 'text-xs text-gray-600'}>Max</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-[#3B82F6]"></div>
+          <span className={isDarkMode ? 'text-xs text-gray-400' : 'text-xs text-gray-600'}>Avg</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-[#76f163]"></div>
+          <span className={isDarkMode ? 'text-xs text-gray-400' : 'text-xs text-gray-600'}>Min</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const AreaAnalysis = ({ 
   map, 
@@ -245,11 +265,40 @@ const AreaAnalysis = ({
   isDarkMode,
   onExpandChange 
 }) => {
+  // Existing state declarations
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState('chart');
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Add the clearAreaStatistics function here
+  const clearAreaStatistics = useCallback(() => {
+    setData([]);
+    setError(null);
+    setIsExpanded(false);
+    setActiveTab('chart');
+    setIsLoading(false);
+    onExpandChange?.(false);
+  }, [onExpandChange]);
+
+  // Add the effect here
+  useEffect(() => {
+    if (!polygon) {
+      clearAreaStatistics();
+    }
+
+    const handleClearEvent = () => {
+      clearAreaStatistics();
+    };
+
+    window.addEventListener('clearAreaStatistics', handleClearEvent);
+
+    return () => {
+      window.removeEventListener('clearAreaStatistics', handleClearEvent);
+    };
+  }, [polygon, clearAreaStatistics]);
+
 
   const formatChartData = useCallback((stats) => {
     return stats.flatMap(tilesetStats =>
@@ -321,11 +370,7 @@ const AreaAnalysis = ({
     }
   }, [polygon, onExpandChange]);
 
-  const handleClose = () => {
-    const newState = !isExpanded;
-    setIsExpanded(newState);
-    onExpandChange?.(newState);
-  };
+
 
   const handleToggleExpand = () => {
     const newState = !isExpanded;
@@ -407,7 +452,7 @@ const AreaAnalysis = ({
           {!isLoading && !error && data.length > 0 && (
             <>
               {activeTab === 'chart' && (
-                <StatsChart data={data} isDarkMode={isDarkMode} />
+                <AreaStatsChart data={data} isDarkMode={isDarkMode} />
               )}
               
               {activeTab === 'table' && (

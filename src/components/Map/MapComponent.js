@@ -239,17 +239,28 @@ const MapComponent = () => {
 
   const clearPolygon = useCallback(() => {
     if (polygon) {
+      // Clean up census highlight layers
       cleanupHighlightLayers(mapInstance);
     }
+    // Clear polygon state
     setPolygon(null);
     setTempPolygon([]);
     setDrawingMode(false);
     setIsPlaying(false);
     setIsPointSelected(false);
+  
+    // Clear area statistics data
+    const analysisComponent = document.querySelector('[data-component="area-analysis"]');
+    if (analysisComponent) {
+      analysisComponent.dispatchEvent(new CustomEvent('clearData'));
+    }
+  
+    // Reset cursor
     if (mapInstance) {
       mapInstance.getCanvas().style.cursor = '';
     }
   }, [mapInstance, polygon, setIsPlaying]);
+
 
   // Update cursor based on whether point selection is allowed
   const getCursor = useCallback(() => {

@@ -3,6 +3,7 @@ import { Users2 } from 'lucide-react';
 import _ from 'lodash';
 import getSelectedCensusTracts from '../../../utils/map/censusAnalysis';
 import { PM25_LEVELS, TILESET_INFO } from '../../../utils/map/constants';
+import { NEON_PM25_COLORS } from '../../../utils/map/colors';
 
 const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }) => {
   const [stats, setStats] = useState({
@@ -19,7 +20,9 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
     }
   });
 
-  // Cache reference to avoid unnecessary recalculations
+  // Keep track of census data separately to avoid recalculation
+  const censusDataRef = useRef(null);
+  
   const lastCalculation = useRef({
     polygon: null,
     time: null,
@@ -34,8 +37,50 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
     );
   }, []);
 
+  // Helper function to determine PM2.5 category
+  const getPM25Category = (pm25Value) => {
+    return PM25_LEVELS.find((level, index) => {
+      const nextLevel = PM25_LEVELS[index + 1];
+      return pm25Value >= level.value && (!nextLevel || pm25Value < nextLevel.value);
+    });
+  };
+
+  // Fetch census data independently of PM2.5 calculations
+  const updateCensusData = useCallback(async () => {
+    if (!map || !polygon) return;
+
+    try {
+      const data = await getSelectedCensusTracts(map, polygon, isDarkMode);
+      censusDataRef.current = data;
+      
+      setStats(prev => ({
+        ...prev,
+        censusStats: {
+          value: { 
+            totalPopulation: data.summary.totalPopulation,
+            avgPM25: prev.censusStats.value?.avgPM25 || 0 
+          },
+          isLoading: false,
+          error: null,
+          tractCount: Object.keys(data.tracts).length
+        }
+      }));
+    } catch (error) {
+      console.error('Error fetching census data:', error);
+      setStats(prev => ({
+        ...prev,
+        censusStats: {
+          value: null,
+          isLoading: false,
+          error: 'Failed to fetch census data',
+          tractCount: 0
+        }
+      }));
+    }
+  }, [map, polygon, isDarkMode]);
+
   const calculateExposure = useCallback(async () => {
-    if (!map || !polygon || !currentDateTime) {
+    if (!map || !polygon || !currentDateTime || !censusDataRef.current) {
       return;
     }
 
@@ -46,7 +91,10 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
     if (lastCalculation.current.polygon === polygon && 
         lastCalculation.current.time === timeKey &&
         lastCalculation.current.result) {
-      setStats(lastCalculation.current.result);
+      setStats(prev => ({
+        ...prev,
+        exposureByPM25: lastCalculation.current.result.exposureByPM25
+      }));
       return;
     }
 
@@ -64,7 +112,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
         setStats(prev => ({
           ...prev,
           exposureByPM25: {
-            value: null,
+            value: prev.exposureByPM25.value, // Maintain previous values
             isLoading: false,
             error: 'Loading data for this time period...'
           }
@@ -72,13 +120,10 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
         return;
       }
 
-      // Get census data (this is already cached internally)
-      const censusData = await getSelectedCensusTracts(map, polygon, isDarkMode);
-      const totalPopulation = censusData.summary.totalPopulation;
-
+      const totalPopulation = censusDataRef.current.summary.totalPopulation;
       const timeString = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
 
-      // Calculate bounds for the polygon
+      // Calculate bounds
       const bounds = {
         minLng: Math.min(...polygon.map(p => p[0])),
         maxLng: Math.max(...polygon.map(p => p[0])),
@@ -86,7 +131,6 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
         maxLat: Math.max(...polygon.map(p => p[1]))
       };
 
-      // Add padding
       const lngPad = (bounds.maxLng - bounds.minLng) * 0.2;
       const latPad = (bounds.maxLat - bounds.minLat) * 0.2;
       bounds.minLng -= lngPad;
@@ -105,9 +149,9 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
         return isPointInPolygon(feature.geometry.coordinates, polygon);
       });
 
-      // Initialize exposure categories
+      // Initialize exposure categories with the total population for Good category
       const exposureByPM25 = PM25_LEVELS.reduce((acc, level) => {
-        acc[level.label] = 0;
+        acc[level.label] = level.label === 'Good' ? totalPopulation : 0;
         return acc;
       }, {});
 
@@ -120,14 +164,19 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
           return isNaN(pm25) ? sum : sum + pm25;
         }, 0) / features.length;
 
-        // Find appropriate PM2.5 level
-        const category = PM25_LEVELS.find((level, index) => {
-          const nextLevel = PM25_LEVELS[index + 1];
-          return calculatedAvgPM25 >= level.value && (!nextLevel || calculatedAvgPM25 < nextLevel.value);
-        });
+        // Get category for the average PM2.5
+        const category = getPM25Category(calculatedAvgPM25);
 
         if (category) {
-          exposureByPM25[category.label] = totalPopulation;
+          // Set population for the current category and all lower categories
+          const categoryIndex = PM25_LEVELS.findIndex(level => level.label === category.label);
+          
+          // Distribute population across relevant categories
+          PM25_LEVELS.forEach((level, index) => {
+            if (index <= categoryIndex) {
+              exposureByPM25[level.label] = totalPopulation;
+            }
+          });
         }
       }
 
@@ -136,7 +185,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
           value: { totalPopulation, avgPM25: calculatedAvgPM25 },
           isLoading: false,
           error: null,
-          tractCount: Object.keys(censusData.tracts).length
+          tractCount: Object.keys(censusDataRef.current.tracts).length
         },
         exposureByPM25: {
           value: exposureByPM25,
@@ -156,16 +205,22 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
 
     } catch (error) {
       console.error('Error calculating exposure:', error);
+      // Maintain previous exposure values in case of error
       setStats(prev => ({
         ...prev,
         exposureByPM25: {
-          value: null,
+          value: prev.exposureByPM25.value,
           isLoading: false,
           error: 'Failed to calculate exposure'
         }
       }));
     }
-  }, [map, polygon, currentDateTime, isDarkMode, getCurrentTilesetInfo]);
+  }, [map, polygon, currentDateTime, getCurrentTilesetInfo]);
+
+  // Update census data when polygon changes
+  useEffect(() => {
+    updateCensusData();
+  }, [updateCensusData]);
 
   // Debounced version of calculateExposure
   const debouncedCalculateExposure = useCallback(
@@ -174,7 +229,9 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
   );
 
   useEffect(() => {
-    debouncedCalculateExposure();
+    if (censusDataRef.current) {
+      debouncedCalculateExposure();
+    }
     return () => debouncedCalculateExposure.cancel();
   }, [debouncedCalculateExposure]);
 
@@ -236,20 +293,22 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
                   <div key={category.label} className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                        {category.label}
+                        {category.label} ({category.value}+)
                       </span>
                       <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                         {population.toLocaleString()} ({percentage}%)
                       </span>
                     </div>
-                    <div className={`h-2 w-full rounded-lg overflow-hidden ${
+                                          <div className={`h-2 w-full rounded-lg overflow-hidden ${
                       isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
                     }`}>
                       <div
                         className="h-full transition-all duration-300"
                         style={{
                           width: `${percentage}%`,
-                          backgroundColor: category.darkColor || category.color
+                          backgroundColor: isDarkMode ? 
+                            NEON_PM25_COLORS.darkMode[category.label.toLowerCase().replace(/\s+/g, '')] || '#00ff9d' : 
+                            NEON_PM25_COLORS.lightMode[category.label.toLowerCase().replace(/\s+/g, '')] || '#00e400'
                         }}
                       />
                     </div>

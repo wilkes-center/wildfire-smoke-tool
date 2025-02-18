@@ -16,6 +16,8 @@ const PM25ThresholdSlider = ({
   isDarkMode 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [inputValue, setInputValue] = useState(pm25Threshold.toString());
+  const [isEditing, setIsEditing] = useState(false);
 
   const valueToPosition = (value) => {
     for (let i = 0; i < PM25_LEVELS.length - 1; i++) {
@@ -58,6 +60,32 @@ const PM25ThresholdSlider = ({
     const position = parseFloat(e.target.value);
     const value = positionToValue(position);
     setPM25Threshold(value);
+    setInputValue(value.toFixed(1));
+  };
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setInputValue(value);
+  };
+
+  const handleInputBlur = () => {
+    setIsEditing(false);
+    let newValue = parseFloat(inputValue);
+    
+    if (isNaN(newValue)) {
+      newValue = pm25Threshold;
+    } else {
+      newValue = Math.max(0, Math.min(500, newValue));
+    }
+    
+    setPM25Threshold(newValue);
+    setInputValue(newValue.toFixed(1));
+  };
+
+  const handleInputKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleInputBlur();
+    }
   };
 
   const currentLevel = getCurrentLevel(pm25Threshold);
@@ -65,7 +93,7 @@ const PM25ThresholdSlider = ({
 
   return (
     <div 
-      onClick={() => setIsExpanded(!isExpanded)}
+      onClick={() => !isEditing && setIsExpanded(!isExpanded)}
       className={`backdrop-blur-sm rounded-xl shadow-lg px-6 py-3 flex items-center cursor-pointer transition-all duration-300 ${
         isDarkMode ? 'bg-gray-800/95 text-gray-200' : 'bg-white/95 text-gray-800'
       }`}
@@ -74,14 +102,37 @@ const PM25ThresholdSlider = ({
         PM2.5
       </div>
       <div className={`w-px h-6 mx-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
-      <div className="text-xl font-medium flex items-center gap-2">
-        <span style={{ color: currentLevel?.color }}>
-          {pm25Threshold.toFixed(0)}+
-        </span>
+      <div 
+        className="text-xl font-medium flex items-center gap-2"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsEditing(true);
+        }}
+      >
+        {isEditing ? (
+          <input
+            type="text"
+            value={inputValue}
+            onChange={handleInputChange}
+            onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
+            className={`w-16 px-2 py-1 rounded text-center ${
+              isDarkMode 
+                ? 'bg-gray-700 text-gray-200 focus:bg-gray-600' 
+                : 'bg-gray-100 text-gray-800 focus:bg-white'
+            } focus:outline-none focus:ring-2 focus:ring-purple-500`}
+            autoFocus
+          />
+        ) : (
+          <span style={{ color: currentLevel?.color }}>
+            {pm25Threshold.toFixed(1)}+
+          </span>
+        )}
       </div>
 
-      {isExpanded && (
-        <div className="absolute left-0 right-0 top-full mt-2 backdrop-blur-sm rounded-xl shadow-lg px-6 py-4 cursor-default"
+      {isExpanded && !isEditing && (
+        <div 
+          className="absolute left-0 right-0 top-full mt-2 backdrop-blur-sm rounded-xl shadow-lg px-6 py-4 cursor-default"
           onClick={(e) => e.stopPropagation()}
           style={{
             backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)'
