@@ -61,18 +61,31 @@ const MapComponent = () => {
     }
   }, [isMapLoaded]);
 
+  const layerSetupComplete = useRef(false);
+
   const setupCensusLayers = useCallback((map, isDarkMode) => {
-    if (!map || !map.getStyle()) return;
-    
+    if (!map || !map.getStyle() || layerSetupComplete.current) return;
+  
     try {
-      if (!map.getSource('census-tracts')) {
+      // Check if layers already exist
+      const hasSource = map.getSource('census-tracts');
+      const hasLayer = map.getLayer('census-tracts-layer');
+      
+      if (hasSource && hasLayer) {
+        // Just update colors if needed
+        map.setPaintProperty('census-tracts-layer', 'fill-color', isDarkMode ? '#374151' : '#6B7280');
+        map.setPaintProperty('census-tracts-layer', 'fill-outline-color', isDarkMode ? '#4B5563' : '#374151');
+        return;
+      }
+  
+      if (!hasSource) {
         map.addSource('census-tracts', {
           type: 'vector',
           url: 'mapbox://pkulandh.3r0plqr0'
         });
       }
   
-      if (!map.getLayer('census-tracts-layer')) {
+      if (!hasLayer) {
         map.addLayer({
           id: 'census-tracts-layer',
           type: 'fill',
@@ -84,19 +97,19 @@ const MapComponent = () => {
             'fill-outline-color': isDarkMode ? '#4B5563' : '#374151'
           }
         });
-      } else {
-        map.setPaintProperty('census-tracts-layer', 'fill-color', isDarkMode ? '#374151' : '#6B7280');
-        map.setPaintProperty('census-tracts-layer', 'fill-opacity', 0);
-        map.setPaintProperty('census-tracts-layer', 'fill-outline-color', isDarkMode ? '#4B5563' : '#374151');
       }
   
+      layerSetupComplete.current = true;
       console.log('Census tract layers setup complete');
     } catch (error) {
       console.error('Error setting up census tract layers:', error);
     }
-  });
+  }, []);
+  
 
   const handleMapLoad = useCallback(() => {
+    if (layerSetupComplete.current) return;
+    
     console.log('Map loaded, initializing...');
     setIsMapLoaded(true);
     if (mapRef.current) {
@@ -104,7 +117,7 @@ const MapComponent = () => {
       setMapInstance(map);
       setupCensusLayers(map, isDarkMode);
     }
-  }, [isDarkMode]);
+  }, [isDarkMode, setupCensusLayers]);
   
 
   const getCurrentDateTime = useCallback(() => {
@@ -136,6 +149,12 @@ const MapComponent = () => {
     isDarkMode,
     needsLayerReinitRef
   );
+  
+  const handleBasemapChange = useCallback((newBasemap) => {
+    setCurrentBasemap(newBasemap);
+    needsLayerReinitRef.current = true;
+    layerSetupComplete.current = false;
+  }, []);
 
   const handleMapClick = useCallback(async (e) => {
     // If in drawing mode, handle polygon drawing
@@ -194,6 +213,30 @@ const MapComponent = () => {
     setIsPlaying
   ]);
 
+  const cleanupCensusLayers = useCallback((map) => {
+    if (!map) return;
+  
+    try {
+      if (map.getLayer('census-tracts-layer')) {
+        map.removeLayer('census-tracts-layer');
+      }
+      if (map.getSource('census-tracts')) {
+        map.removeSource('census-tracts');
+      }
+      layerSetupComplete.current = false;
+    } catch (error) {
+      console.error('Error cleaning up census layers:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (mapInstance) {
+        cleanupCensusLayers(mapInstance);
+      }
+    };
+  }, [mapInstance, cleanupCensusLayers]);
+
   const clearPolygon = useCallback(() => {
     if (polygon) {
       cleanupHighlightLayers(mapInstance);
@@ -243,6 +286,7 @@ const MapComponent = () => {
     const handleStyleData = () => {
       if (needsLayerReinitRef.current) {
         console.log('Reinitializing layers after style change');
+        layerSetupComplete.current = false; // Reset the flag when style changes
         setupCensusLayers(mapInstance, isDarkMode);
         updateLayers(mapInstance);
         needsLayerReinitRef.current = false;
@@ -252,7 +296,7 @@ const MapComponent = () => {
     mapInstance.on('styledata', handleStyleData);
     return () => mapInstance.off('styledata', handleStyleData);
   }, [mapInstance, isDarkMode, setupCensusLayers, updateLayers]);
-
+  
 
   useEffect(() => {
     if (mapInstance && isMapLoaded) {

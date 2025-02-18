@@ -1,120 +1,27 @@
 import { useState, useCallback, useEffect } from 'react';
 import _ from 'lodash';
+import { fetchCensusPopulation, isValidGEOID } from './census-api';
 
+// Global cache for census data with TTL
+const censusCache = {
+  data: null,
+  timestamp: null,
+  TTL: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+};
 
-// Cache for selected census tracts to avoid recalculation on pan/zoom
+// Cache for selected tract calculations
+const tractCalculationCache = {
+  key: null,
+  data: null,
+  timestamp: null,
+  TTL: 5 * 60 * 1000 // 5 minutes in milliseconds
+};
+
+// Selected tracts cache
 let selectedTractCache = {
   polygon: null,
   tracts: null,
   bounds: null
-};
-
-export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
-  if (!map || !polygon) {
-    console.debug('Missing map or polygon');
-    return { tracts: {}, summary: { totalPopulation: 0 } };
-  }
-
-  try {
-    // Check if we already have results for this polygon
-    if (selectedTractCache.polygon && 
-        arePolygonsEqual(selectedTractCache.polygon, polygon)) {
-      return selectedTractCache.tracts;
-    }
-
-    // Verify map is loaded
-    if (!map.isStyleLoaded()) {
-      console.debug('Map style not loaded');
-      return { tracts: {}, summary: { totalPopulation: 0 } };
-    }
-
-    const CENSUS_LAYER = 'census-tracts-layer';
-    const SOURCE_LAYER = 'cb_2019_us_tract_500k-2qnt3v';
-
-    if (!map.getLayer(CENSUS_LAYER)) {
-      console.debug('Census tracts layer not found:', CENSUS_LAYER);
-      return { tracts: {}, summary: { totalPopulation: 0 } };
-    }
-
-    // Calculate bounds once and cache them
-    const bounds = getBoundingBox(polygon);
-    const sw = map.project([bounds.minLng, bounds.minLat]);
-    const ne = map.project([bounds.maxLng, bounds.maxLat]);
-
-    // Query features only once
-    const features = map.queryRenderedFeatures([sw, ne], {
-      layers: [CENSUS_LAYER]
-    });
-
-    // Filter intersecting features
-    const selectedFeatures = features.filter(feature => {
-      if (!feature.geometry || !feature.properties) return false;
-
-      if (feature.geometry.type === 'Polygon') {
-        return feature.geometry.coordinates[0].some(coord => 
-          isPointInPolygon(coord, polygon)
-        );
-      }
-
-      const center = feature.properties.INTPTLON20 && feature.properties.INTPTLAT20
-        ? [parseFloat(feature.properties.INTPTLON20), parseFloat(feature.properties.INTPTLAT20)]
-        : null;
-        
-      return center ? isPointInPolygon(center, polygon) : false;
-    });
-
-    if (selectedFeatures.length === 0) {
-      console.debug('No features found in selection');
-      return { tracts: {}, summary: { totalPopulation: 0 } };
-    }
-
-    // Process tract data
-    const selectedTracts = {};
-    let totalPopulation = 0;
-
-    selectedFeatures.forEach(feature => {
-      const props = feature.properties;
-      if (!props || !props.GEOID) return;
-
-      const geoid = props.GEOID;
-      const landArea = parseFloat(props.ALAND) || 0;
-      const estimatedPopulation = Math.round((landArea / 1000000) * 2500);
-
-      selectedTracts[geoid] = {
-        population: estimatedPopulation,
-        metadata: {
-          landArea,
-          geoid
-        }
-      };
-
-      totalPopulation += estimatedPopulation;
-    });
-
-    // Update highlight layers only if polygon has changed
-    if (!selectedTractCache.polygon || 
-        !arePolygonsEqual(selectedTractCache.polygon, polygon)) {
-      await updateHighlightLayers(map, selectedFeatures, isDarkMode);
-    }
-
-    const result = {
-      tracts: selectedTracts,
-      summary: { totalPopulation }
-    };
-
-    // Cache the results
-    selectedTractCache = {
-      polygon: [...polygon],
-      tracts: result,
-      bounds
-    };
-
-    return result;
-
-  } catch (error) {
-    console.error('Error in getSelectedCensusTracts:', error);
-    return { tracts: {}, summary: { totalPopulation: 0 } };
-  }
 };
 
 const getBoundingBox = (polygon) => {
@@ -163,8 +70,6 @@ const isPointInPolygon = (point, polygon) => {
   return inside;
 };
 
-
-// Helper function to compare polygons
 const arePolygonsEqual = (poly1, poly2) => {
   if (!poly1 || !poly2 || poly1.length !== poly2.length) return false;
   return poly1.every((coord, i) => 
@@ -172,7 +77,17 @@ const arePolygonsEqual = (poly1, poly2) => {
   );
 };
 
-// Modified updateHighlightLayers function to be more efficient
+const generateTractCacheKey = (polygon) => {
+  if (!polygon) return null;
+  return JSON.stringify(polygon);
+};
+
+const isCacheValid = (cache) => {
+  if (!cache.data || !cache.timestamp) return false;
+  const now = Date.now();
+  return (now - cache.timestamp) < cache.TTL;
+};
+
 const updateHighlightLayers = async (map, features, isDarkMode) => {
   const HIGHLIGHT_SOURCE = 'selected-tracts';
   const HIGHLIGHT_LAYER = 'selected-tracts-highlight';
@@ -239,7 +154,122 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
   }
 };
 
-// Modified PopulationExposureCounter component
+export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
+  if (!map || !polygon) {
+    console.debug('Missing map or polygon');
+    return { tracts: {}, summary: { totalPopulation: 0 } };
+  }
+
+  try {
+    // Check cache based on polygon
+    const cacheKey = generateTractCacheKey(polygon);
+    if (cacheKey && 
+        tractCalculationCache.key === cacheKey && 
+        isCacheValid(tractCalculationCache)) {
+      return tractCalculationCache.data;
+    }
+
+    if (selectedTractCache.polygon && 
+        arePolygonsEqual(selectedTractCache.polygon, polygon)) {
+      return selectedTractCache.tracts;
+    }
+
+    // Get the census tracts that intersect with our polygon
+    const bounds = getBoundingBox(polygon);
+    const sw = map.project([bounds.minLng, bounds.minLat]);
+    const ne = map.project([bounds.maxLng, bounds.maxLat]);
+
+    const features = map.queryRenderedFeatures([sw, ne], {
+      layers: ['census-tracts-layer']
+    }).filter(feature => {
+      if (!feature.geometry || !feature.properties) return false;
+      return feature.geometry.coordinates[0].some(coord => 
+        isPointInPolygon(coord, polygon)
+      );
+    });
+
+    if (features.length === 0) {
+      console.debug('No census tracts found in selection');
+      return { tracts: {}, summary: { totalPopulation: 0 } };
+    }
+
+    // Get valid GEOIDs from features
+    const validGeoIds = features
+      .map(f => f.properties.GEOID)
+      .filter(geoid => geoid && isValidGEOID(geoid));
+
+    if (validGeoIds.length === 0) {
+      console.debug('No valid GEOIDs found in selected tracts');
+      return { tracts: {}, summary: { totalPopulation: 0 } };
+    }
+
+    // Check/fetch census data
+    if (!censusCache.data || !isCacheValid(censusCache)) {
+      console.debug('Fetching new census data...');
+      censusCache.data = await fetchCensusPopulation();
+      censusCache.timestamp = Date.now();
+    }
+
+    // Process tract data
+    const selectedTracts = {};
+    let totalPopulation = 0;
+
+    validGeoIds.forEach(geoid => {
+      const tractData = censusCache.data[geoid];
+      if (!tractData) {
+        console.debug(`No population data found for tract ${geoid}`);
+        return;
+      }
+
+      const feature = features.find(f => f.properties.GEOID === geoid);
+      if (!feature) return;
+
+      selectedTracts[geoid] = {
+        population: tractData.population,
+        metadata: {
+          landArea: parseFloat(feature.properties.ALAND) || 0,
+          geoid,
+          state: tractData.metadata.state,
+          county: tractData.metadata.county,
+          tract: tractData.metadata.tract
+        }
+      };
+
+      totalPopulation += tractData.population;
+    });
+
+    // Update visualization of selected tracts
+    await updateHighlightLayers(map, features, isDarkMode);
+
+    const result = {
+      tracts: selectedTracts,
+      summary: { 
+        totalPopulation,
+        tractCount: Object.keys(selectedTracts).length
+      }
+    };
+
+    // Update caches
+    if (cacheKey) {
+      tractCalculationCache.key = cacheKey;
+      tractCalculationCache.data = result;
+      tractCalculationCache.timestamp = Date.now();
+    }
+
+    selectedTractCache = {
+      polygon: [...polygon],
+      tracts: result,
+      bounds
+    };
+
+    return result;
+
+  } catch (error) {
+    console.error('Error in getSelectedCensusTracts:', error);
+    return { tracts: {}, summary: { totalPopulation: 0 } };
+  }
+};
+
 export const usePopulationExposure = (map, polygon, isDarkMode, currentDateTime) => {
   const [stats, setStats] = useState({
     censusStats: {
@@ -255,9 +285,6 @@ export const usePopulationExposure = (map, polygon, isDarkMode, currentDateTime)
     }
   });
 
-  
-
-  // Debounced update function to prevent excessive calculations
   const updateExposure = useCallback(
     _.debounce(async () => {
       if (!map || !polygon || !currentDateTime) return;
@@ -305,6 +332,19 @@ export const cleanupHighlightLayers = (map) => {
   }
 };
 
-
+export const clearCaches = () => {
+  censusCache.data = null;
+  censusCache.timestamp = null;
+  
+  tractCalculationCache.key = null;
+  tractCalculationCache.data = null;
+  tractCalculationCache.timestamp = null;
+  
+  selectedTractCache = {
+    polygon: null,
+    tracts: null,
+    bounds: null
+  };
+};
 
 export default getSelectedCensusTracts;

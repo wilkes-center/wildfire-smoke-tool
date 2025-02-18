@@ -28,7 +28,6 @@ export const TimeControls = ({
     setCurrentHour(newHour);
   };
 
-  // Calculate date marker positions (24 hours apart)
   const dateMarkers = [24, 48, 72].map(hour => ({
     hour,
     position: (hour / (TOTAL_HOURS - 1)) * 100
@@ -123,7 +122,7 @@ export const TimeControls = ({
                   left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
                 }}
               >
-                {String(currentHour % 24).padStart(2, '0')}:00
+                {String(currentHour % 24).padStart(2, '0')}:00 UTC
               </div>
 
               {/* Vertical time indicator line */}
