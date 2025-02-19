@@ -23,6 +23,7 @@ const MapComponent = () => {
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapInstance, setMapInstance] = useState(null);
   const [isPointSelected, setIsPointSelected] = useState(false);
+  const [mousePosition, setMousePosition] = useState(null);
   const [currentHour, setCurrentHour] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -42,18 +43,11 @@ const MapComponent = () => {
 
   useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
 
-  const handleThemeChange = useCallback((darkMode) => {
-    setIsDarkMode(darkMode);
-    needsLayerReinitRef.current = true;
-    if (currentBasemap !== BASEMAPS.satellite.url) {
-      setCurrentBasemap(darkMode ? BASEMAPS.darkMatter.url : BASEMAPS.light.url);
-    }
-    
-    // Update census layer colors when theme changes
-    if (mapInstance) {
-      updateCensusLayerColors(mapInstance, darkMode);
-    }
-  }, [currentBasemap, mapInstance]);
+  const layerSetupComplete = useRef(false);
+  const styleLoadCount = useRef(0);
+  const initialSetupDone = useRef(false);
+
+  
 
   const handleMapInteraction = useCallback((evt) => {
     if (isMapLoaded) {
@@ -61,51 +55,83 @@ const MapComponent = () => {
     }
   }, [isMapLoaded]);
 
-  const layerSetupComplete = useRef(false);
 
-  const setupCensusLayers = useCallback((map, isDarkMode) => {
-    if (!map || !map.getStyle() || layerSetupComplete.current) return;
-  
+  const setupCensusLayers = useCallback((map, darkMode) => {
+    if (!map || !map.getStyle() || !map.isStyleLoaded()) {
+      console.log('Map not ready for layer setup');
+      return false;
+    }
+
     try {
-      // Check if layers already exist
-      const hasSource = map.getSource('census-tracts');
-      const hasLayer = map.getLayer('census-tracts-layer');
+      // Only log when actually setting up layers
+      if (!map.getLayer('census-tracts-layer')) {
+        console.log('Setting up census tract layers...');
+      }
       
-      if (hasSource && hasLayer) {
-        // Just update colors if needed
-        map.setPaintProperty('census-tracts-layer', 'fill-color', isDarkMode ? '#374151' : '#6B7280');
-        map.setPaintProperty('census-tracts-layer', 'fill-outline-color', isDarkMode ? '#4B5563' : '#374151');
-        return;
+      // Clean up existing layers first
+      if (map.getLayer('census-tracts-layer')) {
+        map.removeLayer('census-tracts-layer');
       }
-  
-      if (!hasSource) {
-        map.addSource('census-tracts', {
-          type: 'vector',
-          url: 'mapbox://pkulandh.3r0plqr0'
-        });
+      if (map.getSource('census-tracts')) {
+        map.removeSource('census-tracts');
       }
-  
-      if (!hasLayer) {
-        map.addLayer({
-          id: 'census-tracts-layer',
-          type: 'fill',
-          source: 'census-tracts',
-          'source-layer': 'cb_2019_us_tract_500k-2qnt3v',
-          paint: {
-            'fill-color': isDarkMode ? '#374151' : '#6B7280',
-            'fill-opacity': 0,
-            'fill-outline-color': isDarkMode ? '#4B5563' : '#374151'
-          }
-        });
-      }
-  
+
+      // Add source and layer
+      map.addSource('census-tracts', {
+        type: 'vector',
+        url: 'mapbox://pkulandh.3r0plqr0'
+      });
+
+      map.addLayer({
+        id: 'census-tracts-layer',
+        type: 'fill',
+        source: 'census-tracts',
+        'source-layer': 'cb_2019_us_tract_500k-2qnt3v',
+        paint: {
+          'fill-color': darkMode ? '#374151' : '#6B7280',
+          'fill-opacity': 0,
+          'fill-outline-color': darkMode ? '#4B5563' : '#374151'
+        }
+      });
+
       layerSetupComplete.current = true;
-      console.log('Census tract layers setup complete');
+      return true;
     } catch (error) {
       console.error('Error setting up census tract layers:', error);
+      layerSetupComplete.current = false;
+      return false;
+    }
+  }, []);
+
+  const updateCensusLayerColors = useCallback((map, darkMode) => {
+    if (!map || !map.getLayer('census-tracts-layer')) return;
+
+    try {
+      map.setPaintProperty(
+        'census-tracts-layer',
+        'fill-color',
+        darkMode ? '#374151' : '#6B7280'
+      );
+      map.setPaintProperty(
+        'census-tracts-layer',
+        'fill-outline-color',
+        darkMode ? '#4B5563' : '#374151'
+      );
+    } catch (error) {
+      console.error('Error updating census layer colors:', error);
     }
   }, []);
   
+
+  const handleThemeChange = useCallback((darkMode) => {
+    setIsDarkMode(darkMode);
+    if (currentBasemap !== BASEMAPS.satellite.url) {
+      setCurrentBasemap(darkMode ? BASEMAPS.darkMatter.url : BASEMAPS.light.url);
+    }
+    needsLayerReinitRef.current = true;
+  }, [currentBasemap]);
+
+
 
   const handleMapLoad = useCallback(() => {
     if (layerSetupComplete.current) return;
@@ -115,7 +141,15 @@ const MapComponent = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
       setMapInstance(map);
-      setupCensusLayers(map, isDarkMode);
+      
+      // Wait for style to be loaded
+      if (!map.isStyleLoaded()) {
+        map.once('style.load', () => {
+          setupCensusLayers(map, isDarkMode);
+        });
+      } else {
+        setupCensusLayers(map, isDarkMode);
+      }
     }
   }, [isDarkMode, setupCensusLayers]);
   
@@ -157,61 +191,34 @@ const MapComponent = () => {
   }, []);
 
   const handleMapClick = useCallback(async (e) => {
-    // If in drawing mode, handle polygon drawing
-    if (drawingMode) {
-      const { lng, lat } = e.lngLat;
-      
-      // Handle double click to complete polygon
-      if (e.originalEvent.detail === 2 && tempPolygon.length >= 2) {
-        const finalPolygon = [...tempPolygon, tempPolygon[0]]; // Close the polygon
-        setPolygon(finalPolygon);
-        setDrawingMode(false);
-        setTempPolygon([]);
-        setIsPlaying(true);
-        
-        if (mapInstance) {
-          try {
-            const censusData = await getSelectedCensusTracts(mapInstance, polygon, isDarkMode);
-            console.log('Selected area census data:', censusData);
-          } catch (error) {
-            console.error('Error fetching census data:', error);
-          }
-        }
-        return;
-      }
-  
-      // Add point to temporary polygon
-      setTempPolygon(prev => [...prev, [lng, lat]]);
-      return;
-    }
-  
     if (!isPointSelected && mapInstance) {
       try {
+        // Wait for census layer to be ready
+        if (!mapInstance.getLayer('census-tracts-layer')) {
+          console.log('Waiting for census layer to be ready...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+  
         const selection = await handleEnhancedMapClick(e, mapInstance, {
           initialZoomLevel: 7,
           zoomDuration: 1000,
           selectionDelay: 500,
           selectionRadius: 0.1
         });
-
+  
         setPolygon(selection.polygon);
         setIsPointSelected(true);
         setIsPlaying(true);
   
         // Get census data for the selected area
-        const censusData = await getSelectedCensusTracts(mapInstance, selection.polygon);
+        const censusData = await getSelectedCensusTracts(mapInstance, selection.polygon, isDarkMode);
         console.log('Selected area census data:', censusData);
       } catch (error) {
         console.error('Error handling map click:', error);
       }
     }
-  }, [
-    drawingMode,
-    isPointSelected,
-    tempPolygon,
-    mapInstance,
-    setIsPlaying
-  ]);
+  }, [drawingMode, isPointSelected, mapInstance, setIsPlaying, isDarkMode]);
+    
 
   const cleanupCensusLayers = useCallback((map) => {
     if (!map) return;
@@ -229,13 +236,6 @@ const MapComponent = () => {
     }
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (mapInstance) {
-        cleanupCensusLayers(mapInstance);
-      }
-    };
-  }, [mapInstance, cleanupCensusLayers]);
 
   const clearPolygon = useCallback(() => {
     if (polygon) {
@@ -292,94 +292,213 @@ const MapComponent = () => {
   }, [tempPolygon, mapInstance]);
 
   useEffect(() => {
-    if (!mapInstance) return;
-  
+    if (!mapInstance || !isMapLoaded) return;
+
     const handleStyleData = () => {
-      if (needsLayerReinitRef.current) {
-        console.log('Reinitializing layers after style change');
-        layerSetupComplete.current = false; // Reset the flag when style changes
-        setupCensusLayers(mapInstance, isDarkMode);
-        updateLayers(mapInstance);
-        needsLayerReinitRef.current = false;
+      if (!mapInstance.isStyleLoaded()) {
+        console.log('Waiting for style to load...');
+        return;
+      }
+
+      // Only reinitialize if explicitly needed or layers are missing
+      if (needsLayerReinitRef.current || !mapInstance.getLayer('census-tracts-layer')) {
+        const success = setupCensusLayers(mapInstance, isDarkMode);
+        if (success) {
+          needsLayerReinitRef.current = false;
+          if (!initialSetupDone.current) {
+            console.log('Initial setup completed');
+            initialSetupDone.current = true;
+          }
+        }
       }
     };
-  
+
+    // Handle initial setup
+    if (!initialSetupDone.current) {
+      handleStyleData();
+    }
+
+    // Listen for style changes
     mapInstance.on('styledata', handleStyleData);
-    return () => mapInstance.off('styledata', handleStyleData);
-  }, [mapInstance, isDarkMode, setupCensusLayers, updateLayers]);
-  
 
-  useEffect(() => {
-    if (mapInstance && isMapLoaded) {
-      updateLayers(mapInstance);
-      setupCensusLayers(mapInstance, isDarkMode);
-    }
-  }, [mapInstance, isMapLoaded, updateLayers, setupCensusLayers, isDarkMode]);
-
-  // Polygon rendering effect
-  useEffect(() => {
-    if (!mapInstance || mapInstance._removed) return;
-
-    const sourceId = 'polygon-source';
-    const layerId = 'polygon-layer';
-    const outlineLayerId = `${layerId}-outline`;
-
-    const cleanup = () => {
-      if (mapInstance && !mapInstance._removed) {
-        if (mapInstance.getLayer(outlineLayerId)) {
-          mapInstance.removeLayer(outlineLayerId);
-        }
-        if (mapInstance.getLayer(layerId)) {
-          mapInstance.removeLayer(layerId);
-        }
-        if (mapInstance.getSource(sourceId)) {
-          mapInstance.removeSource(sourceId);
-        }
-      }
+    return () => {
+      mapInstance.off('styledata', handleStyleData);
     };
+  }, [mapInstance, isMapLoaded, isDarkMode, setupCensusLayers]);
 
-    cleanup();
 
-    if (polygon || tempPolygon.length > 0) {
-      try {
-        mapInstance.addSource(sourceId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: {
-              type: 'Polygon',
-              coordinates: [polygon || [...tempPolygon, tempPolygon[0]]]
+
+    useEffect(() => {
+      if (!mapInstance || !drawingMode) return;
+
+      const handleMouseMove = (e) => {
+        setMousePosition([e.lngLat.lng, e.lngLat.lat]);
+      };
+
+      mapInstance.on('mousemove', handleMouseMove);
+      return () => {
+        mapInstance.off('mousemove', handleMouseMove);
+        setMousePosition(null);
+      };
+    }, [mapInstance, drawingMode]);
+
+    useEffect(() => {
+      return () => {
+        if (mapInstance) {
+          cleanupCensusLayers(mapInstance);
+          layerSetupComplete.current = false;
+        }
+      };
+    }, [mapInstance, cleanupCensusLayers]);
+
+    useEffect(() => {
+      return () => {
+        if (mapInstance) {
+          if (mapInstance.getLayer('census-tracts-layer')) {
+            mapInstance.removeLayer('census-tracts-layer');
+          }
+          if (mapInstance.getSource('census-tracts')) {
+            mapInstance.removeSource('census-tracts');
+          }
+        }
+      };
+    }, [mapInstance]);
+
+
+    useEffect(() => {
+      if (!mapInstance || mapInstance._removed) return;
+
+      const sourceId = 'polygon-source';
+      const layerId = 'polygon-layer';
+      const outlineLayerId = `${layerId}-outline`;
+      const previewLayerId = `${layerId}-preview`;
+
+      // Cleanup function to remove all layers and sources
+      const cleanup = () => {
+        if (mapInstance && !mapInstance._removed) {
+          [previewLayerId, outlineLayerId, layerId].forEach(id => {
+            if (mapInstance.getLayer(id)) {
+              mapInstance.removeLayer(id);
             }
+          });
+          if (mapInstance.getSource(sourceId)) {
+            mapInstance.removeSource(sourceId);
           }
-        });
+        }
+      };
 
-        mapInstance.addLayer({
-          id: layerId,
-          type: 'fill',
-          source: sourceId,
-          paint: {
-            'fill-color': isDarkMode ? '#60A5FA' : '#3B82F6',
-            'fill-opacity': 0.2,
-          }
-        });
+      cleanup();
 
-        mapInstance.addLayer({
-          id: outlineLayerId,
-          type: 'line',
-          source: sourceId,
-          paint: {
-            'line-color': isDarkMode ? '#60A5FA' : '#3B82F6',
-            'line-width': 3,
+      if (polygon || tempPolygon.length > 0) {
+        try {
+          // Create coordinates array based on whether we have a complete polygon or temp points
+          const coordinates = polygon ? 
+            [polygon] : 
+            tempPolygon.length > 0 && mousePosition ? 
+              [[...tempPolygon, mousePosition, tempPolygon[0]]] : 
+              [tempPolygon];
+
+          // Add the source
+          mapInstance.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              geometry: {
+                type: 'Polygon',
+                coordinates
+              }
+            }
+          });
+
+          // Add fill layer
+          mapInstance.addLayer({
+            id: layerId,
+            type: 'fill',
+            source: sourceId,
+            paint: {
+              'fill-color': isDarkMode ? '#60A5FA' : '#3B82F6',
+              'fill-opacity': isDarkMode ? 0.3 : 0.2
+            }
+          });
+
+          // Add outline layer
+          mapInstance.addLayer({
+            id: outlineLayerId,
+            type: 'line',
+            source: sourceId,
+            paint: {
+              'line-color': isDarkMode ? '#60A5FA' : '#3B82F6',
+              'line-width': 2
+            }
+          });
+
+          // Add preview line layer (only during drawing)
+          if (drawingMode && mousePosition && tempPolygon.length > 0) {
+            mapInstance.addLayer({
+              id: previewLayerId,
+              type: 'line',
+              source: sourceId,
+              paint: {
+                'line-color': isDarkMode ? '#60A5FA' : '#3B82F6',
+                'line-width': 2,
+                'line-dasharray': [2, 2]
+              }
+            });
           }
-        });
-      } catch (error) {
-        console.error('Error adding polygon layers:', error);
+
+          // Add vertices as points (optional)
+          if (tempPolygon.length > 0) {
+            const vertexSourceId = `${sourceId}-vertices`;
+            const vertexLayerId = `${layerId}-vertices`;
+
+            // Add vertex source
+            mapInstance.addSource(vertexSourceId, {
+              type: 'geojson',
+              data: {
+                type: 'FeatureCollection',
+                features: tempPolygon.map(coord => ({
+                  type: 'Feature',
+                  geometry: {
+                    type: 'Point',
+                    coordinates: coord
+                  }
+                }))
+              }
+            });
+
+            // Add vertex layer
+            mapInstance.addLayer({
+              id: vertexLayerId,
+              type: 'circle',
+              source: vertexSourceId,
+              paint: {
+                'circle-radius': 5,
+                'circle-color': isDarkMode ? '#60A5FA' : '#3B82F6',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': 'white'
+              }
+            });
+          }
+
+        } catch (error) {
+          console.error('Error adding polygon layers:', error);
+        }
       }
-    }
 
-    return cleanup;
-  }, [mapInstance, polygon, tempPolygon, isDarkMode]);
+      // Return cleanup function
+      return cleanup;
+    }, [
+      mapInstance,
+      polygon,
+      tempPolygon,
+      mousePosition,
+      drawingMode,
+      isDarkMode
+    ]);
 
+
+
+  
   return (
     <div className={`fixed inset-0 overflow-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
       <Map

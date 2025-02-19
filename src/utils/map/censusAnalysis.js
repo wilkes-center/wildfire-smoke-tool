@@ -154,6 +154,16 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
   }
 };
 
+const waitForLayer = async (map, layerId, maxAttempts = 5) => {
+  for (let i = 0; i < maxAttempts; i++) {
+    if (map.getLayer(layerId)) {
+      return true;
+    }
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  return false;
+};
+
 export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
   if (!map || !polygon) {
     console.debug('Missing map or polygon');
@@ -161,6 +171,19 @@ export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
   }
 
   try {
+    // Wait for map style and layer to be ready
+    if (!map.isStyleLoaded()) {
+      console.debug('Map style not loaded');
+      return { tracts: {}, summary: { totalPopulation: 0 } };
+    }
+
+    // Wait for census layer
+    const layerReady = await waitForLayer(map, 'census-tracts-layer');
+    if (!layerReady) {
+      console.debug('Census layer not available');
+      return { tracts: {}, summary: { totalPopulation: 0 } };
+    }
+
     // Check cache based on polygon
     const cacheKey = generateTractCacheKey(polygon);
     if (cacheKey && 
@@ -169,59 +192,54 @@ export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
       return tractCalculationCache.data;
     }
 
-    if (selectedTractCache.polygon && 
-        arePolygonsEqual(selectedTractCache.polygon, polygon)) {
-      return selectedTractCache.tracts;
-    }
-
-    // Get the census tracts that intersect with our polygon
+    // Calculate bounds with padding
     const bounds = getBoundingBox(polygon);
     const sw = map.project([bounds.minLng, bounds.minLat]);
     const ne = map.project([bounds.maxLng, bounds.maxLat]);
 
+    // Query features
     const features = map.queryRenderedFeatures([sw, ne], {
       layers: ['census-tracts-layer']
-    }).filter(feature => {
+    });
+
+    if (!features || features.length === 0) {
+      console.debug('No census tracts found in selection');
+      return { tracts: {}, summary: { totalPopulation: 0 } };
+    }
+
+    // Filter features that intersect with polygon
+    const intersectingFeatures = features.filter(feature => {
       if (!feature.geometry || !feature.properties) return false;
       return feature.geometry.coordinates[0].some(coord => 
         isPointInPolygon(coord, polygon)
       );
     });
 
-    if (features.length === 0) {
-      console.debug('No census tracts found in selection');
+    if (intersectingFeatures.length === 0) {
+      console.debug('No intersecting census tracts found');
       return { tracts: {}, summary: { totalPopulation: 0 } };
     }
 
-    // Get valid GEOIDs from features
-    const validGeoIds = features
+    // Get valid GEOIDs
+    const validGeoIds = intersectingFeatures
       .map(f => f.properties.GEOID)
       .filter(geoid => geoid && isValidGEOID(geoid));
 
     if (validGeoIds.length === 0) {
-      console.debug('No valid GEOIDs found in selected tracts');
+      console.debug('No valid GEOIDs found');
       return { tracts: {}, summary: { totalPopulation: 0 } };
     }
 
-    // Check/fetch census data
-    if (!censusCache.data || !isCacheValid(censusCache)) {
-      console.debug('Fetching new census data...');
-      censusCache.data = await fetchCensusPopulation();
-      censusCache.timestamp = Date.now();
-    }
-
-    // Process tract data
+    // Process census data
+    const censusData = await fetchCensusPopulation();
     const selectedTracts = {};
     let totalPopulation = 0;
 
     validGeoIds.forEach(geoid => {
-      const tractData = censusCache.data[geoid];
-      if (!tractData) {
-        console.debug(`No population data found for tract ${geoid}`);
-        return;
-      }
+      const tractData = censusData[geoid];
+      if (!tractData) return;
 
-      const feature = features.find(f => f.properties.GEOID === geoid);
+      const feature = intersectingFeatures.find(f => f.properties.GEOID === geoid);
       if (!feature) return;
 
       selectedTracts[geoid] = {
@@ -238,8 +256,8 @@ export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
       totalPopulation += tractData.population;
     });
 
-    // Update visualization of selected tracts
-    await updateHighlightLayers(map, features, isDarkMode);
+    // Update visualization
+    await updateHighlightLayers(map, intersectingFeatures, isDarkMode);
 
     const result = {
       tracts: selectedTracts,
@@ -249,18 +267,12 @@ export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
       }
     };
 
-    // Update caches
+    // Update cache
     if (cacheKey) {
       tractCalculationCache.key = cacheKey;
       tractCalculationCache.data = result;
       tractCalculationCache.timestamp = Date.now();
     }
-
-    selectedTractCache = {
-      polygon: [...polygon],
-      tracts: result,
-      bounds
-    };
 
     return result;
 
