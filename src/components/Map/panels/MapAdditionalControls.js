@@ -19,7 +19,20 @@ const MapAdditionalControls = ({
   const [minimapViewport, setMinimapViewport] = useState(null);
   const minimapRef = useRef(null);
   const layersInitializedRef = useRef(false);
+  const loadedSourcesRef = useRef(new Set());
+  const loadedLayersRef = useRef(new Set());
+  const previousChunkRef = useRef(null);
 
+  const getCurrentDateTime = useCallback(() => {
+    if (!currentDateTime) return { date: '', hour: 0 };
+    return currentDateTime;
+  }, [currentDateTime]);
+
+  useEffect(() => {
+    if (!polygon) {
+      layersInitializedRef.current = false;
+    }
+  }, [polygon]);
   useEffect(() => {
     if (!polygon) {
       layersInitializedRef.current = false;
@@ -175,8 +188,8 @@ const MapAdditionalControls = ({
               4, 2,
               5, 5,
               6, 10,
-              7, 25,
-              8, 50,
+              7, 55,
+              8, 70,
               9, 90
             ],
             'circle-color': getPM25ColorInterpolation(isDarkMode),
@@ -197,62 +210,131 @@ const MapAdditionalControls = ({
     }
   }, [currentDateTime, isDarkMode]);
 
-  const updateLayers = useCallback(() => {
-    const minimap = minimapRef.current?.getMap();
-    if (!minimap || !currentDateTime || !layersInitializedRef.current) return;
+  const updateLayers = useCallback((map) => {
+    if (!map || !map.getStyle()) return;
 
     try {
-      const time = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
+      const { date, hour } = getCurrentDateTime();
+      
+      // Find current tileset
+      const currentTileset = TILESET_INFO.find(tileset => 
+        tileset.date === date && 
+        hour >= tileset.startHour && 
+        hour <= tileset.endHour
+      );
 
-      // First set all layers to invisible
-      TILESET_INFO.forEach((tileset) => {
-        const layerId = `minimap-layer-${tileset.id}`;
-        if (minimap.getLayer(layerId)) {
-          minimap.setPaintProperty(layerId, 'circle-opacity', 0);
-          minimap.setLayoutProperty(layerId, 'visibility', 'none');
+      if (!currentTileset) {
+        console.warn('No tileset found for:', { date, hour });
+        return;
+      }
+
+      // Calculate next hour for transition preparation
+      const nextHour = (hour + 1) % 24;
+      const nextDate = nextHour === 0 ? 
+        new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : 
+        date;
+
+      // Find next tileset
+      const nextTileset = TILESET_INFO.find(tileset =>
+        tileset.date === nextDate &&
+        nextHour >= tileset.startHour &&
+        nextHour <= tileset.endHour
+      );
+
+      // Set all layer opacities to 0 first
+      loadedLayersRef.current.forEach(layerId => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'circle-opacity', 0);
+          map.setLayoutProperty(layerId, 'visibility', 'none');
         }
       });
 
-      // Find current tileset and update its layer
-      const currentTileset = TILESET_INFO.find(tileset => 
-        tileset.date === currentDateTime.date && 
-        currentDateTime.hour >= tileset.startHour && 
-        currentDateTime.hour <= tileset.endHour
-      );
+      // Update current layer
+      const currentLayerId = `minimap-layer-${currentTileset.id}`;
+      const timeString = `${date}T${String(hour).padStart(2, '0')}:00:00`;
 
-      if (currentTileset) {
-        const currentLayerId = `minimap-layer-${currentTileset.id}`;
+      if (map.getLayer(currentLayerId)) {
+        map.setFilter(currentLayerId, [
+          'all',
+          ['==', ['get', 'time'], timeString],
+          ['>=', ['coalesce', ['to-number', ['get', 'PM25'], null], 0], pm25Threshold || 0]
+        ]);
         
-        if (minimap.getLayer(currentLayerId)) {
-          minimap.setFilter(currentLayerId, [
-            'all',
-            ['==', ['get', 'time'], time],
-            ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold || 0]
-          ]);
+        map.setPaintProperty(
+          currentLayerId,
+          'circle-opacity',
+          isDarkMode ? 0.6 : 0.4
+        );
+        map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
+      }
 
-          minimap.setPaintProperty(
-            currentLayerId,
-            'circle-opacity',
-            isDarkMode ? 0.6 : 0.4
-          );
+      // Prepare next chunk if we're near the end of current chunk
+      if (nextTileset && hour === currentTileset.endHour) {
+        const nextSourceId = `minimap-source-${nextTileset.id}`;
+        const nextLayerId = `minimap-layer-${nextTileset.id}`;
 
-          minimap.setLayoutProperty(
-            currentLayerId,
-            'visibility',
-            'visible'
-          );
+        // Add next chunk's source if it doesn't exist
+        if (!map.getSource(nextSourceId)) {
+          map.addSource(nextSourceId, {
+            type: 'vector',
+            url: `mapbox://${nextTileset.id}`,
+            maxzoom: 9
+          });
+          loadedSourcesRef.current.add(nextSourceId);
+        }
 
-          minimap.setPaintProperty(
-            currentLayerId,
-            'circle-color',
-            getPM25ColorInterpolation(isDarkMode)
-          );
+        // Add next chunk's layer if it doesn't exist
+        if (!map.getLayer(nextLayerId)) {
+          map.addLayer({
+            id: nextLayerId,
+            type: 'circle',
+            source: nextSourceId,
+            'source-layer': nextTileset.layer,
+            maxzoom: 9,
+            paint: {
+              'circle-radius': [
+                'interpolate',
+                ['exponential', 2],
+                ['zoom'],
+                4, 2,
+                5, 5,
+                6, 10,
+                7, 25,
+                8, 50,
+                9, 90
+              ],
+              'circle-color': getPM25ColorInterpolation(isDarkMode),
+              'circle-blur': 0.85,
+              'circle-opacity': 0
+            },
+            layout: {
+              'visibility': 'visible'
+            }
+          });
+          loadedLayersRef.current.add(nextLayerId);
+        }
+
+        // Prepare next chunk's data
+        const nextTimeString = `${nextDate}T${String(nextHour).padStart(2, '0')}:00:00`;
+        map.setFilter(nextLayerId, [
+          'all',
+          ['==', ['get', 'time'], nextTimeString],
+          ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+        ]);
+
+        // If very close to transition, start fading in next layer
+        if (hour === currentTileset.endHour) {
+          map.setPaintProperty(nextLayerId, 'circle-opacity', 0.2);
         }
       }
+
+      previousChunkRef.current = currentTileset.id;
+
     } catch (error) {
       console.error('Error updating minimap layers:', error);
     }
-  }, [currentDateTime, pm25Threshold, isDarkMode]);
+  }, [getCurrentDateTime, pm25Threshold, isDarkMode]);
+
 
   // Handle map load
   const handleMinimapLoad = useCallback(() => {
@@ -313,6 +395,13 @@ const MapAdditionalControls = ({
     }
   }, [isExpanded, onExpandChange, initializeLayers, updateLayers]);
 
+  useEffect(() => {
+    const minimap = minimapRef.current?.getMap();
+    if (minimap && layersInitializedRef.current) {
+      updateLayers(minimap);
+    }
+  }, [updateLayers, isDarkMode, currentDateTime, pm25Threshold]);
+
   return (
     <div style={{ 
       position: 'fixed',
@@ -325,7 +414,10 @@ const MapAdditionalControls = ({
         title="Area Overview"
         icon={MapIcon}
         isExpanded={isExpanded}
-        onClose={handleToggleExpand}
+        onClose={() => {
+          setIsExpanded(!isExpanded);
+          onExpandChange?.(!isExpanded);
+        }}
         isDarkMode={isDarkMode}
         order={2}
       >
@@ -338,7 +430,13 @@ const MapAdditionalControls = ({
               mapStyle={mapStyle}
               mapboxAccessToken={mapboxAccessToken}
               interactive={false}
-              onLoad={handleMinimapLoad}
+              onLoad={() => {
+                const minimap = minimapRef.current?.getMap();
+                if (minimap) {
+                  layersInitializedRef.current = true;
+                  updateLayers(minimap);
+                }
+              }}
             />
           )}
         </div>

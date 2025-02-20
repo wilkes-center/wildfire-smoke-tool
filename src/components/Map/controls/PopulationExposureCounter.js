@@ -1,9 +1,49 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Users2 } from 'lucide-react';
 import _ from 'lodash';
-import getSelectedCensusTracts from '../../../utils/map/censusAnalysis';
 import { PM25_LEVELS, TILESET_INFO } from '../../../utils/map/constants';
 import { NEON_PM25_COLORS } from '../../../utils/map/colors';
+import getSelectedCensusTracts from '../../../utils/map/censusAnalysis';
+
+// Helper for point-in-polygon check
+const isPointInPolygon = (point, polygon) => {
+  if (!Array.isArray(point) || point.length < 2) return false;
+  
+  const x = point[0], y = point[1];
+  let inside = false;
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0], yi = polygon[i][1];
+    const xj = polygon[j][0], yj = polygon[j][1];
+
+    const intersect = ((yi > y) !== (yj > y)) &&
+      (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+
+    if (intersect) inside = !inside;
+  }
+
+  return inside;
+};
+
+// Find active layer for current time
+const findActiveLayer = (map, date, hour) => {
+  if (!map || !map.getStyle()) return null;
+
+  // Find matching tileset for current date and hour
+  const tileset = TILESET_INFO.find(t => 
+    t.date === date && 
+    hour >= t.startHour && 
+    hour <= t.endHour
+  );
+
+  if (!tileset) {
+    console.warn('No tileset found for:', { date, hour });
+    return null;
+  }
+
+  const layerId = `layer-${tileset.id}`;
+  return map.getLayer(layerId) ? layerId : null;
+};
 
 const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }) => {
   const [stats, setStats] = useState({
@@ -11,7 +51,8 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
       value: null,
       isLoading: true,
       error: null,
-      tractCount: 0
+      tractCount: 0,
+      status: 'idle'
     },
     exposureByPM25: {
       value: null,
@@ -20,51 +61,61 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
     }
   });
 
-  // Keep track of census data separately to avoid recalculation
+  // Keep track of census data separately
   const censusDataRef = useRef(null);
-  
-  const lastCalculation = useRef({
-    polygon: null,
-    time: null,
-    result: null
-  });
 
-  const getCurrentTilesetInfo = useCallback((date, hour) => {
-    return TILESET_INFO.find(tileset => 
-      tileset.date === date && 
-      hour >= tileset.startHour && 
-      hour <= tileset.endHour
-    );
-  }, []);
-
-  // Helper function to determine PM2.5 category
-  const getPM25Category = (pm25Value) => {
-    return PM25_LEVELS.find((level, index) => {
-      const nextLevel = PM25_LEVELS[index + 1];
-      return pm25Value >= level.value && (!nextLevel || pm25Value < nextLevel.value);
-    });
-  };
-
-  // Fetch census data independently of PM2.5 calculations
+  // Update census data when polygon changes
   const updateCensusData = useCallback(async () => {
     if (!map || !polygon) return;
 
     try {
-      const data = await getSelectedCensusTracts(map, polygon, isDarkMode);
-      censusDataRef.current = data;
-      
       setStats(prev => ({
         ...prev,
         censusStats: {
-          value: { 
-            totalPopulation: data.summary.totalPopulation,
-            avgPM25: prev.censusStats.value?.avgPM25 || 0 
-          },
-          isLoading: false,
+          ...prev.censusStats,
+          isLoading: true,
           error: null,
-          tractCount: Object.keys(data.tracts).length
+          status: 'loading'
         }
       }));
+
+      const initialResult = await getSelectedCensusTracts(map, polygon, isDarkMode);
+      censusDataRef.current = initialResult;
+      
+      // First update with tract count
+      setStats(prev => ({
+        ...prev,
+        censusStats: {
+          value: {
+            totalPopulation: null,
+            tractCount: initialResult.summary.tractCount
+          },
+          isLoading: true,
+          error: null,
+          tractCount: initialResult.summary.tractCount,
+          status: 'calculating'
+        }
+      }));
+
+      // Wait for population data
+      if (initialResult.populationPromise) {
+        const populationResult = await initialResult.populationPromise;
+        
+        setStats(prev => ({
+          ...prev,
+          censusStats: {
+            value: {
+              totalPopulation: populationResult.summary.totalPopulation,
+              tractCount: populationResult.summary.tractCount
+            },
+            isLoading: false,
+            error: null,
+            tractCount: populationResult.summary.tractCount,
+            status: 'complete'
+          }
+        }));
+      }
+
     } catch (error) {
       console.error('Error fetching census data:', error);
       setStats(prev => ({
@@ -73,46 +124,39 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
           value: null,
           isLoading: false,
           error: 'Failed to fetch census data',
-          tractCount: 0
+          tractCount: 0,
+          status: 'error'
         }
       }));
     }
   }, [map, polygon, isDarkMode]);
 
+  // Calculate exposure for current time
   const calculateExposure = useCallback(async () => {
     if (!map || !polygon || !currentDateTime || !censusDataRef.current) {
       return;
     }
 
-    // Generate cache key
-    const timeKey = `${currentDateTime.date}-${currentDateTime.hour}`;
-    
-    // Check if we have a cached result for the same inputs
-    if (lastCalculation.current.polygon === polygon && 
-        lastCalculation.current.time === timeKey &&
-        lastCalculation.current.result) {
+    try {
       setStats(prev => ({
         ...prev,
-        exposureByPM25: lastCalculation.current.result.exposureByPM25
+        exposureByPM25: {
+          ...prev.exposureByPM25,
+          isLoading: true,
+          error: null
+        }
       }));
-      return;
-    }
 
-    try {
-      const currentTileset = getCurrentTilesetInfo(currentDateTime.date, currentDateTime.hour);
-      
-      if (!currentTileset) {
-        console.warn('No tileset found for current datetime:', currentDateTime);
-        return;
-      }
+      const timeString = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
 
-      const layerId = `layer-${currentTileset.id}`;
+      // Find active layer
+      const activeLayer = findActiveLayer(map, currentDateTime.date, currentDateTime.hour);
       
-      if (!map.getLayer(layerId)) {
+      if (!activeLayer) {
         setStats(prev => ({
           ...prev,
           exposureByPM25: {
-            value: prev.exposureByPM25.value, // Maintain previous values
+            value: null,
             isLoading: false,
             error: 'Loading data for this time period...'
           }
@@ -120,10 +164,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
         return;
       }
 
-      const totalPopulation = censusDataRef.current.summary.totalPopulation;
-      const timeString = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
-
-      // Calculate bounds
+      // Calculate bounds with padding
       const bounds = {
         minLng: Math.min(...polygon.map(p => p[0])),
         maxLng: Math.max(...polygon.map(p => p[0])),
@@ -141,71 +182,80 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
       const sw = map.project([bounds.minLng, bounds.minLat]);
       const ne = map.project([bounds.maxLng, bounds.maxLat]);
 
+      // Query features
       const features = map.queryRenderedFeatures([sw, ne], {
-        layers: [layerId],
+        layers: [activeLayer],
         filter: ['==', ['get', 'time'], timeString]
       }).filter(feature => {
         if (!feature.geometry || !feature.geometry.coordinates) return false;
         return isPointInPolygon(feature.geometry.coordinates, polygon);
       });
 
-      // Initialize exposure categories with the total population for Good category
+      // Initialize exposure categories
       const exposureByPM25 = PM25_LEVELS.reduce((acc, level) => {
-        acc[level.label] = level.label === 'Good' ? totalPopulation : 0;
+        acc[level.label] = 0;
         return acc;
       }, {});
 
       let calculatedAvgPM25 = 0;
 
       if (features.length > 0) {
-        // Calculate average PM2.5
-        calculatedAvgPM25 = features.reduce((sum, feature) => {
+        // Create grid of PM2.5 values
+        const pm25Grid = features.reduce((grid, feature) => {
           const pm25 = parseFloat(feature.properties.PM25);
-          return isNaN(pm25) ? sum : sum + pm25;
-        }, 0) / features.length;
+          if (!isNaN(pm25)) {
+            const coords = feature.geometry.coordinates;
+            grid.push({
+              pm25,
+              coordinates: coords
+            });
+          }
+          return grid;
+        }, []);
 
-        // Get category for the average PM2.5
-        const category = getPM25Category(calculatedAvgPM25);
+        // Calculate average PM2.5 and distribute population
+        if (pm25Grid.length > 0) {
+          calculatedAvgPM25 = pm25Grid.reduce((sum, point) => sum + point.pm25, 0) / pm25Grid.length;
 
-        if (category) {
-          // Set population for the current category and all lower categories
-          const categoryIndex = PM25_LEVELS.findIndex(level => level.label === category.label);
-          
-          // Distribute population across relevant categories
-          PM25_LEVELS.forEach((level, index) => {
-            if (index <= categoryIndex) {
-              exposureByPM25[level.label] = totalPopulation;
+          // Get census data
+          const totalPopulation = censusDataRef.current.summary.totalPopulation;
+
+          // For each PM2.5 grid point, assign population proportion
+          pm25Grid.forEach(gridPoint => {
+            const category = PM25_LEVELS.find((level, index) => {
+              const nextLevel = PM25_LEVELS[index + 1];
+              return gridPoint.pm25 >= level.value && (!nextLevel || gridPoint.pm25 < nextLevel.value);
+            });
+
+            if (category) {
+              // Distribute population evenly across grid points
+              const pointContribution = totalPopulation / pm25Grid.length;
+              exposureByPM25[category.label] += pointContribution;
             }
+          });
+
+          // Round the values
+          Object.keys(exposureByPM25).forEach(key => {
+            exposureByPM25[key] = Math.round(exposureByPM25[key]);
           });
         }
       }
 
-      const newStats = {
+      setStats(prev => ({
+        ...prev,
         censusStats: {
-          value: { totalPopulation, avgPM25: calculatedAvgPM25 },
-          isLoading: false,
-          error: null,
-          tractCount: Object.keys(censusDataRef.current.tracts).length
+          ...prev.censusStats,
+          value: { ...prev.censusStats.value, avgPM25: calculatedAvgPM25 }
         },
         exposureByPM25: {
           value: exposureByPM25,
           isLoading: false,
           error: null
         }
-      };
-
-      // Update cache
-      lastCalculation.current = {
-        polygon,
-        time: timeKey,
-        result: newStats
-      };
-
-      setStats(newStats);
+      }));
 
     } catch (error) {
       console.error('Error calculating exposure:', error);
-      // Maintain previous exposure values in case of error
       setStats(prev => ({
         ...prev,
         exposureByPM25: {
@@ -215,12 +265,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
         }
       }));
     }
-  }, [map, polygon, currentDateTime, getCurrentTilesetInfo]);
-
-  // Update census data when polygon changes
-  useEffect(() => {
-    updateCensusData();
-  }, [updateCensusData]);
+  }, [map, polygon, currentDateTime]);
 
   // Debounced version of calculateExposure
   const debouncedCalculateExposure = useCallback(
@@ -228,6 +273,12 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
     [calculateExposure]
   );
 
+  // Update census data when polygon changes
+  useEffect(() => {
+    updateCensusData();
+  }, [updateCensusData]);
+
+  // Update exposure when time changes
   useEffect(() => {
     if (censusDataRef.current) {
       debouncedCalculateExposure();
@@ -259,7 +310,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
                 <>
                   {stats.censusStats.value?.totalPopulation?.toLocaleString() || '0'}
                   <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                   in {stats.censusStats.tractCount} Census Tracts
+                    in {stats.censusStats.tractCount} Census Tracts
                   </div>
                 </>
               )}
@@ -299,7 +350,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
                         {population.toLocaleString()} ({percentage}%)
                       </span>
                     </div>
-                                          <div className={`h-2 w-full rounded-lg overflow-hidden ${
+                    <div className={`h-2 w-full rounded-lg overflow-hidden ${
                       isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
                     }`}>
                       <div
@@ -321,26 +372,6 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
       </div>
     </div>
   );
-};
-
-// Helper function for point-in-polygon check
-const isPointInPolygon = (point, polygon) => {
-  if (!Array.isArray(point) || point.length < 2) return false;
-  
-  const x = point[0], y = point[1];
-  let inside = false;
-
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i][0], yi = polygon[i][1];
-    const xj = polygon[j][0], yj = polygon[j][1];
-
-    const intersect = ((yi > y) !== (yj > y)) &&
-      (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-
-    if (intersect) inside = !inside;
-  }
-
-  return inside;
 };
 
 export default React.memo(PopulationExposureCounter);

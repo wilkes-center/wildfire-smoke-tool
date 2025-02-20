@@ -16,6 +16,8 @@ import PopulationExposureCounter from './controls/PopulationExposureCounter';
 import handleEnhancedMapClick  from './controls/handleEnhancedMapClick.js';
 import ZoomControls from './controls/ZoomControls';
 import { setupCensusLayers, updateCensusLayerColors } from '../../utils/map/censusLayers.js';
+import { censusPreloader } from '../../utils/map/censusPreloader';
+
 
 const MapComponent = () => {
   const mapRef = useRef(null);
@@ -46,6 +48,9 @@ const MapComponent = () => {
   const layerSetupComplete = useRef(false);
   const styleLoadCount = useRef(0);
   const initialSetupDone = useRef(false);
+
+  const [censusLoading, setCensusLoading] = useState(false);
+  const [censusError, setCensusError] = useState(null);
 
   
 
@@ -294,6 +299,43 @@ const MapComponent = () => {
   useEffect(() => {
     if (!mapInstance || !isMapLoaded) return;
 
+    const initializeCensusLayer = async () => {
+      setCensusLoading(true);
+      setCensusError(null);
+
+      try {
+        // Subscribe to progress updates
+        const unsubscribe = censusPreloader.onProgress(({ stage, progress }) => {
+          console.debug(`Census ${stage} progress: ${progress}%`);
+        });
+
+        // Initialize the layer
+        await censusPreloader.preloadAll(mapInstance, isDarkMode);
+
+      } catch (error) {
+        console.error('Failed to initialize census layer:', error);
+        setCensusError(error.message);
+      } finally {
+        setCensusLoading(false);
+      }
+    };
+
+    initializeCensusLayer();
+
+    // Cleanup function
+    return () => {
+      censusPreloader.cleanup(mapInstance);
+    };
+  }, [mapInstance, isMapLoaded, isDarkMode]);
+
+  useEffect(() => {
+    if (!mapInstance || !isMapLoaded) return;
+    censusPreloader.updateColors(mapInstance, isDarkMode);
+  }, [isDarkMode, mapInstance, isMapLoaded]);
+
+  useEffect(() => {
+    if (!mapInstance || !isMapLoaded) return;
+
     const handleStyleData = () => {
       if (!mapInstance.isStyleLoaded()) {
         console.log('Waiting for style to load...');
@@ -514,6 +556,22 @@ const MapComponent = () => {
       />
       
       {!isMapLoaded && <LoadingOverlay isDarkMode={isDarkMode} />}
+
+      {censusLoading && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg ${
+          isDarkMode ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-800'
+        } shadow-lg z-50`}>
+          Loading census data...
+        </div>
+      )}
+
+      {censusError && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg ${
+          isDarkMode ? 'bg-red-900/90 text-red-200' : 'bg-red-50 text-red-600'
+        } shadow-lg z-50`}>
+          {censusError}
+        </div>
+      )}
       
       {isMapLoaded && mapInstance && (
         <>

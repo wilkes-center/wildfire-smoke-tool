@@ -202,12 +202,12 @@ export const useMapLayers = (
                 4, 2,
                 5, 5,
                 6, 10,
-                7, 25,
-                8, 50,
+                7, 55,
+                8, 70,
                 9, 90
               ],
               'circle-color': getPM25ColorInterpolation(isDarkMode),
-              'circle-blur': 0.85,
+              'circle-blur': 0.9,
               'circle-opacity': isDarkMode ? 0.6 : 0.4
             },
             layout: {
