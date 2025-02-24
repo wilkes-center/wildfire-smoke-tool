@@ -9,9 +9,12 @@ export const TimeControls = ({
   setIsPlaying,
   playbackSpeed,
   setPlaybackSpeed,
-  isDarkMode
+  isDarkMode,
+  onTimeChange
 }) => {
   const [showSpeedOptions, setShowSpeedOptions] = useState(false);
+
+  
 
   const handlePrevHour = () => {
     const newHour = Math.max(0, currentHour - 1);
@@ -26,6 +29,10 @@ export const TimeControls = ({
   const handleSliderChange = (e) => {
     const newHour = parseInt(e.target.value);
     setCurrentHour(newHour);
+    
+    if (typeof onTimeChange === 'function') {
+      onTimeChange(newHour);
+    }
   };
 
   const dateMarkers = [24, 48, 72].map(hour => ({

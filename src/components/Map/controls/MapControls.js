@@ -4,6 +4,8 @@ import { ThemeControls } from './ThemeControls';
 import { DateTime } from './DateTime';
 import PM25ThresholdSlider from './PM25ThresholdSlider';
 import { Pen, X } from 'lucide-react';
+import { TILESET_INFO } from '../../../utils/map/constants.js';
+
 
 const MapControls = ({
   currentHour,
@@ -71,7 +73,7 @@ const MapControls = ({
 
       {/* Bottom Time Controls */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl pointer-events-auto">
-        <TimeControls
+      <TimeControls
           currentHour={currentHour}
           setCurrentHour={setCurrentHour}
           isPlaying={isPlaying}
@@ -79,6 +81,46 @@ const MapControls = ({
           playbackSpeed={playbackSpeed}
           setPlaybackSpeed={setPlaybackSpeed}
           isDarkMode={isDarkMode}
+          onTimeChange={(hour) => {
+            // Force an immediate layer update when time is changed manually
+            if (mapInstance) {
+              const { date, hour: newHour } = getCurrentDateTime(hour);
+              const currentTileset = TILESET_INFO.find(tileset => 
+                tileset.date === date && 
+                newHour >= tileset.startHour && 
+                newHour <= tileset.endHour
+              );
+              
+              if (currentTileset) {
+                const layerId = `layer-${currentTileset.id}`;
+                const timeString = `${date}T${String(newHour).padStart(2, '0')}:00:00`;
+                
+                // Hide all layers first
+                Object.values(mapInstance.getStyle().layers)
+                  .filter(layer => layer.id.startsWith('layer-'))
+                  .forEach(layer => {
+                    mapInstance.setLayoutProperty(layer.id, 'visibility', 'none');
+                    mapInstance.setPaintProperty(layer.id, 'circle-opacity', 0);
+                  });
+                
+                // Make sure the layer exists
+                if (mapInstance.getLayer(layerId)) {
+                  // Update filter for the specific hour
+                  mapInstance.setFilter(layerId, [
+                    'all',
+                    ['==', ['get', 'time'], timeString],
+                    ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+                  ]);
+                  
+                  // Make layer visible
+                  mapInstance.setPaintProperty(layerId, 'circle-opacity', isDarkMode ? 0.6 : 0.4);
+                  mapInstance.setLayoutProperty(layerId, 'visibility', 'visible');
+                } else {
+                  console.warn(`Layer not found for time ${timeString}:`, layerId);
+                }
+              }
+            }
+          }}
         />
       </div>
 

@@ -2,14 +2,12 @@ import { useState, useCallback, useEffect } from 'react';
 import _ from 'lodash';
 import { fetchCensusPopulation, isValidGEOID } from './census-api';
 
-// Global cache for census data with TTL
 const censusCache = {
   data: null,
   timestamp: null,
   TTL: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
 };
 
-// Cache for selected tract calculations
 const tractCalculationCache = {
   key: null,
   data: null,
@@ -54,7 +52,6 @@ const getBoundingBox = (polygon) => {
   });
 };
 
-// Optimized point-in-polygon check
 const isPointInPolygon = (point, polygon) => {
   if (!Array.isArray(point) || point.length < 2) return false;
   
@@ -74,17 +71,6 @@ const isPointInPolygon = (point, polygon) => {
   return inside;
 };
 
-// Check if polygons are sufficiently similar to use cached results
-const arePolygonsSimilar = (poly1, poly2, tolerance = 0.001) => {
-  if (!poly1 || !poly2 || poly1.length !== poly2.length) return false;
-  
-  return poly1.every((coord, i) => 
-    Math.abs(coord[0] - poly2[i][0]) < tolerance &&
-    Math.abs(coord[1] - poly2[i][1]) < tolerance
-  );
-};
-
-// Optimized feature querying
 const queryFeaturesEfficiently = (map, bounds, layerId) => {
   const sw = map.project([bounds.minLng, bounds.minLat]);
   const ne = map.project([bounds.maxLng, bounds.maxLat]);
@@ -227,13 +213,21 @@ export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
   }
 };
 
-// In the updateHighlightLayers function in censusAnalysis.js:
+// Alternative approach - insert above the topmost layer
 const updateHighlightLayers = async (map, features, isDarkMode) => {
   const HIGHLIGHT_SOURCE = 'selected-tracts';
   const HIGHLIGHT_LAYER = 'selected-tracts-highlight';
   const OUTLINE_LAYER = 'selected-tracts-outline';
 
   try {
+    // Clean up existing layers
+    [HIGHLIGHT_LAYER, OUTLINE_LAYER].forEach(id => {
+      if (map.getLayer(id)) map.removeLayer(id);
+    });
+    if (map.getSource(HIGHLIGHT_SOURCE)) {
+      map.removeSource(HIGHLIGHT_SOURCE);
+    }
+
     const geojson = {
       type: 'FeatureCollection',
       features: features.map(f => ({
@@ -243,21 +237,17 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
       }))
     };
 
-    // First, remove any existing highlight layers to re-add them on top
-    [HIGHLIGHT_LAYER, OUTLINE_LAYER].forEach(id => {
-      if (map.getLayer(id)) map.removeLayer(id);
-    });
-    if (map.getSource(HIGHLIGHT_SOURCE)) {
-      map.removeSource(HIGHLIGHT_SOURCE);
-    }
-
-    // Add the source
+    // Add source
     map.addSource(HIGHLIGHT_SOURCE, {
       type: 'geojson',
       data: geojson
     });
 
-    // Add highlight fill layer
+    // Get the current layers to find the topmost one
+    const layers = map.getStyle().layers;
+    const topmostLayerId = layers[layers.length - 1].id;
+
+    // Add highlight fill layer above the topmost layer
     map.addLayer({
       id: HIGHLIGHT_LAYER,
       type: 'fill',
@@ -267,7 +257,7 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
         'fill-opacity': isDarkMode ? 0.4 : 0.3,
         'fill-outline-color': isDarkMode ? '#9F7AEA' : '#7C3AED'
       }
-    });
+    }, topmostLayerId); // Insert above the topmost layer
 
     // Add outline layer at the very top
     map.addLayer({
@@ -279,14 +269,13 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
         'line-width': 1.5,
         'line-opacity': isDarkMode ? 0.8 : 0.6
       }
-    });
+    }); // This will be added at the top
 
   } catch (error) {
     console.error('Error updating highlight layers:', error);
   }
 };
 
-// Cleanup function
 export const cleanupHighlightLayers = (map) => {
   if (!map) return;
 

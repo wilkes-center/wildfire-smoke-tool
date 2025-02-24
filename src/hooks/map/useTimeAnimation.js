@@ -5,7 +5,25 @@ export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
   const animationFrameRef = useRef(null);
   const lastTimestampRef = useRef(0);
   const isAnimatingRef = useRef(false);
+  const initializedRef = useRef(false);
 
+  useEffect(() => {
+
+    if (initializedRef.current) return;
+
+    setCurrentHour(hour => {
+
+      if (hour === 0) {
+        setTimeout(() => setCurrentHour(1), 200);
+        setTimeout(() => setCurrentHour(0), 400);
+      }
+      return hour;
+    });
+    
+    initializedRef.current = true;
+  }, [setCurrentHour]);
+
+  // Standard animation logic
   useEffect(() => {
     const animationDuration = 1000 / playbackSpeed; // ms per hour
 
