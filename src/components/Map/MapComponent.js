@@ -52,6 +52,9 @@ const MapComponent = () => {
   const [censusLoading, setCensusLoading] = useState(false);
   const [censusError, setCensusError] = useState(null);
 
+  const [lastClickTime, setLastClickTime] = useState(0);
+  const DOUBLE_CLICK_THRESHOLD = 300; // milliseconds
+
   
 
   const handleMapInteraction = useCallback((evt) => {
@@ -195,34 +198,62 @@ const MapComponent = () => {
     layerSetupComplete.current = false;
   }, []);
 
-  const handleMapClick = useCallback(async (e) => {
+  const handleMapClick = useCallback((e) => {
+    // First check if we're in drawing mode
+    if (drawingMode) {
+      const { lng, lat } = e.lngLat;
+      const now = Date.now();
+      
+      // Check if this is a double-click based on timing
+      if (now - lastClickTime < DOUBLE_CLICK_THRESHOLD && tempPolygon.length >= 2) {
+        // Double click detected - finish the polygon
+        const finalPolygon = [...tempPolygon, tempPolygon[0]]; // Close the polygon
+        setPolygon(finalPolygon);
+        setDrawingMode(false);
+        setTempPolygon([]);
+        setIsPlaying(true);
+        
+        if (mapInstance) {
+          mapInstance.getCanvas().style.cursor = '';
+        }
+        
+        setLastClickTime(0); // Reset click time
+        return;
+      }
+      
+      // Single click - add point to tempPolygon
+      setTempPolygon(prev => [...prev, [lng, lat]]);
+      setLastClickTime(now);
+      return;
+    }
+    
+    // Only proceed with point selection if not in drawing mode
     if (!isPointSelected && mapInstance) {
       try {
-        // Wait for census layer to be ready
-        if (!mapInstance.getLayer('census-tracts-layer')) {
-          console.log('Waiting for census layer to be ready...');
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-  
-        const selection = await handleEnhancedMapClick(e, mapInstance, {
+        // Existing point selection logic
+        handleEnhancedMapClick(e, mapInstance, {
           initialZoomLevel: 7,
           zoomDuration: 1000,
           selectionDelay: 500,
           selectionRadius: 0.1
+        }).then(selection => {
+          setPolygon(selection.polygon);
+          setIsPointSelected(true);
+          setIsPlaying(true);
+          
+          // Get census data for the selected area
+          getSelectedCensusTracts(mapInstance, selection.polygon, isDarkMode)
+            .then(censusData => {
+              console.log('Selected area census data:', censusData);
+            });
+        }).catch(error => {
+          console.error('Error handling map click:', error);
         });
-  
-        setPolygon(selection.polygon);
-        setIsPointSelected(true);
-        setIsPlaying(true);
-  
-        // Get census data for the selected area
-        const censusData = await getSelectedCensusTracts(mapInstance, selection.polygon, isDarkMode);
-        console.log('Selected area census data:', censusData);
       } catch (error) {
         console.error('Error handling map click:', error);
       }
     }
-  }, [drawingMode, isPointSelected, mapInstance, setIsPlaying, isDarkMode]);
+  }, [drawingMode, isPointSelected, mapInstance, setIsPlaying, isDarkMode, tempPolygon, lastClickTime]);
     
 
   const cleanupCensusLayers = useCallback((map) => {
@@ -342,7 +373,6 @@ const MapComponent = () => {
         return;
       }
 
-      // Only reinitialize if explicitly needed or layers are missing
       if (needsLayerReinitRef.current || !mapInstance.getLayer('census-tracts-layer')) {
         const success = setupCensusLayers(mapInstance, isDarkMode);
         if (success) {
@@ -406,53 +436,66 @@ const MapComponent = () => {
       };
     }, [mapInstance]);
 
+    useEffect(() => {
+      if (!mapInstance) return;
+      
+      // Disable double-click zoom when in drawing mode
+      if (drawingMode) {
+        mapInstance.doubleClickZoom.disable();
+      } else {
+        mapInstance.doubleClickZoom.enable();
+      }
+      
+      return () => {
+        if (mapInstance && !mapInstance._removed) {
+          mapInstance.doubleClickZoom.enable();
+        }
+      };
+    }, [mapInstance, drawingMode]);
+
 
     useEffect(() => {
       if (!mapInstance || mapInstance._removed) return;
-
+    
       const sourceId = 'polygon-source';
       const layerId = 'polygon-layer';
       const outlineLayerId = `${layerId}-outline`;
       const previewLayerId = `${layerId}-preview`;
-
-      // Cleanup function to remove all layers and sources
-      const cleanup = () => {
-        if (mapInstance && !mapInstance._removed) {
-          [previewLayerId, outlineLayerId, layerId].forEach(id => {
-            if (mapInstance.getLayer(id)) {
-              mapInstance.removeLayer(id);
-            }
-          });
-          if (mapInstance.getSource(sourceId)) {
-            mapInstance.removeSource(sourceId);
-          }
-        }
-      };
-
-      cleanup();
-
-      if (polygon || tempPolygon.length > 0) {
-        try {
-          // Create coordinates array based on whether we have a complete polygon or temp points
-          const coordinates = polygon ? 
-            [polygon] : 
-            tempPolygon.length > 0 && mousePosition ? 
-              [[...tempPolygon, mousePosition, tempPolygon[0]]] : 
-              [tempPolygon];
-
-          // Add the source
+      const vertexSourceId = `${sourceId}-vertices`;
+      const vertexLayerId = `${layerId}-vertices`;
+    
+      // Initial setup - this will run only once when mapInstance first becomes available
+      const setupSources = () => {
+        // Main polygon source
+        if (!mapInstance.getSource(sourceId)) {
           mapInstance.addSource(sourceId, {
             type: 'geojson',
             data: {
               type: 'Feature',
               geometry: {
                 type: 'Polygon',
-                coordinates
+                coordinates: [[]]
               }
             }
           });
-
-          // Add fill layer
+        }
+        
+        // Vertex source
+        if (!mapInstance.getSource(vertexSourceId)) {
+          mapInstance.addSource(vertexSourceId, {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: []
+            }
+          });
+        }
+      };
+    
+      // Setup layers if they don't exist
+      const setupLayers = () => {
+        // Main fill layer
+        if (!mapInstance.getLayer(layerId)) {
           mapInstance.addLayer({
             id: layerId,
             type: 'fill',
@@ -462,8 +505,10 @@ const MapComponent = () => {
               'fill-opacity': isDarkMode ? 0.3 : 0.2
             }
           });
-
-          // Add outline layer
+        }
+    
+        // Outline layer
+        if (!mapInstance.getLayer(outlineLayerId)) {
           mapInstance.addLayer({
             id: outlineLayerId,
             type: 'line',
@@ -473,62 +518,109 @@ const MapComponent = () => {
               'line-width': 2
             }
           });
-
-          // Add preview line layer (only during drawing)
-          if (drawingMode && mousePosition && tempPolygon.length > 0) {
-            mapInstance.addLayer({
-              id: previewLayerId,
-              type: 'line',
-              source: sourceId,
-              paint: {
-                'line-color': isDarkMode ? '#60A5FA' : '#3B82F6',
-                'line-width': 2,
-                'line-dasharray': [2, 2]
-              }
-            });
-          }
-
-          // Add vertices as points (optional)
-          if (tempPolygon.length > 0) {
-            const vertexSourceId = `${sourceId}-vertices`;
-            const vertexLayerId = `${layerId}-vertices`;
-
-            // Add vertex source
-            mapInstance.addSource(vertexSourceId, {
-              type: 'geojson',
-              data: {
-                type: 'FeatureCollection',
-                features: tempPolygon.map(coord => ({
-                  type: 'Feature',
-                  geometry: {
-                    type: 'Point',
-                    coordinates: coord
-                  }
-                }))
-              }
-            });
-
-            // Add vertex layer
-            mapInstance.addLayer({
-              id: vertexLayerId,
-              type: 'circle',
-              source: vertexSourceId,
-              paint: {
-                'circle-radius': 5,
-                'circle-color': isDarkMode ? '#60A5FA' : '#3B82F6',
-                'circle-stroke-width': 2,
-                'circle-stroke-color': 'white'
-              }
-            });
-          }
-
-        } catch (error) {
-          console.error('Error adding polygon layers:', error);
         }
+    
+        // Preview line layer (dashed line)
+        if (!mapInstance.getLayer(previewLayerId)) {
+          mapInstance.addLayer({
+            id: previewLayerId,
+            type: 'line',
+            source: sourceId,
+            paint: {
+              'line-color': isDarkMode ? '#60A5FA' : '#3B82F6',
+              'line-width': 2,
+              'line-dasharray': [2, 2]
+            },
+            layout: {
+              'visibility': 'none'
+            }
+          });
+        }
+    
+        // Vertex points layer
+        if (!mapInstance.getLayer(vertexLayerId)) {
+          mapInstance.addLayer({
+            id: vertexLayerId,
+            type: 'circle',
+            source: vertexSourceId,
+            paint: {
+              'circle-radius': 5,
+              'circle-color': isDarkMode ? '#60A5FA' : '#3B82F6',
+              'circle-stroke-width': 2,
+              'circle-stroke-color': 'white'
+            }
+          });
+        }
+      };
+    
+      // Try to setup sources and layers
+      try {
+        setupSources();
+        setupLayers();
+      } catch (error) {
+        console.error('Error setting up map sources/layers:', error);
       }
-
-      // Return cleanup function
-      return cleanup;
+    
+      // Update the data instead of recreating sources
+      try {
+        // Update polygon source data
+        if (mapInstance.getSource(sourceId)) {
+          const coordinates = polygon ? 
+            [polygon] : 
+            tempPolygon.length > 0 && mousePosition ? 
+              [[...tempPolygon, mousePosition, tempPolygon[0]]] : 
+              tempPolygon.length > 0 ? [tempPolygon] : [[]];
+              
+          mapInstance.getSource(sourceId).setData({
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates
+            }
+          });
+        }
+    
+        // Update vertices source data
+        if (mapInstance.getSource(vertexSourceId)) {
+          mapInstance.getSource(vertexSourceId).setData({
+            type: 'FeatureCollection',
+            features: tempPolygon.map(coord => ({
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: coord
+              }
+            }))
+          });
+        }
+    
+        // Update preview line visibility
+        if (mapInstance.getLayer(previewLayerId)) {
+          const showPreview = drawingMode && mousePosition && tempPolygon.length > 0;
+          mapInstance.setLayoutProperty(
+            previewLayerId,
+            'visibility',
+            showPreview ? 'visible' : 'none'
+          );
+        }
+    
+        // Update vertex layer visibility
+        if (mapInstance.getLayer(vertexLayerId)) {
+          mapInstance.setLayoutProperty(
+            vertexLayerId, 
+            'visibility', 
+            tempPolygon.length > 0 ? 'visible' : 'none'
+          );
+        }
+      } catch (error) {
+        console.error('Error updating polygon data:', error);
+      }
+    
+      // Cleanup function
+      return () => {
+        // We don't remove sources and layers here anymore
+        // This prevents the flickering effect
+      };
     }, [
       mapInstance,
       polygon,
@@ -537,7 +629,6 @@ const MapComponent = () => {
       drawingMode,
       isDarkMode
     ]);
-
 
 
   

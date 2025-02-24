@@ -227,7 +227,7 @@ export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
   }
 };
 
-// Optimized highlight layer updates
+// In the updateHighlightLayers function in censusAnalysis.js:
 const updateHighlightLayers = async (map, features, isDarkMode) => {
   const HIGHLIGHT_SOURCE = 'selected-tracts';
   const HIGHLIGHT_LAYER = 'selected-tracts-highlight';
@@ -243,38 +243,43 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
       }))
     };
 
-    if (!map.getSource(HIGHLIGHT_SOURCE)) {
-      // Add source and layers if they don't exist
-      map.addSource(HIGHLIGHT_SOURCE, {
-        type: 'geojson',
-        data: geojson
-      });
-
-      map.addLayer({
-        id: HIGHLIGHT_LAYER,
-        type: 'fill',
-        source: HIGHLIGHT_SOURCE,
-        paint: {
-          'fill-color': isDarkMode ? '#7C3AED' : '#8B5CF6',
-          'fill-opacity': isDarkMode ? 0.4 : 0.3,
-          'fill-outline-color': isDarkMode ? '#9F7AEA' : '#7C3AED'
-        }
-      });
-
-      map.addLayer({
-        id: OUTLINE_LAYER,
-        type: 'line',
-        source: HIGHLIGHT_SOURCE,
-        paint: {
-          'line-color': isDarkMode ? '#A78BFA' : '#7C3AED',
-          'line-width': 1.5,
-          'line-opacity': isDarkMode ? 0.8 : 0.6
-        }
-      });
-    } else {
-      // Just update the data if layers exist
-      map.getSource(HIGHLIGHT_SOURCE).setData(geojson);
+    // First, remove any existing highlight layers to re-add them on top
+    [HIGHLIGHT_LAYER, OUTLINE_LAYER].forEach(id => {
+      if (map.getLayer(id)) map.removeLayer(id);
+    });
+    if (map.getSource(HIGHLIGHT_SOURCE)) {
+      map.removeSource(HIGHLIGHT_SOURCE);
     }
+
+    // Add the source
+    map.addSource(HIGHLIGHT_SOURCE, {
+      type: 'geojson',
+      data: geojson
+    });
+
+    // Add highlight fill layer
+    map.addLayer({
+      id: HIGHLIGHT_LAYER,
+      type: 'fill',
+      source: HIGHLIGHT_SOURCE,
+      paint: {
+        'fill-color': isDarkMode ? '#7C3AED' : '#8B5CF6',
+        'fill-opacity': isDarkMode ? 0.4 : 0.3,
+        'fill-outline-color': isDarkMode ? '#9F7AEA' : '#7C3AED'
+      }
+    });
+
+    // Add outline layer at the very top
+    map.addLayer({
+      id: OUTLINE_LAYER,
+      type: 'line',
+      source: HIGHLIGHT_SOURCE,
+      paint: {
+        'line-color': isDarkMode ? '#A78BFA' : '#7C3AED',
+        'line-width': 1.5,
+        'line-opacity': isDarkMode ? 0.8 : 0.6
+      }
+    });
 
   } catch (error) {
     console.error('Error updating highlight layers:', error);
