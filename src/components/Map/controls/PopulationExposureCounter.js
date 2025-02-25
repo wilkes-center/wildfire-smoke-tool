@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Users2 } from 'lucide-react';
 import _ from 'lodash';
-import { PM25_LEVELS, TILESET_INFO } from '../../../utils/map/constants';
+import { TILESET_INFO } from '../../../utils/map/constants';
 import { NEON_PM25_COLORS } from '../../../utils/map/colors';
 import getSelectedCensusTracts from '../../../utils/map/censusAnalysis';
 
@@ -45,6 +45,16 @@ const findActiveLayer = (map, date, hour) => {
   return map.getLayer(layerId) ? layerId : null;
 };
 
+// Define PM25_LEVELS with hard-coded colors to avoid issues
+const PM25_LEVELS = [
+  { value: 0, label: 'Good', key: 'good', color: '#00e400', darkColor: '#00ff9d' },
+  { value: 12.1, label: 'Moderate', key: 'moderate', color: '#ffff00', darkColor: '#fff700' },
+  { value: 35.5, label: 'Unhealthy for Sensitive Groups', key: 'usg', color: '#ff7e00', darkColor: '#ff9100' },
+  { value: 55.5, label: 'Unhealthy', key: 'unhealthy', color: '#ff0000', darkColor: '#ff0055' },
+  { value: 150.5, label: 'Very Unhealthy', key: 'veryUnhealthy', color: '#8f3f97', darkColor: '#bf00ff' },
+  { value: 250.5, label: 'Hazardous', key: 'hazardous', color: '#7e0023', darkColor: '#ff00ff' }
+];
+
 const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }) => {
   const [stats, setStats] = useState({
     censusStats: {
@@ -57,12 +67,35 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
     exposureByPM25: {
       value: null,
       isLoading: true,
-      error: null
+      error: null,
+      // Add distribution to store percentage within PM2.5 categories separately
+      distribution: null
     }
   });
 
   // Keep track of census data separately
   const censusDataRef = useRef(null);
+  // Keep track of the last successful PM2.5 data to avoid loss on further updates
+  const lastValidPM25DataRef = useRef(null);
+  // Track the current polygon to know when it changes
+  const currentPolygonRef = useRef(null);
+  
+  // Reset the cache when polygon changes
+  useEffect(() => {
+    if (polygon) {
+      // Convert polygon to string for comparison
+      const polygonStr = JSON.stringify(polygon);
+      if (currentPolygonRef.current !== polygonStr) {
+        // Reset when polygon changes
+        lastValidPM25DataRef.current = null;
+        currentPolygonRef.current = polygonStr;
+      }
+    } else {
+      // Clear when no polygon
+      lastValidPM25DataRef.current = null;
+      currentPolygonRef.current = null;
+    }
+  }, [polygon]);
 
   // Update census data when polygon changes
   const updateCensusData = useCallback(async () => {
@@ -133,19 +166,22 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
 
   // Calculate exposure for current time
   const calculateExposure = useCallback(async () => {
-    if (!map || !polygon || !currentDateTime || !censusDataRef.current) {
+    if (!map || !polygon || !currentDateTime) {
       return;
     }
 
     try {
-      setStats(prev => ({
-        ...prev,
-        exposureByPM25: {
-          ...prev.exposureByPM25,
-          isLoading: true,
-          error: null
-        }
-      }));
+      // Don't set loading state if we have cached data
+      if (!lastValidPM25DataRef.current) {
+        setStats(prev => ({
+          ...prev,
+          exposureByPM25: {
+            ...prev.exposureByPM25,
+            isLoading: true,
+            error: null
+          }
+        }));
+      }
 
       const timeString = `${currentDateTime.date}T${String(currentDateTime.hour).padStart(2, '0')}:00:00`;
 
@@ -153,12 +189,30 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
       const activeLayer = findActiveLayer(map, currentDateTime.date, currentDateTime.hour);
       
       if (!activeLayer) {
+        console.warn('No active layer found for the current time period');
+        
+        // Use cached data if available instead of showing error
+        if (lastValidPM25DataRef.current) {
+          console.log('Using cached PM2.5 data for this time period');
+          setStats(prev => ({
+            ...prev,
+            exposureByPM25: {
+              value: lastValidPM25DataRef.current.value,
+              distribution: lastValidPM25DataRef.current.distribution,
+              isLoading: false,
+              error: null
+            }
+          }));
+          return;
+        }
+        
         setStats(prev => ({
           ...prev,
           exposureByPM25: {
             value: null,
+            distribution: null,
             isLoading: false,
-            error: 'Loading data for this time period...'
+            error: 'No data available for this time period'
           }
         }));
         return;
@@ -172,32 +226,159 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
         maxLat: Math.max(...polygon.map(p => p[1]))
       };
 
-      const lngPad = (bounds.maxLng - bounds.minLng) * 0.2;
-      const latPad = (bounds.maxLat - bounds.minLat) * 0.2;
-      bounds.minLng -= lngPad;
-      bounds.maxLng += lngPad;
-      bounds.minLat -= latPad;
-      bounds.maxLat += latPad;
+      let features = [];
+      
+      // Method 1: Try queryRenderedFeatures with bounds first
+      try {
+        const lngPad = (bounds.maxLng - bounds.minLng) * 0.2;
+        const latPad = (bounds.maxLat - bounds.minLat) * 0.2;
+        const paddedBounds = [
+          [bounds.minLng - lngPad, bounds.minLat - latPad],
+          [bounds.maxLng + lngPad, bounds.maxLat + latPad]
+        ];
 
-      const sw = map.project([bounds.minLng, bounds.minLat]);
-      const ne = map.project([bounds.maxLng, bounds.maxLat]);
+        const sw = map.project(paddedBounds[0]);
+        const ne = map.project(paddedBounds[1]);
 
-      // Query features
-      const features = map.queryRenderedFeatures([sw, ne], {
-        layers: [activeLayer],
-        filter: ['==', ['get', 'time'], timeString]
-      }).filter(feature => {
-        if (!feature.geometry || !feature.geometry.coordinates) return false;
-        return isPointInPolygon(feature.geometry.coordinates, polygon);
+        features = map.queryRenderedFeatures([sw, ne], {
+          layers: [activeLayer],
+          filter: ['==', ['get', 'time'], timeString]
+        }).filter(feature => {
+          if (!feature.geometry || !feature.geometry.coordinates) return false;
+          return isPointInPolygon(feature.geometry.coordinates, polygon);
+        });
+
+        console.log(`Method 1: Found ${features.length} PM2.5 data points within the selected area`);
+      } catch (err) {
+        console.warn('Error using queryRenderedFeatures with bounds:', err);
+      }
+
+      // Method 2: If first method doesn't work, try querySourceFeatures
+      if (features.length === 0) {
+        try {
+          const sourceId = activeLayer.replace('layer-', 'source-');
+          if (map.getSource(sourceId)) {
+            // This queries the source directly, which might get us more features
+            const sourceFeatures = map.querySourceFeatures(sourceId, {
+              sourceLayer: activeLayer.replace('layer-', ''),
+              filter: ['==', ['get', 'time'], timeString]
+            });
+
+            // Filter by polygon
+            features = sourceFeatures.filter(feature => {
+              if (!feature.geometry || !feature.geometry.coordinates) return false;
+              return isPointInPolygon(feature.geometry.coordinates, polygon);
+            });
+
+            console.log(`Method 2: Found ${features.length} PM2.5 data points from source`);
+          }
+        } catch (err) {
+          console.warn('Error using querySourceFeatures:', err);
+        }
+      }
+
+      // Method 3: If still no features, try to get all visible features and filter manually
+      if (features.length === 0) {
+        try {
+          // Get all visible features from the layer
+          const visibleFeatures = map.queryRenderedFeatures({
+            layers: [activeLayer]
+          });
+
+          console.log(`Method 3: Found ${visibleFeatures.length} total visible features`);
+
+          // Filter by time and polygon
+          features = visibleFeatures.filter(feature => {
+            if (!feature.geometry || !feature.geometry.coordinates) return false;
+            if (feature.properties.time !== timeString) return false;
+            return isPointInPolygon(feature.geometry.coordinates, polygon);
+          });
+
+          console.log(`Method 3: After filtering, ${features.length} features are in the polygon`);
+        } catch (err) {
+          console.warn('Error using alternative feature query:', err);
+        }
+      }
+
+      // Method 4: Scan the visible area with a grid of points
+      if (features.length === 0) {
+        try {
+          const gridSize = 20; // 20x20 grid
+          const lngStep = (bounds.maxLng - bounds.minLng) / gridSize;
+          const latStep = (bounds.maxLat - bounds.minLat) / gridSize;
+          
+          const gridPoints = [];
+          for (let i = 0; i <= gridSize; i++) {
+            for (let j = 0; j <= gridSize; j++) {
+              const lng = bounds.minLng + (i * lngStep);
+              const lat = bounds.minLat + (j * latStep);
+              gridPoints.push([lng, lat]);
+            }
+          }
+          
+          console.log(`Method 4: Created ${gridPoints.length} grid points to sample`);
+          
+          // Query each point
+          let gridFeatures = [];
+          gridPoints.forEach(point => {
+            if (isPointInPolygon(point, polygon)) {
+              const pointFeatures = map.queryRenderedFeatures(
+                map.project(point), 
+                { layers: [activeLayer] }
+              );
+              
+              // Filter for correct time
+              const validFeatures = pointFeatures.filter(f => 
+                f.properties.time === timeString
+              );
+              
+              gridFeatures = [...gridFeatures, ...validFeatures];
+            }
+          });
+          
+          // De-duplicate features
+          const uniqueIds = new Set();
+          features = gridFeatures.filter(feature => {
+            // Create a unique ID using coordinates and properties
+            const id = `${feature.geometry.coordinates[0]}_${feature.geometry.coordinates[1]}_${feature.properties.PM25}`;
+            if (uniqueIds.has(id)) return false;
+            uniqueIds.add(id);
+            return true;
+          });
+          
+          console.log(`Method 4: Found ${features.length} features using grid sampling`);
+        } catch (err) {
+          console.warn('Error using grid sampling method:', err);
+        }
+      }
+
+      console.log(`Final result: Found ${features.length} PM2.5 data points to process`);
+
+      // If no features found but we have cached data, use that instead
+      if (features.length === 0 && lastValidPM25DataRef.current) {
+        console.log('No new data found, using cached PM2.5 data');
+        setStats(prev => ({
+          ...prev,
+          exposureByPM25: {
+            value: lastValidPM25DataRef.current.value,
+            distribution: lastValidPM25DataRef.current.distribution,
+            isLoading: false,
+            error: null
+          }
+        }));
+        return;
+      }
+
+      // Initialize exposure categories using our local PM25_LEVELS
+      const exposureByPM25 = {};
+      const distributionByPM25 = {};
+      PM25_LEVELS.forEach(level => {
+        exposureByPM25[level.label] = 0;
+        distributionByPM25[level.label] = 0;
       });
 
-      // Initialize exposure categories
-      const exposureByPM25 = PM25_LEVELS.reduce((acc, level) => {
-        acc[level.label] = 0;
-        return acc;
-      }, {});
-
       let calculatedAvgPM25 = 0;
+      let hasData = false;
 
       if (features.length > 0) {
         // Create grid of PM2.5 values
@@ -213,34 +394,104 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
           return grid;
         }, []);
 
+        console.log(`Created PM2.5 grid with ${pm25Grid.length} valid points`);
+
         // Calculate average PM2.5 and distribute population
         if (pm25Grid.length > 0) {
           calculatedAvgPM25 = pm25Grid.reduce((sum, point) => sum + point.pm25, 0) / pm25Grid.length;
+          console.log(`Average PM2.5 for the area: ${calculatedAvgPM25.toFixed(1)}`);
 
-          // Get census data
-          const totalPopulation = censusDataRef.current.summary.totalPopulation;
-
-          // For each PM2.5 grid point, assign population proportion
+          // First, count points in each category for distribution calculation
+          const pointsPerCategory = {};
+          PM25_LEVELS.forEach(level => {
+            pointsPerCategory[level.label] = 0;
+          });
+          
+          // Count points in each category
           pm25Grid.forEach(gridPoint => {
             const category = PM25_LEVELS.find((level, index) => {
               const nextLevel = PM25_LEVELS[index + 1];
               return gridPoint.pm25 >= level.value && (!nextLevel || gridPoint.pm25 < nextLevel.value);
             });
-
+            
             if (category) {
-              // Distribute population evenly across grid points
-              const pointContribution = totalPopulation / pm25Grid.length;
-              exposureByPM25[category.label] += pointContribution;
+              pointsPerCategory[category.label]++;
+              hasData = true;
             }
           });
-
-          // Round the values
-          Object.keys(exposureByPM25).forEach(key => {
-            exposureByPM25[key] = Math.round(exposureByPM25[key]);
+          
+          // Calculate distribution percentages based on point count
+          const totalPoints = pm25Grid.length;
+          PM25_LEVELS.forEach(level => {
+            const count = pointsPerCategory[level.label] || 0;
+            distributionByPM25[level.label] = totalPoints > 0 
+              ? parseFloat((count / totalPoints * 100).toFixed(1))
+              : 0;
           });
+
+          // Get census data for population distribution
+          const totalPopulation = censusDataRef.current?.summary?.totalPopulation;
+          
+          if (totalPopulation) {
+            console.log(`Total population: ${totalPopulation.toLocaleString()}`);
+
+            // Distribute population based on point distribution
+            PM25_LEVELS.forEach(level => {
+              const pointCount = pointsPerCategory[level.label] || 0;
+              const proportion = totalPoints > 0 ? pointCount / totalPoints : 0;
+              exposureByPM25[level.label] = Math.round(proportion * totalPopulation);
+            });
+          } else {
+            console.log("No population data available, using point counts");
+            // Just use the point counts
+            PM25_LEVELS.forEach(level => {
+              exposureByPM25[level.label] = pointsPerCategory[level.label] || 0;
+            });
+          }
         }
       }
 
+      // If we still have no data after all attempts, but have cached data
+      if (!hasData && lastValidPM25DataRef.current) {
+        console.warn('Could not find new PM2.5 data, using cached data');
+        setStats(prev => ({
+          ...prev,
+          exposureByPM25: {
+            value: lastValidPM25DataRef.current.value,
+            distribution: lastValidPM25DataRef.current.distribution,
+            isLoading: false,
+            error: null
+          }
+        }));
+        return;
+      }
+      
+      // If we have no data and no cache, show error
+      if (!hasData && !lastValidPM25DataRef.current) {
+        console.warn('Could not find any PM2.5 data for this area and time period');
+        setStats(prev => ({
+          ...prev,
+          exposureByPM25: {
+            value: null,
+            distribution: null,
+            isLoading: false,
+            error: 'No PM2.5 data available for this area'
+          }
+        }));
+        return;
+      }
+
+      // Cache the valid data for future use
+      if (hasData) {
+        lastValidPM25DataRef.current = {
+          value: exposureByPM25,
+          distribution: distributionByPM25,
+          avgPM25: calculatedAvgPM25,
+          timestamp: Date.now()
+        };
+      }
+
+      // Update state with calculated values
       setStats(prev => ({
         ...prev,
         censusStats: {
@@ -249,27 +500,47 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
         },
         exposureByPM25: {
           value: exposureByPM25,
+          distribution: distributionByPM25,
           isLoading: false,
           error: null
         }
       }));
 
+      console.log('PM2.5 Exposure calculated:', exposureByPM25);
+      console.log('PM2.5 Distribution calculated:', distributionByPM25);
+
     } catch (error) {
       console.error('Error calculating exposure:', error);
-      setStats(prev => ({
-        ...prev,
-        exposureByPM25: {
-          value: prev.exposureByPM25.value,
-          isLoading: false,
-          error: 'Failed to calculate exposure'
-        }
-      }));
+      
+      // Try to use cached data if available
+      if (lastValidPM25DataRef.current) {
+        console.log('Using cached data due to error');
+        setStats(prev => ({
+          ...prev,
+          exposureByPM25: {
+            value: lastValidPM25DataRef.current.value,
+            distribution: lastValidPM25DataRef.current.distribution,
+            isLoading: false,
+            error: null
+          }
+        }));
+      } else {
+        setStats(prev => ({
+          ...prev,
+          exposureByPM25: {
+            value: null,
+            distribution: null,
+            isLoading: false,
+            error: 'Failed to calculate PM2.5 exposure'
+          }
+        }));
+      }
     }
   }, [map, polygon, currentDateTime]);
 
-  // Debounced version of calculateExposure
+  // Use a less aggressive debounce to ensure data persists
   const debouncedCalculateExposure = useCallback(
-    _.debounce(() => calculateExposure(), 1000, { leading: true, trailing: true }),
+    _.debounce(() => calculateExposure(), 500, { leading: true, trailing: false }),
     [calculateExposure]
   );
 
@@ -280,13 +551,21 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
 
   // Update exposure when time changes
   useEffect(() => {
-    if (censusDataRef.current) {
-      debouncedCalculateExposure();
-    }
+    debouncedCalculateExposure();
     return () => debouncedCalculateExposure.cancel();
   }, [debouncedCalculateExposure]);
 
   if (!polygon) return null;
+
+  // Get color for PM2.5 level directly from our hard-coded values
+  const getPM25Color = (label) => {
+    // Find the matching level
+    const level = PM25_LEVELS.find(l => l.label === label);
+    if (!level) return isDarkMode ? '#00ff9d' : '#00e400'; // Default to Good color
+    
+    // Return the hard-coded color
+    return isDarkMode ? level.darkColor : level.color;
+  };
 
   return (
     <div className={`backdrop-blur-md rounded-xl border-2 border-purple-500 shadow-lg px-6 py-4 ${
@@ -329,16 +608,38 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
             }`}>
               {stats.exposureByPM25.error}
             </div>
-          ) : !stats.exposureByPM25.isLoading && stats.exposureByPM25.value && (
+          ) : stats.exposureByPM25.isLoading ? (
+            <div className={`text-sm ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              Loading PM2.5 data...
+            </div>
+          ) : !stats.exposureByPM25.value ? (
+            <div className={`text-sm ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              No PM2.5 data available
+            </div>
+          ) : (
             <div className={`mt-2 rounded-lg ${
                 isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50/50'
               } p-3 space-y-2`}>
               {PM25_LEVELS.map(category => {
+                // Get population for this category
                 const population = stats.exposureByPM25.value[category.label] || 0;
-                if (population === 0) return null;
+                
+                // Skip rendering if there's no population in this category
+                if (population <= 0) return null;
+                
+                // Use distribution percentage instead of calculating from population
+                const percentage = stats.exposureByPM25.distribution ? 
+                  stats.exposureByPM25.distribution[category.label] || 0 : 0;
 
-                const percentage = stats.censusStats.value?.totalPopulation ?
-                  (population / stats.censusStats.value.totalPopulation * 100).toFixed(1) : 0;
+                // Set a minimum visible width for non-zero categories
+                const barWidth = Math.max(5, percentage);
+
+                // Use the direct color method
+                const barColor = getPM25Color(category.label);
 
                 return (
                   <div key={category.label} className="space-y-1">
@@ -347,7 +648,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
                         {category.label} ({category.value}+)
                       </span>
                       <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                        {population.toLocaleString()} ({percentage}%)
+                        ({percentage.toFixed(1)}%)
                       </span>
                     </div>
                     <div className={`h-2 w-full rounded-lg overflow-hidden ${
@@ -356,16 +657,14 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
                       <div
                         className="h-full transition-all duration-300"
                         style={{
-                          width: `${percentage}%`,
-                          backgroundColor: isDarkMode ? 
-                            NEON_PM25_COLORS.darkMode[category.label.toLowerCase().replace(/\s+/g, '')] || '#00ff9d' : 
-                            NEON_PM25_COLORS.lightMode[category.label.toLowerCase().replace(/\s+/g, '')] || '#00e400'
+                          width: `${barWidth}%`,
+                          backgroundColor: barColor
                         }}
                       />
                     </div>
                   </div>
                 );
-              })}
+              }).filter(Boolean)}
             </div>
           )}
         </div>

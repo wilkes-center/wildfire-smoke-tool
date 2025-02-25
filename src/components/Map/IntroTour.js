@@ -11,7 +11,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
 
   const tourSteps = [
     {
-      title: "Welcome to the xxx Visualizer",
+      title: "Welcome to --- ",
       description: "This interactive map shows PM2.5 air quality data across the United States. We'll walk you through the main features to help you get started.",
       target: null,
       icon: MapPin
