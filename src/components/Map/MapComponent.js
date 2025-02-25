@@ -15,7 +15,6 @@ import DrawingTooltip from './DrawingTooltip';
 import PopulationExposureCounter from './controls/PopulationExposureCounter';
 import handleEnhancedMapClick from './controls/handleEnhancedMapClick.js';
 import ZoomControls from './controls/ZoomControls';
-import { setupCensusLayers, updateCensusLayerColors } from '../../utils/map/censusLayers.js';
 import { censusPreloader } from '../../utils/map/censusPreloader';
 import IntroTour from './IntroTour';
 import TourButton from './TourButton';
@@ -56,7 +55,7 @@ const MapComponent = () => {
   const [censusError, setCensusError] = useState(null);
 
   const [lastClickTime, setLastClickTime] = useState(0);
-  const DOUBLE_CLICK_THRESHOLD = 300; // milliseconds
+  const DOUBLE_CLICK_THRESHOLD = 300; 
 
   // Handle tour completion
   const handleTourComplete = () => {

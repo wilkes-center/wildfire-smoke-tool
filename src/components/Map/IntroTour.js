@@ -7,10 +7,11 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
   const [highlightedElement, setHighlightedElement] = useState(null);
   const [previousElement, setPreviousElement] = useState(null);
   const cleanupFunctionRef = useRef(null);
+  const highlightedElementsRef = useRef(new Set());
 
   const tourSteps = [
     {
-      title: "Welcome to the Air Quality Visualizer",
+      title: "Welcome to the xxx Visualizer",
       description: "This interactive map shows PM2.5 air quality data across the United States. We'll walk you through the main features to help you get started.",
       target: null,
       icon: MapPin
@@ -52,12 +53,56 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
     },
     {
       title: "Zoom Controls",
-      description: "Zoom in and out of the map, or reset to the default view. Zooming in reveals more detailed air quality patterns in specific regions.",
+      description: "Zoom in and out of the map, or reset to the default view.",
       target: "zoom-controls",
       position: "right",
       icon: MapPin
     }
   ];
+
+  // Improved cleanup function that removes all styles completely
+  const cleanupElement = useCallback((element) => {
+    if (element && document.body.contains(element)) {
+      try {
+        // Simply remove the entire style attribute instead of trying to reset individual properties
+        element.removeAttribute('style');
+        highlightedElementsRef.current.delete(element);
+      } catch (err) {
+        console.error("Error cleaning up element:", err);
+      }
+    }
+  }, []);
+
+  // Thoroughly cleanup all elements that might have tour styling
+  const performFinalCleanup = useCallback(() => {
+    console.log("Performing final cleanup of all tour highlights");
+    
+    // Clean any elements we've tracked
+    highlightedElementsRef.current.forEach(cleanupElement);
+    highlightedElementsRef.current.clear();
+    
+    // Also search for any elements with style attributes that might be tour-related
+    const styledElements = document.querySelectorAll('[style]');
+    
+    styledElements.forEach(el => {
+      try {
+        const style = el.getAttribute('style') || '';
+        
+        // Check if it has any tour-related styling
+        if (style.includes('outline') || 
+            style.includes('purple') || 
+            style.includes('scale(1.02)') ||
+            style.includes('box-shadow') && style.includes('rgba(168, 85, 247') ||
+            style.includes('z-index: 1050')) {
+          
+          console.log("Cleaning element with tour styling:", el);
+          el.removeAttribute('style');
+        }
+      } catch (err) {
+        console.error("Error cleaning element:", err);
+      }
+    });
+  }, [cleanupElement]);
 
   // Handle next/previous/skip with proper cleanup
   const handleNext = () => {
@@ -71,22 +116,17 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
       cleanupFunctionRef.current = null;
     }
     
-    // Also manually clean up the current highlighted element
-    if (highlightedElement && document.body.contains(highlightedElement)) {
-      highlightedElement.style.position = '';
-      highlightedElement.style.zIndex = '';
-      highlightedElement.style.outline = '';
-      highlightedElement.style.outlineOffset = '';
-      highlightedElement.style.boxShadow = '';
-      highlightedElement.style.transform = '';
-      highlightedElement.style.transition = '';
-    }
+    // Also directly clean the current highlighted element
+    cleanupElement(highlightedElement);
     
     if (currentStep < tourSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       // If this is the last step, perform a final thorough cleanup
       performFinalCleanup();
+      // Add a delay for a second cleanup pass to catch any transitions
+      setTimeout(performFinalCleanup, 100);
+      
       setIsVisible(false);
       if (onComplete) onComplete();
     }
@@ -103,16 +143,8 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
       cleanupFunctionRef.current = null;
     }
     
-    // Also manually clean up the current highlighted element
-    if (highlightedElement && document.body.contains(highlightedElement)) {
-      highlightedElement.style.position = '';
-      highlightedElement.style.zIndex = '';
-      highlightedElement.style.outline = '';
-      highlightedElement.style.outlineOffset = '';
-      highlightedElement.style.boxShadow = '';
-      highlightedElement.style.transform = '';
-      highlightedElement.style.transition = '';
-    }
+    // Also directly clean the current highlighted element
+    cleanupElement(highlightedElement);
     
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
@@ -130,81 +162,26 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
       cleanupFunctionRef.current = null;
     }
     
-    // Also manually clean up the current highlighted element
-    if (highlightedElement && document.body.contains(highlightedElement)) {
-      highlightedElement.style.position = '';
-      highlightedElement.style.zIndex = '';
-      highlightedElement.style.outline = '';
-      highlightedElement.style.outlineOffset = '';
-      highlightedElement.style.boxShadow = '';
-      highlightedElement.style.transform = '';
-      highlightedElement.style.transition = '';
-    }
+    // Also directly clean the current highlighted element
+    cleanupElement(highlightedElement);
     
     // Perform a thorough cleanup of any element that might have purple outlines
     performFinalCleanup();
+    // Add a delay for a second cleanup pass
+    setTimeout(performFinalCleanup, 100);
     
     setIsVisible(false);
     if (onComplete) onComplete();
   };
-  
-  // Function to thoroughly clean up all highlighting when tour is complete
-  const performFinalCleanup = useCallback(() => {
-    console.log("Performing final cleanup of all tour highlights");
-    
-    // Find any element with purple outline styling and clean it
-    const purpleOutlineElements = document.querySelectorAll('[style*="outline"]');
-    purpleOutlineElements.forEach(el => {
-      try {
-        const styleValue = el.getAttribute('style') || '';
-        if (styleValue.includes('purple') || 
-            styleValue.includes('#a855f7') || 
-            styleValue.includes('#8b5cf6') ||
-            styleValue.includes('#d8b4fe') ||
-            styleValue.includes('#c4b5fd')) {
-          
-          console.log("Cleaning element with purple outline:", el);
-          el.style.position = '';
-          el.style.zIndex = '';
-          el.style.outline = '';
-          el.style.outlineOffset = '';
-          el.style.boxShadow = '';
-          el.style.transform = '';
-          el.style.transition = '';
-        }
-      } catch (err) {
-        console.error("Error cleaning element:", err);
-      }
-    });
-    
-    // Also check for elements with box-shadow or scale transform
-    const boxShadowElements = document.querySelectorAll('[style*="box-shadow"]');
-    boxShadowElements.forEach(el => {
-      try {
-        el.style.boxShadow = '';
-      } catch (err) {
-        console.error("Error removing box-shadow:", err);
-      }
-    });
-    
-    const transformElements = document.querySelectorAll('[style*="scale"]');
-    transformElements.forEach(el => {
-      try {
-        el.style.transform = '';
-      } catch (err) {
-        console.error("Error removing transform:", err);
-      }
-    });
-  }, []);
 
-  // Helper function to find elements by different strategies
   const findElementByMultipleSelectors = useCallback((targetId) => {
     // Try different selector strategies in order of preference
     const selectors = [
       `[data-tour="${targetId}"]`,                  // 1. Exact data-tour attribute
-      `[class*="${targetId}"]`,                     // 2. Class contains target name
-      `[class*="${targetId.replace(/-/g, "")}"]`,   // 3. Class with no hyphens
-      `[title*="${targetId.replace(/-/g, " ")}"]`   // 4. Title attribute contains words
+      `[id="tour-${targetId}"]`,                    // 2. ID with tour- prefix
+      `[class*="${targetId}"]`,                     // 3. Class contains target name
+      `[class*="${targetId.replace(/-/g, "")}"]`,   // 4. Class with no hyphens
+      `[title*="${targetId.replace(/-/g, " ")}"]`   // 5. Title attribute contains words
     ];
     
     // For specific cases - more specific selectors for each component
@@ -230,9 +207,11 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
       );
     } else if (targetId === 'theme-controls') {
       selectors.push(
-        '[class*="ThemeControls"]',
-        '.flex.items-center.gap-2',
-        '.fixed.top-4 .flex.items-center.gap-4 > :nth-child(3)'
+        '[title="Switch to light mode"]',
+        '[title="Switch to dark mode"]',
+        '.w-10.h-10.rounded-lg:has(svg[class*="Sun"], svg[class*="Moon"])',
+        '.flex.items-center.gap-2 > button:first-child',
+        '.fixed.top-4 .flex.items-center.gap-4 > :nth-child(3) > .flex.items-center.gap-2 > button:first-child'
       );
     } else if (targetId === 'draw-button') {
       selectors.push(
@@ -299,17 +278,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
     }
     
     // Also directly clear styles from previous element as a backup method
-    if (previousElement && document.body.contains(previousElement)) {
-      console.log("Manually cleaning up previous element");
-      previousElement.style.position = '';
-      previousElement.style.zIndex = '';
-      previousElement.style.outline = '';
-      previousElement.style.outlineOffset = '';
-      previousElement.style.boxShadow = '';
-      previousElement.style.transform = '';
-      previousElement.style.transition = '';
-      void previousElement.offsetHeight; // Force repaint
-    }
+    cleanupElement(previousElement);
     
     // Add a small delay to ensure the UI has rendered
     const timeoutId = setTimeout(() => {
@@ -320,21 +289,98 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
         // Add better debug information
         if (element) {
           console.log(`Found element for ${step.target}:`, element);
-          setPreviousElement(element);
+          setPreviousElement(highlightedElement);
+          setHighlightedElement(element);
+          
+          // Track this element for later cleanup
+          highlightedElementsRef.current.add(element);
+          
+          // Apply highlighting
+          const applyHighlighting = () => {
+            if (!element || !document.body.contains(element)) return () => {};
+
+            // Check if this is the time controls to apply special highlighting
+            const isTimeControls = step.target === 'time-controls';
+            
+            // Add highlighting - simply set these properties directly
+            element.style.position = element.style.position === 'static' ? 'relative' : element.style.position;
+            element.style.zIndex = '1050';
+            element.style.outline = `2px solid ${isDarkMode ? '#a855f7' : '#8b5cf6'}`;
+            element.style.outlineOffset = '4px';
+            element.style.boxShadow = `0 0 0 4px ${isDarkMode ? 'rgba(168, 85, 247, 0.3)' : 'rgba(139, 92, 246, 0.3)'}`;
+            element.style.transition = 'outline 0.2s, box-shadow 0.2s';
+            
+            // Only apply scale transform if NOT time controls
+            if (!isTimeControls) {
+              element.style.transform = 'scale(1.02)';
+              element.style.transition += ', transform 0.2s';
+            }
+            
+            // Create cleanup function
+            return () => {
+              cleanupElement(element);
+            };
+          };
+          
+          // Set up the cleanup function for later
+          cleanupFunctionRef.current = applyHighlighting();
         } else {
           console.warn(`Could not find element for ${step.target}`);
           setPreviousElement(null);
+          setHighlightedElement(null);
         }
-        
-        setHighlightedElement(element);
       } else {
         setHighlightedElement(null);
         setPreviousElement(null);
       }
-    }, 20); 
+    }, 50); 
     
     return () => clearTimeout(timeoutId);
-  }, [currentStep, tourSteps, findElementByMultipleSelectors, previousElement]);
+  }, [currentStep, tourSteps, findElementByMultipleSelectors, previousElement, isDarkMode, highlightedElement, cleanupElement]);
+
+  // Create a MutationObserver to watch for style changes after tour ends
+  useEffect(() => {
+    if (!isVisible) {
+      // If tour is not visible, watch for any residual styling
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            const el = mutation.target;
+            const style = el.getAttribute('style') || '';
+            
+            // Check if this looks like tour styling
+            if ((style.includes('outline') && (
+                style.includes('purple') || 
+                style.includes('#a855f7') || 
+                style.includes('#8b5cf6'))) ||
+                (style.includes('box-shadow') && 
+                 style.includes('scale(1.02)'))) {
+              
+              console.log('Removing residual tour styling:', el);
+              el.removeAttribute('style');
+            }
+          }
+        });
+      });
+      
+      // Start observing the document for one second after tour ends
+      observer.observe(document.body, { 
+        subtree: true, 
+        attributes: true,
+        attributeFilter: ['style'] 
+      });
+      
+      // Stop after 1 second to avoid performance issues
+      const timeoutId = setTimeout(() => {
+        observer.disconnect();
+      }, 1000);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        observer.disconnect();
+      };
+    }
+  }, [isVisible]);
 
   // Handle component unmounting - make sure to clean up any highlighting
   useEffect(() => {
@@ -360,6 +406,9 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
       if (window.cleanUpTourHighlights) {
         window.cleanUpTourHighlights();
       }
+      
+      // Perform final cleanup
+      performFinalCleanup();
       
       // Remove the global function
       delete window.cleanUpTourHighlights;
@@ -476,7 +525,6 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
           isLastStep={currentStep === tourSteps.length - 1}
           stepNumber={currentStep}
           totalSteps={tourSteps.length - 1}
-          cleanupFunctionRef={cleanupFunctionRef}
         />
       )}
     </div>
@@ -493,8 +541,7 @@ const FeatureTooltip = ({
   onSkip,
   isLastStep,
   stepNumber,
-  totalSteps,
-  cleanupFunctionRef
+  totalSteps
 }) => {
   const [position, setPosition] = useState({ top: 0, left: 0 });
   
@@ -512,7 +559,7 @@ const FeatureTooltip = ({
       case 'draw-button':
         return { top: 100, left: window.innerWidth / 2 + 250 };
       case 'zoom-controls':
-        return { top: window.innerHeight / 2, left: 100 };
+        return { top: window.innerHeight / 2 , left: 100 };
       default:
         return { top: window.innerHeight / 2, left: window.innerWidth / 2 };
     }
@@ -521,12 +568,6 @@ const FeatureTooltip = ({
   useEffect(() => {
     // Helper for finding the position
     const updatePosition = () => {
-      // Clean up previous highlight if we're switching elements
-      if (cleanupFunctionRef.current) {
-        cleanupFunctionRef.current();
-        cleanupFunctionRef.current = null;
-      }
-      
       // If we have the element, position next to it
       if (element) {
         try {
@@ -538,7 +579,7 @@ const FeatureTooltip = ({
           
           switch(step.position) {
             case 'top':
-              top = rect.top - tooltipHeight - 10;
+              top = rect.top - tooltipHeight - 50;
               left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
               break;
             case 'bottom':
@@ -569,91 +610,24 @@ const FeatureTooltip = ({
           }
           
           setPosition({ top, left });
-          
-          // Store original styles to restore them later
-          const originalStyles = {
-            position: element.style.position,
-            zIndex: element.style.zIndex,
-            outline: element.style.outline,
-            outlineOffset: element.style.outlineOffset,
-            boxShadow: element.style.boxShadow,
-            transform: element.style.transform,
-            transition: element.style.transition
-          };
-          
-          // Enhanced element highlighting - apply both outline and a pseudo-element highlight
-          element.style.position = element.style.position === 'static' ? 'relative' : element.style.position;
-          element.style.zIndex = '1050';
-          element.style.outline = `2px solid ${isDarkMode ? '#a855f7' : '#8b5cf6'}`;
-          element.style.outlineOffset = '4px';
-          element.style.boxShadow = `0 0 0 4px ${isDarkMode ? 'rgba(168, 85, 247, 0.3)' : 'rgba(139, 92, 246, 0.3)'}`;
-          element.style.transition = 'outline 0.2s, box-shadow 0.2s, transform 0.2s';
-          element.style.transform = 'scale(1.02)';
-          
-          // Add a subtle animation to draw attention
-          const pulseAnimation = () => {
-            element.style.outline = `2px solid ${isDarkMode ? '#d8b4fe' : '#c4b5fd'}`;
-            element.style.boxShadow = `0 0 0 6px ${isDarkMode ? 'rgba(168, 85, 247, 0.15)' : 'rgba(139, 92, 246, 0.15)'}`;
-            
-            setTimeout(() => {
-              if (element) { // Check if element still exists
-                element.style.outline = `2px solid ${isDarkMode ? '#a855f7' : '#8b5cf6'}`;
-                element.style.boxShadow = `0 0 0 4px ${isDarkMode ? 'rgba(168, 85, 247, 0.3)' : 'rgba(139, 92, 246, 0.3)'}`;
-              }
-            }, 700);
-          };
-          
-          // Start pulsing
-          pulseAnimation();
-          const pulseInterval = setInterval(pulseAnimation, 1500);
-          
-          // Create cleanup function and store it in the ref
-          const cleanup = () => {
-            // Clear interval first
-            clearInterval(pulseInterval);
-            
-            // Check if element still exists in DOM before trying to modify it
-            if (element && document.body.contains(element)) {
-              console.log("Cleaning up element styles:", element);
-              // Completely remove the styles instead of trying to restore them
-              element.style.position = '';
-              element.style.zIndex = '';
-              element.style.outline = '';
-              element.style.outlineOffset = '';
-              element.style.boxShadow = '';
-              element.style.transform = '';
-              element.style.transition = '';
-              
-              // Force a repaint to ensure styles are cleared
-              void element.offsetHeight;
-            }
-          };
-          
-          // Store cleanup function in ref so it can be accessed from outside
-          cleanupFunctionRef.current = cleanup;
-          
-          return cleanup;
         } catch (error) {
           console.warn("Error positioning tooltip:", error);
         }
-      } 
-      
-      // If no element, use default positions
-      const defaultPos = getDefaultPosition(step.target);
-      setPosition(defaultPos);
-      return () => {};
+      } else {
+        // If no element, use default positions
+        const defaultPos = getDefaultPosition(step.target);
+        setPosition(defaultPos);
+      }
     };
     
     // Update position immediately and on resize
-    const cleanup = updatePosition();
+    updatePosition();
     window.addEventListener('resize', updatePosition);
     
-    // Make sure we clean up when component unmounts
     return () => {
-      if (cleanup) cleanup();
       window.removeEventListener('resize', updatePosition);
     };
-  }, [element, step.position, step.target, isDarkMode, cleanupFunctionRef]);
+  }, [element, step.position, step.target]);
 
   return (
     <div 
