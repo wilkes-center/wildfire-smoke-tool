@@ -26,21 +26,23 @@ const CustomTooltip = ({ active, payload, label, isDarkMode }) => {
   return null;
 };
 
-const CustomXAxisTick = ({ x, y, payload, isDarkMode }) => {
+  const CustomXAxisTick = ({ x, y, payload, isDarkMode }) => {
   const [date, time] = payload.value.split(' ');
   const hour = parseInt(time);
   
-  // Show hour every 3 hours
-  const showHour = hour % 6 === 0;
+  // Always show 0, 6, 12, 18, 24 hours
+  const keyHours = [0, 6, 12, 18];
+  const showHour = keyHours.includes(hour);
   // Show date at midnight
   const showDate = hour === 0;
 
-  if (!showHour && !showDate) return null;
+  // Always render key hours
+  if (!keyHours.includes(hour) && !showDate) return null;
 
   const content = showDate ? (
-    <text
+          <text
       x={x}
-      y={y + 35}
+      y={y + 16}
       textAnchor="middle"
       fill={isDarkMode ? '#9CA3AF' : '#6B7280'}
       style={{ fontSize: '12px', fontWeight: 'bold' }}
@@ -50,10 +52,10 @@ const CustomXAxisTick = ({ x, y, payload, isDarkMode }) => {
   ) : (
     <text
       x={x}
-      y={y + 20}
+      y={y + 12}
       textAnchor="middle"
       fill={isDarkMode ? '#9CA3AF' : '#6B7280'}
-      style={{ fontSize: '12px' }}
+      style={{ fontSize: '11px' }}
     >
       {`${hour}:00`}
     </text>
@@ -172,6 +174,27 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
     }
     return acc;
   }, []);
+  
+  // Find max value for better domain calculation
+  const findMaxValue = () => {
+    const values = data.flatMap(item => [
+      item.minPM25,
+      item.averagePM25,
+      item.maxPM25
+    ]).filter(val => val !== undefined && !isNaN(val));
+    
+    const max = Math.max(...values);
+    
+    // Calculate a reasonable max with less padding to avoid wasted space
+    // If max value is very small (less than 2), add less padding to utilize space better
+    if (max < 2) {
+      return Math.ceil(max * 1.05); // Only 5% padding for small values
+    } else {
+      return Math.ceil(max * 1.1); // 10% padding for larger values
+    }
+  };
+  
+  const max = findMaxValue();
 
   return (
     <div className={`h-[320px] w-full relative ${
@@ -180,7 +203,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
       <ResponsiveContainer>
         <LineChart 
           data={data}
-          margin={{ top: 20, right: 10, left: -20, bottom: 45 }}
+          margin={{ top: 20, right: 10, left: 0, bottom: 30 }}
         >
           <CartesianGrid 
             strokeDasharray="3 3" 
@@ -196,9 +219,10 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
           ))}
           <XAxis 
             dataKey="time"
-            height={60}
+            height={25}
             tick={<CustomXAxisTick isDarkMode={isDarkMode} />}
             interval={0}
+            tickSize={3}
             axisLine={{ stroke: isDarkMode ? '#374151' : '#E5E7EB' }}
           />
           <YAxis 
@@ -206,7 +230,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
               fill: isDarkMode ? '#9CA3AF' : '#6B7280',
               fontSize: 12 
             }}
-            domain={[0, 'dataMax + 10']}
+            domain={[0, max]} // Start from 0, go to calculated max
             axisLine={{ stroke: isDarkMode ? '#374151' : '#E5E7EB' }}
           />
           <Tooltip content={<CustomTooltip isDarkMode={isDarkMode} />} />
