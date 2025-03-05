@@ -11,21 +11,21 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
 
   const tourSteps = [
     {
-      title: "Welcome to --- ",
-      description: "This interactive map shows PM2.5 air quality data across the United States. We'll walk you through the main features to help you get started.",
+      title: "Welcome to PM2.5 visualization tool",
+      description: "This interactive map shows PM2.5 air quality data from Smoke across the United States. We'll walk you through the main features to help you get started.",
       target: null,
       icon: MapPin
     },
     {
       title: "Time Controls",
-      description: "Use these controls to play through time, change the playback speed, or jump to a specific time. This lets you see how air quality changes over multiple days.",
+      description: "Use these controls to play through time, change the playback speed, or jump to a specific time. This lets you see how air quality changes over 4 days, 2 days of archival data and 2 days of forecast data.",
       target: "time-controls",
       position: "top",
       icon: Clock
     },
     {
       title: "PM2.5 Threshold",
-      description: "Adjust this slider to filter air quality data. Only areas with PM2.5 levels above this threshold will be visible. Higher values show only the most affected areas.",
+      description: "Adjust this slider or enter a value to filter air quality data. Only areas with PM2.5 levels above or at this threshold will be visible. ",
       target: "pm25-threshold",
       position: "bottom",
       icon: Wind
@@ -348,7 +348,6 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
             const el = mutation.target;
             const style = el.getAttribute('style') || '';
             
-            // Check if this looks like tour styling
             if ((style.includes('outline') && (
                 style.includes('purple') || 
                 style.includes('#a855f7') || 
@@ -362,8 +361,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
           }
         });
       });
-      
-      // Start observing the document for one second after tour ends
+
       observer.observe(document.body, { 
         subtree: true, 
         attributes: true,
@@ -513,7 +511,6 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
         </div>
       )}
 
-      {/* Feature tooltip - shown for steps after the first */}
       {currentStep > 0 && (
         <FeatureTooltip 
           step={tourSteps[currentStep]}
@@ -572,7 +569,7 @@ const FeatureTooltip = ({
       if (element) {
         try {
           const rect = element.getBoundingClientRect();
-          const tooltipWidth = 300;
+          const tooltipWidth = 400;
           const tooltipHeight = 180;
           
           let top, left;
