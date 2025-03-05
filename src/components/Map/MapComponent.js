@@ -824,7 +824,7 @@ const MapComponent = () => {
             setPM25Threshold={setPM25Threshold}
           />
           
-          {/* Intro tour component */}
+
           {showTour && (
             <IntroTour 
               onComplete={handleTourComplete}
@@ -832,7 +832,6 @@ const MapComponent = () => {
             />
           )}
           
-          {/* Tour help button - only shown when tour is not active */}
           {!showTour && (
             <TourButton 
               onClick={() => setShowTour(true)}

@@ -30,10 +30,9 @@ const CustomTooltip = ({ active, payload, label, isDarkMode }) => {
   const [date, time] = payload.value.split(' ');
   const hour = parseInt(time);
   
-  // Always show 0, 6, 12, 18, 24 hours
+  // Always show 0, 6, 12, 18 hours
   const keyHours = [0, 6, 12, 18];
   const showHour = keyHours.includes(hour);
-  // Show date at midnight
   const showDate = hour === 0;
 
   // Always render key hours
@@ -75,8 +74,6 @@ const DateSeparator = ({ x, isDarkMode }) => (
     strokeDasharray="3 3"
   />
 );
-
-
 
 const StatsTable = ({ data, isDarkMode }) => {
   const headerStyles = {
@@ -185,8 +182,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
     
     const max = Math.max(...values);
     
-    // Calculate a reasonable max with less padding to avoid wasted space
-    // If max value is very small (less than 2), add less padding to utilize space better
+
     if (max < 2) {
       return Math.ceil(max * 1.05); // Only 5% padding for small values
     } else {
