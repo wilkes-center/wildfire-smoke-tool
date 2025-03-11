@@ -18,6 +18,7 @@ import ZoomControls from './controls/ZoomControls';
 import { censusPreloader } from '../../utils/map/censusPreloader';
 import IntroTour from './IntroTour';
 import TourButton from './TourButton';
+import DrawingHelperOverlay from './DrawingHelperOverlay';
 
 const MapComponent = () => {
   const mapRef = useRef(null);
@@ -799,7 +800,14 @@ const MapComponent = () => {
             drawingMode={drawingMode} 
             tempPolygon={tempPolygon}
           />
-  
+          
+          <DrawingHelperOverlay
+            drawingMode={drawingMode}
+            tempPolygon={tempPolygon}
+            isDarkMode={isDarkMode}
+            finishDrawing={finishDrawing}
+          />
+            
           {/* Bottom controls */}
           <MapControls
             currentHour={currentHour}

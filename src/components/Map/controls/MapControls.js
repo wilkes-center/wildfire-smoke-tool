@@ -6,7 +6,6 @@ import PM25ThresholdSlider from './PM25ThresholdSlider';
 import { Pen, X } from 'lucide-react';
 import { TILESET_INFO } from '../../../utils/map/constants.js';
 
-
 const MapControls = ({
   currentHour,
   setCurrentHour,
@@ -55,17 +54,19 @@ const MapControls = ({
               basemapOptions={basemapOptions}
             />
             {!polygon && !drawingMode && (
-              <button
-                onClick={startDrawing}
-                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                  isDarkMode
-                    ? 'bg-gray-800 text-purple-400 hover:bg-gray-700'
-                    : 'bg-gray-50 text-purple-500 hover:bg-gray-100'
-                }`}
-                title="Draw Area"
-              >
-                <Pen className="w-5 h-5" />
-              </button>
+              <>
+                <button
+                  onClick={startDrawing}
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                    isDarkMode
+                      ? 'bg-gray-800 text-purple-400 hover:bg-gray-700'
+                      : 'bg-gray-50 text-purple-500 hover:bg-gray-100'
+                  }`}
+                  title="Draw Area"
+                >
+                  <Pen className="w-5 h-5" />
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -124,21 +125,7 @@ const MapControls = ({
         />
       </div>
 
-      {/* Drawing mode controls - Only show when in drawing mode */}
-      {drawingMode && (
-        <div className="fixed bottom-4 right-4 z-50 pointer-events-auto">
-          <button
-            onClick={finishDrawing}
-            className={`h-12 px-6 rounded-lg text-sm font-medium transition-colors ${
-              isDarkMode
-                ? 'bg-purple-900/50 hover:bg-purple-900/70 text-purple-400'
-                : 'bg-purple-50 hover:bg-purple-100 text-purple-600'
-            }`}
-          >
-            Finish Drawing
-          </button>
-        </div>
-      )}
+      {/* Drawing mode controls - Remove since we now have the finish button in the overlay */}
 
       {/* Clear button - Only show when area is selected */}
       {polygon && !drawingMode && (
