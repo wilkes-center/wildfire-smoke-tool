@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { CornerUpLeft } from 'lucide-react';
+import { getDrawingInstructions } from './drawing/DrawingInstructions';
 
+/**
+ * Specialized tooltip for drawing mode that follows the cursor
+ */
 const DrawingTooltip = ({ drawingMode, tempPolygon }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState(false);
@@ -22,15 +26,8 @@ const DrawingTooltip = ({ drawingMode, tempPolygon }) => {
 
   if (!isVisible || !drawingMode) return null;
 
-  const getMessage = () => {
-    if (tempPolygon.length === 0) {
-      return 'Click to start drawing';
-    }
-    if (tempPolygon.length === 1) {
-      return 'Click to add points';
-    }
-    return 'Double-click to finish';
-  };
+  const message = getDrawingInstructions(tempPolygon.length);
+  const showIcon = tempPolygon.length >= 2;
 
   return (
     <div 
@@ -41,10 +38,10 @@ const DrawingTooltip = ({ drawingMode, tempPolygon }) => {
         transform: 'translate(0, -50%)'
       }}
     >
-      {tempPolygon.length >= 2 && (
+      {showIcon && (
         <CornerUpLeft className="w-4 h-4 mr-2 text-gray-500" />
       )}
-      {getMessage()}
+      {message}
     </div>
   );
 };

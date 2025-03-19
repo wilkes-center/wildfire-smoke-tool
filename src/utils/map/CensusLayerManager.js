@@ -1,4 +1,19 @@
 // src/utils/map/CensusLayerManager.js
+import { waitForMapReady, removeLayerAndSource, updateLayerColors } from './layerUtils';
+
+const CENSUS_SOURCE_ID = 'census-tracts';
+const CENSUS_LAYER_ID = 'census-tracts-layer';
+const CENSUS_COLORS = {
+  'fill-color': {
+    light: '#6B7280',
+    dark: '#374151'
+  },
+  'fill-outline-color': {
+    light: '#374151',
+    dark: '#4B5563'
+  }
+};
+
 class CensusLayerManager {
     constructor() {
       this.layerInitialized = false;
@@ -19,17 +34,6 @@ class CensusLayerManager {
       );
     }
   
-    // Wait for map to be ready
-    async waitForMapReady(map, maxAttempts = 10) {
-      if (!map) return false;
-      
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        if (map.isStyleLoaded()) return true;
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      return false;
-    }
-  
     // Initialize census tract layer
     async initializeLayer(map, isDarkMode) {
       if (!map) throw new Error('Map instance is required');
@@ -42,7 +46,7 @@ class CensusLayerManager {
           this.notifyProgress('layer', 0);
           
           // Wait for map to be ready
-          const isReady = await this.waitForMapReady(map);
+          const isReady = await waitForMapReady(map);
           if (!isReady) {
             throw new Error('Map not ready after maximum attempts');
           }
@@ -50,12 +54,12 @@ class CensusLayerManager {
           this.notifyProgress('layer', 30);
           
           // Clean up existing layers
-          this.cleanupLayers(map);
+          removeLayerAndSource(map, CENSUS_LAYER_ID, CENSUS_SOURCE_ID);
           
           this.notifyProgress('layer', 50);
           
           // Add census tracts source
-          map.addSource('census-tracts', {
+          map.addSource(CENSUS_SOURCE_ID, {
             type: 'vector',
             url: 'mapbox://pkulandh.3r0plqr0',
             maxzoom: 12,
@@ -66,16 +70,16 @@ class CensusLayerManager {
           
           // Add fill layer for census tracts
           map.addLayer({
-            id: 'census-tracts-layer',
+            id: CENSUS_LAYER_ID,
             type: 'fill',
-            source: 'census-tracts',
+            source: CENSUS_SOURCE_ID,
             'source-layer': 'cb_2019_us_tract_500k-2qnt3v',
             minzoom: 4,
             maxzoom: 12,
             paint: {
-              'fill-color': isDarkMode ? '#374151' : '#6B7280',
+              'fill-color': isDarkMode ? CENSUS_COLORS['fill-color'].dark : CENSUS_COLORS['fill-color'].light,
               'fill-opacity': 0,
-              'fill-outline-color': isDarkMode ? '#4B5563' : '#374151'
+              'fill-outline-color': isDarkMode ? CENSUS_COLORS['fill-outline-color'].dark : CENSUS_COLORS['fill-outline-color'].light
             }
           });
           
@@ -102,31 +106,16 @@ class CensusLayerManager {
   
     // Update layer colors
     updateColors(map, isDarkMode) {
-      if (!map || !map.getLayer('census-tracts-layer')) return;
-      
-      try {
-        map.setPaintProperty(
-          'census-tracts-layer',
-          'fill-color',
-          isDarkMode ? '#374151' : '#6B7280'
-        );
-        map.setPaintProperty(
-          'census-tracts-layer',
-          'fill-outline-color',
-          isDarkMode ? '#4B5563' : '#374151'
-        );
-      } catch (error) {
-        console.warn('Error updating census layer colors:', error);
-      }
+      updateLayerColors(map, CENSUS_LAYER_ID, CENSUS_COLORS, isDarkMode);
     }
   
     // Update layer visibility
     updateVisibility(map, visible) {
-      if (!map || !map.getLayer('census-tracts-layer')) return;
+      if (!map || !map.getLayer(CENSUS_LAYER_ID)) return;
       
       try {
         const opacity = visible ? 0.1 : 0;
-        map.setPaintProperty('census-tracts-layer', 'fill-opacity', opacity);
+        map.setPaintProperty(CENSUS_LAYER_ID, 'fill-opacity', opacity);
       } catch (error) {
         console.error('Error updating census layer visibility:', error);
       }
@@ -134,18 +123,7 @@ class CensusLayerManager {
   
     // Clean up census layers
     cleanupLayers(map) {
-      if (!map) return;
-      
-      try {
-        if (map.getLayer('census-tracts-layer')) {
-          map.removeLayer('census-tracts-layer');
-        }
-        if (map.getSource('census-tracts')) {
-          map.removeSource('census-tracts');
-        }
-      } catch (error) {
-        console.warn('Error cleaning up census layers:', error);
-      }
+      removeLayerAndSource(map, CENSUS_LAYER_ID, CENSUS_SOURCE_ID);
     }
   
     // Load and initialize everything

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 import DrawingAnimation from './controls/AnimatedDrawingExample';
+import { canCompletePolygon } from './drawing/DrawingInstructions';
 
 const DrawingHelperOverlay = ({ drawingMode, tempPolygon, isDarkMode, finishDrawing }) => {
   if (!drawingMode) return null;
@@ -22,7 +23,7 @@ const DrawingHelperOverlay = ({ drawingMode, tempPolygon, isDarkMode, finishDraw
   };
   
   const stageInfo = getStageInfo();
-  const showCompletionButton = tempPolygon.length >= 3;
+  const showCompletionButton = canCompletePolygon(tempPolygon);
 
   return (
     <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[60] py-2 px-3 rounded-lg backdrop-blur-md shadow-lg max-w-md ${

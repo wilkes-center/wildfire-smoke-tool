@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import _ from 'lodash';
 import { fetchCensusPopulation, isValidGEOID } from './census-api';
+import { isPointInPolygon, getBoundingBox } from './geometryUtils';
+import { removeLayerAndSource } from './layerUtils';
 
 const censusCache = {
   data: null,
@@ -35,40 +37,6 @@ const initializeCache = () => {
   if (dataCache.initialized) return;
   dataCache.initialized = true;
   dataCache.features = new Map();
-};
-
-// More efficient bounds calculation
-const getBoundingBox = (polygon) => {
-  return polygon.reduce((bounds, [lng, lat]) => ({
-    minLng: Math.min(bounds.minLng, lng),
-    maxLng: Math.max(bounds.maxLng, lng),
-    minLat: Math.min(bounds.minLat, lat),
-    maxLat: Math.max(bounds.maxLat, lat)
-  }), {
-    minLng: Infinity,
-    maxLng: -Infinity,
-    minLat: Infinity,
-    maxLat: -Infinity
-  });
-};
-
-const isPointInPolygon = (point, polygon) => {
-  if (!Array.isArray(point) || point.length < 2) return false;
-  
-  const x = point[0], y = point[1];
-  let inside = false;
-
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i][0], yi = polygon[i][1];
-    const xj = polygon[j][0], yj = polygon[j][1];
-
-    const intersect = ((yi > y) !== (yj > y)) &&
-      (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-
-    if (intersect) inside = !inside;
-  }
-
-  return inside;
 };
 
 const queryFeaturesEfficiently = (map, bounds, layerId) => {
@@ -276,20 +244,21 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
   }
 };
 
+const HIGHLIGHT_SOURCE = 'selected-tracts';
+const HIGHLIGHT_LAYER = 'selected-tracts-highlight';
+const OUTLINE_LAYER = 'selected-tracts-outline';
+
 export const cleanupHighlightLayers = (map) => {
   if (!map) return;
 
-  const HIGHLIGHT_SOURCE = 'selected-tracts';
-  const HIGHLIGHT_LAYER = 'selected-tracts-highlight';
-  const OUTLINE_LAYER = 'selected-tracts-outline';
-
   try {
-    [HIGHLIGHT_LAYER, OUTLINE_LAYER].forEach(id => {
-      if (map.getLayer(id)) map.removeLayer(id);
-    });
-    if (map.getSource(HIGHLIGHT_SOURCE)) {
-      map.removeSource(HIGHLIGHT_SOURCE);
+    // Clean up outline layer separately since it shares the source with highlight layer
+    if (map.getLayer(OUTLINE_LAYER)) {
+      map.removeLayer(OUTLINE_LAYER);
     }
+    
+    // Clean up the highlight layer and its source
+    removeLayerAndSource(map, HIGHLIGHT_LAYER, HIGHLIGHT_SOURCE);
   } catch (error) {
     console.error('Error cleaning up highlight layers:', error);
   }
