@@ -74,7 +74,7 @@ class CensusLayerManager {
             maxzoom: 12,
             paint: {
               'fill-color': isDarkMode ? '#374151' : '#6B7280',
-              'fill-opacity': 0.1,
+              'fill-opacity': 0,
               'fill-outline-color': isDarkMode ? '#4B5563' : '#374151'
             }
           });
