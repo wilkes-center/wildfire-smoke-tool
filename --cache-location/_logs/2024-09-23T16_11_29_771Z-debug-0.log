@@ -1,0 +1,31 @@
+0 verbose cli /Users/kulandhaivel/.nvm/versions/node/v20.17.0/bin/node /Users/kulandhaivel/.nvm/versions/node/v20.17.0/bin/npm
+1 info using npm@10.8.3
+2 info using node@v20.17.0
+3 silly config load:file:/Users/kulandhaivel/.nvm/versions/node/v20.17.0/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/kulandhaivel/Documents/wildfire-webapp/.npmrc
+5 silly config load:file:/Users/kulandhaivel/.npmrc
+6 silly config load:file:/Users/kulandhaivel/.nvm/versions/node/v20.17.0/etc/npmrc
+7 verbose title npm run eslint ./node_modules/.cache/eslint-loader/ content .
+8 verbose argv "run" "eslint" "--cache" "--cache-location" "./node_modules/.cache/eslint-loader/" "--cache-strategy" "content" "."
+9 verbose logfile logs-max:10 dir:/Users/kulandhaivel/Documents/wildfire-webapp/--cache-location/_logs/2024-09-23T16_11_29_771Z-
+10 verbose logfile /Users/kulandhaivel/Documents/wildfire-webapp/--cache-location/_logs/2024-09-23T16_11_29_771Z-debug-0.log
+11 silly logfile done cleaning log files
+12 verbose stack Error: Missing script: "eslint"
+12 verbose stack
+12 verbose stack To see a list of scripts, run:
+12 verbose stack   npm run
+12 verbose stack     at #run (/Users/kulandhaivel/.nvm/versions/node/v20.17.0/lib/node_modules/npm/lib/commands/run-script.js:110:13)
+12 verbose stack     at async RunScript.exec (/Users/kulandhaivel/.nvm/versions/node/v20.17.0/lib/node_modules/npm/lib/commands/run-script.js:39:7)
+12 verbose stack     at async Npm.exec (/Users/kulandhaivel/.nvm/versions/node/v20.17.0/lib/node_modules/npm/lib/npm.js:207:9)
+12 verbose stack     at async module.exports (/Users/kulandhaivel/.nvm/versions/node/v20.17.0/lib/node_modules/npm/lib/cli/entry.js:74:5)
+13 error Missing script: "eslint"
+13 error
+13 error To see a list of scripts, run:
+13 error   npm run
+14 verbose cwd /Users/kulandhaivel/Documents/wildfire-webapp
+15 verbose os Darwin 24.0.0
+16 verbose node v20.17.0
+17 verbose npm  v10.8.3
+18 verbose exit 1
+19 verbose code 1
+20 error A complete log of this run can be found in: /Users/kulandhaivel/Documents/wildfire-webapp/--cache-location/_logs/2024-09-23T16_11_29_771Z-debug-0.log
