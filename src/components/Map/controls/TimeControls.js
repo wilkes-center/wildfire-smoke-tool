@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react';
-import { START_DATE, END_DATE, TOTAL_HOURS } from '../../../utils/map/constants.js';
+import { TOTAL_HOURS } from '../../../utils/map/constants.js';
 
 export const TimeControls = ({
   currentHour,
@@ -14,25 +14,22 @@ export const TimeControls = ({
 }) => {
   const [showSpeedOptions, setShowSpeedOptions] = useState(false);
 
-  
-
   const handlePrevHour = () => {
     const newHour = Math.max(0, currentHour - 1);
     setCurrentHour(newHour);
+    if (onTimeChange) onTimeChange(newHour);
   };
 
   const handleNextHour = () => {
     const newHour = Math.min(TOTAL_HOURS - 1, currentHour + 1);
     setCurrentHour(newHour);
+    if (onTimeChange) onTimeChange(newHour);
   };
 
   const handleSliderChange = (e) => {
     const newHour = parseInt(e.target.value);
     setCurrentHour(newHour);
-    
-    if (typeof onTimeChange === 'function') {
-      onTimeChange(newHour);
-    }
+    if (onTimeChange) onTimeChange(newHour);
   };
 
   const dateMarkers = [24, 48, 72].map(hour => ({
@@ -47,24 +44,18 @@ export const TimeControls = ({
         : 'bg-white/95 border-purple-500/20'
     }`}>
       <div className="flex items-center gap-4">
-        {/* Play/Pause Controls */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsPlaying(!isPlaying)}
             className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-              isPlaying 
-                ? isDarkMode
-                  ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
-                  : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
-                : isDarkMode
-                  ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
-                  : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
+              isDarkMode
+                ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
+                : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
             }`}
           >
             {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
           </button>
 
-          {/* Speed control */}
           <button
             onClick={() => setShowSpeedOptions(!showSpeedOptions)}
             className={`h-10 px-4 rounded-lg text-sm font-medium transition-all ${
@@ -104,7 +95,6 @@ export const TimeControls = ({
           )}
         </div>
 
-        {/* Timeline */}
         <div className="flex-1 flex items-center gap-2">
           <button
             onClick={handlePrevHour}
@@ -117,33 +107,30 @@ export const TimeControls = ({
             <ChevronLeft className="w-5 h-5" />
           </button>
 
-                      <div className="relative flex-1">
-              {/* Current time bubble */}
-              <div 
-                className={`absolute -top-8 py-1 px-2 rounded-lg text-sm font-medium transform -translate-x-1/2 ${
-                  isDarkMode 
-                    ? 'bg-purple-500 text-white' 
-                    : 'bg-purple-500 text-white'
-                }`}
-                style={{ 
-                  left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
-                }}
-              >
-                {String(currentHour % 24).padStart(2, '0')}:00 UTC
-              </div>
+          <div className="relative flex-1">
+            <div 
+              className={`absolute -top-8 py-1 px-2 rounded-lg text-sm font-medium transform -translate-x-1/2 ${
+                isDarkMode 
+                  ? 'bg-purple-500 text-white' 
+                  : 'bg-purple-500 text-white'
+              }`}
+              style={{ 
+                left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
+              }}
+            >
+              {String(currentHour % 24).padStart(2, '0')}:00 UTC
+            </div>
 
-              {/* Vertical time indicator line */}
-              <div 
-                className={`absolute h-8 w-0.5 -translate-x-1/2 ${
-                  isDarkMode ? 'bg-purple-400' : 'bg-purple-500'
-                }`}
-                style={{ 
-                  left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
-                  top: '-8px'
-                }}
-              />
+            <div 
+              className={`absolute h-8 w-0.5 -translate-x-1/2 ${
+                isDarkMode ? 'bg-purple-400' : 'bg-purple-500'
+              }`}
+              style={{ 
+                left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
+                top: '-8px'
+              }}
+            />
 
-              {/* Date markers */}
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 pointer-events-none">
               {dateMarkers.map((marker, index) => (
                 <div
@@ -156,12 +143,10 @@ export const TimeControls = ({
               ))}
             </div>
 
-            {/* Timeline base line */}
             <div className={`absolute h-0.5 w-full top-1/2 -translate-y-1/2 ${
               isDarkMode ? 'bg-gray-600' : 'bg-gray-300'
             }`} />
 
-            {/* Slider filled portion */}
             <div 
               className={`absolute h-0.5 left-0 top-1/2 -translate-y-1/2 transition-all ${
                 isDarkMode ? 'bg-purple-500' : 'bg-purple-500'

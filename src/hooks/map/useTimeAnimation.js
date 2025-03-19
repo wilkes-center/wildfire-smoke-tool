@@ -7,13 +7,14 @@ export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
   const isAnimatingRef = useRef(false);
   const initializedRef = useRef(false);
 
+  // Handle initial frame tick to trigger data loading
   useEffect(() => {
-
     if (initializedRef.current) return;
 
+    // Ensures map layers get loaded properly on first render
     setCurrentHour(hour => {
-
       if (hour === 0) {
+        // Quick toggle to ensure data loading is properly triggered
         setTimeout(() => setCurrentHour(1), 200);
         setTimeout(() => setCurrentHour(0), 400);
       }
@@ -23,9 +24,17 @@ export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
     initializedRef.current = true;
   }, [setCurrentHour]);
 
-  // Standard animation logic
+  // Main animation loop
   useEffect(() => {
-    const animationDuration = 1000 / playbackSpeed; // ms per hour
+    if (!isPlaying) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      return;
+    }
+
+    const animationDuration = 1000 / playbackSpeed;
 
     const animate = (timestamp) => {
       if (!lastTimestampRef.current) {
@@ -34,31 +43,26 @@ export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
       
       const elapsed = timestamp - lastTimestampRef.current;
 
-      if (elapsed >= animationDuration) {
-        if (!isAnimatingRef.current) {
-          isAnimatingRef.current = true;
-          setCurrentHour(prevHour => {
-            const nextHour = prevHour + 1;
-            if (nextHour >= TOTAL_HOURS) {
-              return 0;
-            }
-            return nextHour;
-          });
-          isAnimatingRef.current = false;
-          lastTimestampRef.current = timestamp;
-        }
+      if (elapsed >= animationDuration && !isAnimatingRef.current) {
+        isAnimatingRef.current = true;
+        
+        setCurrentHour(prevHour => {
+          const nextHour = prevHour + 1;
+          return nextHour >= TOTAL_HOURS ? 0 : nextHour;
+        });
+        
+        lastTimestampRef.current = timestamp;
+        isAnimatingRef.current = false;
       }
 
-      if (isPlaying) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      }
+      animationFrameRef.current = requestAnimationFrame(animate);
     };
 
-    if (isPlaying && !animationFrameRef.current) {
-      lastTimestampRef.current = 0;
-      animationFrameRef.current = requestAnimationFrame(animate);
-    }
+    // Start animation loop
+    lastTimestampRef.current = 0;
+    animationFrameRef.current = requestAnimationFrame(animate);
 
+    // Cleanup on unmount or when animation stops
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);

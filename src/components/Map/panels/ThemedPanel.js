@@ -21,7 +21,6 @@ const ThemedPanel = ({
           : 'bg-white/95 border-purple-500'
       } ${className} backdrop-blur-md`}>
         <div className="w-full h-full flex flex-col">
-          {/* Enhanced Header with purple border */}
           <div className={`px-4 py-3 border-b-2 ${
             isDarkMode 
               ? 'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-500' 
@@ -70,7 +69,6 @@ const ThemedPanel = ({
             </div>
           </div>
           
-          {/* Enhanced Content Area */}
           <div className={`flex-1 overflow-hidden ${
             isDarkMode ? 'bg-gray-900/50' : 'bg-white/50'
           }`}>
@@ -81,7 +79,7 @@ const ThemedPanel = ({
     );
   }
 
-  // Minimized state with enhanced styling
+  // Minimized state
   return (
     <button
       onClick={onClose}
@@ -98,7 +96,7 @@ const ThemedPanel = ({
   );
 };
 
-// Parent container for minimized buttons with enhanced spacing
+// Container for minimized buttons with proper spacing
 export const MinimizedContainer = ({ children, isDarkMode }) => (
   <div className="fixed top-20 right-4 z-50 flex flex-col gap-3">
     {children}

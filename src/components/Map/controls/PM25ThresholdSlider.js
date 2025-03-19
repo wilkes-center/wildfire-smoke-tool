@@ -1,14 +1,5 @@
 import React, { useState } from 'react';
-
-const PM25_LEVELS = [
-  { value: 0, label: 'Good', color: '#00e400', position: 0 },
-  { value: 12.1, label: 'Moderate', color: '#ffff00', position: 16.67 },
-  { value: 35.5, label: 'USG', color: '#ff7e00', position: 33.33 },
-  { value: 55.5, label: 'Unhealthy', color: '#ff0000', position: 50 },
-  { value: 150.5, label: 'Very Unhealthy', color: '#8f3f97', position: 66.67 },
-  { value: 250.5, label: 'Hazardous', color: '#7e0023', position: 83.33 },
-  { value: 500, label: 'Hazardous', color: '#7e0023', position: 100 }
-];
+import { PM25_LEVELS } from '../../../constants/pm25Levels';
 
 const PM25ThresholdSlider = ({ 
   pm25Threshold = 1,
@@ -64,8 +55,7 @@ const PM25ThresholdSlider = ({
   };
 
   const handleInputChange = (e) => {
-    const value = e.target.value;
-    setInputValue(value);
+    setInputValue(e.target.value);
   };
 
   const handleInputBlur = () => {
@@ -132,14 +122,13 @@ const PM25ThresholdSlider = ({
 
       {isExpanded && !isEditing && (
         <div 
-          className="absolute left-0 right-0 top-full mt-2 backdrop-blur-sm rounded-xl shadow-lg px-6 py-4 cursor-default"
+          className="absolute left-0 right-0 top-full mt-2 backdrop-blur-sm rounded-xl shadow-lg px-6 py-4 cursor-default z-10"
           onClick={(e) => e.stopPropagation()}
           style={{
             backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)'
           }}
         >
           <div className="relative">
-            {/* Plain slider track with filled portion */}
             <div className={`absolute w-full h-1 rounded-lg ${
               isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
             }`}>
@@ -151,7 +140,6 @@ const PM25ThresholdSlider = ({
               />
             </div>
 
-            {/* Main slider input (transparent) */}
             <input
               type="range"
               min="0"
@@ -162,7 +150,6 @@ const PM25ThresholdSlider = ({
               className="relative w-full h-1 rounded-lg appearance-none cursor-pointer bg-transparent z-10"
             />
 
-            {/* Level markers */}
             <div className="absolute left-0 right-0 top-0 h-1 pointer-events-none">
               {PM25_LEVELS.slice(0, -1).map((level) => (
                 <div

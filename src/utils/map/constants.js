@@ -1,3 +1,5 @@
+import { PM25_LEVELS } from '../../constants/pm25Levels';
+
 const getCurrentUTCDate = () => {
     const now = new Date();
     return new Date(Date.UTC(
@@ -6,9 +8,10 @@ const getCurrentUTCDate = () => {
       now.getUTCDate(),
       0, 0, 0, 0
     ));
-};
+  };
   
-const getDateRange = () => {
+  // Calculate a range of dates centered around today (2 days before, today, and 1 day after)
+  const getDateRange = () => {
     const today = getCurrentUTCDate();
     
     const tomorrow = new Date(today);
@@ -31,15 +34,17 @@ const getDateRange = () => {
       endDate,
       totalHours: Math.floor((endDate - dayBefore) / (1000 * 60 * 60))
     };
-};
-
-const formatDate = (date) => {
+  };
+  
+  // Format a date to YYYYMMDD format
+  const formatDate = (date) => {
     return date.toISOString().split('T')[0].replace(/-/g, '');
-};
-
-const generateTilesetInfo = (date) => {
-  const formattedDate = formatDate(date);
-  const chunks = [
+  };
+  
+  // Generate tileset info for a specific date
+  const generateTilesetInfo = (date) => {
+    const formattedDate = formatDate(date);
+    const chunks = [
       { name: '00to02', start: 0, end: 1 },
       { name: '02to04', start: 2, end: 3 },
       { name: '04to06', start: 4, end: 5 },
@@ -52,41 +57,31 @@ const generateTilesetInfo = (date) => {
       { name: '18to20', start: 18, end: 19 },
       { name: '20to22', start: 20, end: 21 },
       { name: '22to24', start: 22, end: 23 }
-  ];
+    ];
+    
+    return chunks.map(({ name, start, end }) => ({
+      id: `pkulandh.pm25-${formattedDate}-${name}`,
+      layer: `pm25_${formattedDate}_${name}`,
+      date: date.toISOString().split('T')[0],
+      startHour: start,
+      endHour: end
+    }));
+  };
   
-  return chunks.map(({ name, start, end }) => {
-      return {
-          // Format: pkulandh.pm25-20250206-16to18
-          id: `pkulandh.pm25-${formattedDate}-${name}`,
-          // Format: pm25_20250206_16to18
-          layer: `pm25_${formattedDate}_${name}`,
-          date: date.toISOString().split('T')[0],
-          startHour: start,
-          endHour: end
-      };
-  });
-};
-
-export const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
-
-const { startDate, endDate, totalHours, dayBefore, yesterday, today, tomorrow } = getDateRange();
-
-export const START_DATE = startDate;
-export const END_DATE = endDate;
-export const TOTAL_HOURS = totalHours;
-
-export const TILESET_INFO = [
+  export const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
+  
+  const { startDate, endDate, totalHours, dayBefore, yesterday, today, tomorrow } = getDateRange();
+  
+  export const START_DATE = startDate;
+  export const END_DATE = endDate;
+  export const TOTAL_HOURS = totalHours;
+  
+  export const TILESET_INFO = [
     ...generateTilesetInfo(dayBefore),
     ...generateTilesetInfo(yesterday),
     ...generateTilesetInfo(today),
     ...generateTilesetInfo(tomorrow)
-];
+  ];
+  
 
-export const PM25_LEVELS = [
-    { value: 0, label: 'Good', color: 'bg-green-500', text: 'text-green-700' },
-    { value: 12, label: 'Moderate', color: 'bg-yellow-500', text: 'text-yellow-700' },
-    { value: 35.5, label: 'Unhealthy for Sensitive Groups', color: 'bg-orange-500', text: 'text-orange-700' },
-    { value: 55.5, label: 'Unhealthy', color: 'bg-red-500', text: 'text-red-700' },
-    { value: 150.5, label: 'Very Unhealthy', color: 'bg-purple-500', text: 'text-purple-700' },
-    { value: 250.5, label: 'Hazardous', color: 'bg-rose-500', text: 'text-rose-700' }
-];
+  export { PM25_LEVELS };

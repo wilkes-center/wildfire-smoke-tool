@@ -2,8 +2,8 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Users2 } from 'lucide-react';
 import _ from 'lodash';
 import { TILESET_INFO } from '../../../utils/map/constants';
-import { NEON_PM25_COLORS } from '../../../utils/map/colors';
 import getSelectedCensusTracts from '../../../utils/map/censusAnalysis';
+import { PM25_LEVELS, getPM25Level } from '../../../constants/pm25Levels';
 
 // Helper for point-in-polygon check
 const isPointInPolygon = (point, polygon) => {
@@ -45,15 +45,7 @@ const findActiveLayer = (map, date, hour) => {
   return map.getLayer(layerId) ? layerId : null;
 };
 
-// Define PM25_LEVELS with hard-coded colors to avoid issues
-const PM25_LEVELS = [
-  { value: 0, label: 'Good', key: 'good', color: '#00e400', darkColor: '#00ff9d' },
-  { value: 12.1, label: 'Moderate', key: 'moderate', color: '#ffff00', darkColor: '#fff700' },
-  { value: 35.5, label: 'Unhealthy for Sensitive Groups', key: 'usg', color: '#ff7e00', darkColor: '#ff9100' },
-  { value: 55.5, label: 'Unhealthy', key: 'unhealthy', color: '#ff0000', darkColor: '#ff0055' },
-  { value: 150.5, label: 'Very Unhealthy', key: 'veryUnhealthy', color: '#8f3f97', darkColor: '#bf00ff' },
-  { value: 250.5, label: 'Hazardous', key: 'hazardous', color: '#7e0023', darkColor: '#ff00ff' }
-];
+
 
 const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }) => {
   const [stats, setStats] = useState({
@@ -557,13 +549,9 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
 
   if (!polygon) return null;
 
-  // Get color for PM2.5 level directly from our hard-coded values
-  const getPM25Color = (label) => {
-    // Find the matching level
+  const getPM25Color = (label, isDarkMode) => {
     const level = PM25_LEVELS.find(l => l.label === label);
     if (!level) return isDarkMode ? '#00ff9d' : '#00e400'; // Default to Good color
-    
-    // Return the hard-coded color
     return isDarkMode ? level.darkColor : level.color;
   };
 

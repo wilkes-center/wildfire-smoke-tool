@@ -1,16 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Wind } from 'lucide-react';
+import { PM25_LEVELS, getPM25Level } from '../../../constants/pm25Levels';
 
 const DEFAULT_THRESHOLD = 1;
 
-const PM25_LEVELS = [
-  { value: 0, label: 'Good', maxValue: 12.0 },
-  { value: 12.1, label: 'Moderate', maxValue: 35.4 },
-  { value: 35.5, label: 'Unhealthy for Sensitive Groups', maxValue: 55.4 },
-  { value: 55.5, label: 'Unhealthy', maxValue: 150.4 },
-  { value: 150.5, label: 'Very Unhealthy', maxValue: 250.4 },
-  { value: 250.5, label: 'Hazardous', maxValue: 500.4 }
-];
+
 
 const getPM25Label = (value) => {
   return PM25_LEVELS.find(level => 

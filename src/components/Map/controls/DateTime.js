@@ -2,9 +2,7 @@ import React from 'react';
 import { Calendar, Clock } from 'lucide-react';
 
 export const DateTime = ({ currentDateTime, isDarkMode }) => {
-  if (!currentDateTime || !currentDateTime.date) {
-    return null;
-  }
+  if (!currentDateTime || !currentDateTime.date) return null;
 
   return (
     <div className={`backdrop-blur-md rounded-lg border-2 shadow-lg px-6 py-3 ${
