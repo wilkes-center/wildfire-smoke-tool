@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Map from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { START_DATE, MAPBOX_TOKEN } from '../../utils/map/constants.js'; 
+import { START_DATE, MAPBOX_TOKEN, TILESET_INFO } from '../../utils/map/constants.js'; 
 import getSelectedCensusTracts, { cleanupHighlightLayers } from '../../utils/map/censusAnalysis';
 import { useMapLayers } from '../../hooks/map/useMapLayers';
 import { useTimeAnimation } from '../../hooks/map/useTimeAnimation';
@@ -10,26 +10,20 @@ import MapAdditionalControls from './panels/MapAdditionalControls';
 import LoadingOverlay from './LoadingOverlay';
 import AreaAnalysis from './panels/AreaAnalysis';
 import { BASEMAPS } from '../../constants/map/basemaps';
-import { TILESET_INFO } from '../../utils/map/constants.js';
 import DrawingTooltip from './DrawingTooltip';
 import PopulationExposureCounter from './controls/PopulationExposureCounter';
 import handleEnhancedMapClick from './controls/handleEnhancedMapClick.js';
 import ZoomControls from './controls/ZoomControls';
-import { censusPreloader } from '../../utils/map/censusPreloader';
+import { censusLayerManager } from '../../utils/map/CensusLayerManager';
 import IntroTour from './IntroTour';
 import TourButton from './TourButton';
 import DrawingHelperOverlay from './DrawingHelperOverlay';
 
 const MapComponent = () => {
+  // Core map state
   const mapRef = useRef(null);
-  const needsLayerReinitRef = useRef(false);
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapInstance, setMapInstance] = useState(null);
-  const [isPointSelected, setIsPointSelected] = useState(false);
-  const [mousePosition, setMousePosition] = useState(null);
-  const [currentHour, setCurrentHour] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [viewport, setViewport] = useState({
     latitude: 39.8283,
     longitude: -98.5795,
@@ -37,143 +31,41 @@ const MapComponent = () => {
     minZoom: 4.5,
     maxZoom: 9,
   });
-  const [pm25Threshold, setPM25Threshold] = useState(1);
+  
+  // Time control state
+  const [currentHour, setCurrentHour] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  
+  // Theme and appearance
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentBasemap, setCurrentBasemap] = useState(BASEMAPS.light.url);
+  const [pm25Threshold, setPM25Threshold] = useState(1);
+  
+  // Drawing and selection state
   const [drawingMode, setDrawingMode] = useState(false);
+  const [isPointSelected, setIsPointSelected] = useState(false);
   const [polygon, setPolygon] = useState(null);
   const [tempPolygon, setTempPolygon] = useState([]);
-  // Tour visibility state
+  const [mousePosition, setMousePosition] = useState(null);
+  const [lastClickTime, setLastClickTime] = useState(0);
+  
+  // UI state
   const [showTour, setShowTour] = useState(true);
-
-  useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
-
-  const layerSetupComplete = useRef(false);
-  const styleLoadCount = useRef(0);
-  const initialSetupDone = useRef(false);
-
   const [censusLoading, setCensusLoading] = useState(false);
   const [censusError, setCensusError] = useState(null);
-
-  const [lastClickTime, setLastClickTime] = useState(0);
-  const DOUBLE_CLICK_THRESHOLD = 300; 
-
-  // Handle tour completion
-  const handleTourComplete = () => {
-    setShowTour(false);
-    localStorage.setItem('tourCompleted', 'true');
-  };
-
-  // Check if tour has been completed before
-  useEffect(() => {
-    const tourCompleted = localStorage.getItem('tourCompleted');
-    if (tourCompleted === 'true') {
-      setShowTour(false);
-    }
-  }, []);
-
-  const handleMapInteraction = useCallback((evt) => {
-    if (isMapLoaded) {
-      setViewport(evt.viewState);
-    }
-  }, [isMapLoaded]);
-
-  const setupCensusLayers = useCallback((map, darkMode) => {
-    if (!map || !map.getStyle() || !map.isStyleLoaded()) {
-      console.log('Map not ready for layer setup');
-      return false;
-    }
-
-    try {
-      // Only log when actually setting up layers
-      if (!map.getLayer('census-tracts-layer')) {
-        console.log('Setting up census tract layers...');
-      }
-      
-      // Clean up existing layers first
-      if (map.getLayer('census-tracts-layer')) {
-        map.removeLayer('census-tracts-layer');
-      }
-      if (map.getSource('census-tracts')) {
-        map.removeSource('census-tracts');
-      }
-
-      // Add source and layer
-      map.addSource('census-tracts', {
-        type: 'vector',
-        url: 'mapbox://pkulandh.3r0plqr0'
-      });
-
-      map.addLayer({
-        id: 'census-tracts-layer',
-        type: 'fill',
-        source: 'census-tracts',
-        'source-layer': 'cb_2019_us_tract_500k-2qnt3v',
-        paint: {
-          'fill-color': darkMode ? '#374151' : '#6B7280',
-          'fill-opacity': 0,
-          'fill-outline-color': darkMode ? '#4B5563' : '#374151'
-        }
-      });
-
-      layerSetupComplete.current = true;
-      return true;
-    } catch (error) {
-      console.error('Error setting up census tract layers:', error);
-      layerSetupComplete.current = false;
-      return false;
-    }
-  }, []);
-
-  const updateCensusLayerColors = useCallback((map, darkMode) => {
-    if (!map || !map.getLayer('census-tracts-layer')) return;
-
-    try {
-      map.setPaintProperty(
-        'census-tracts-layer',
-        'fill-color',
-        darkMode ? '#374151' : '#6B7280'
-      );
-      map.setPaintProperty(
-        'census-tracts-layer',
-        'fill-outline-color',
-        darkMode ? '#4B5563' : '#374151'
-      );
-    } catch (error) {
-      console.error('Error updating census layer colors:', error);
-    }
-  }, []);
   
-
-  const handleThemeChange = useCallback((darkMode) => {
-    setIsDarkMode(darkMode);
-    if (currentBasemap !== BASEMAPS.satellite.url) {
-      setCurrentBasemap(darkMode ? BASEMAPS.darkMatter.url : BASEMAPS.light.url);
-    }
-    needsLayerReinitRef.current = true;
-  }, [currentBasemap]);
-
-  const handleMapLoad = useCallback(() => {
-    if (layerSetupComplete.current) return;
-    
-    console.log('Map loaded, initializing...');
-    setIsMapLoaded(true);
-    if (mapRef.current) {
-      const map = mapRef.current.getMap();
-      setMapInstance(map);
-      
-      // Wait for style to be loaded
-      if (!map.isStyleLoaded()) {
-        map.once('style.load', () => {
-          setupCensusLayers(map, isDarkMode);
-        });
-      } else {
-        setupCensusLayers(map, isDarkMode);
-      }
-    }
-  }, [isDarkMode, setupCensusLayers]);
+  // Refs for tracking layer state
+  const needsLayerReinitRef = useRef(false);
+  const initialSetupDone = useRef(false);
+  const layerSetupComplete = useRef(false);
   
+  // Constants
+  const DOUBLE_CLICK_THRESHOLD = 300;
 
+  // Custom hooks
+  useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
+  
   const getCurrentDateTime = useCallback(() => {
     const msPerHour = 60 * 60 * 1000;
     const currentDate = new Date(START_DATE.getTime() + (currentHour * msPerHour));
@@ -187,7 +79,6 @@ const MapComponent = () => {
     );
   
     if (!currentTileset) {
-      console.warn('No tileset found for:', { date, hour, currentHour });
       return { date: '', hour: 0 };
     }
   
@@ -203,13 +94,61 @@ const MapComponent = () => {
     isDarkMode,
     needsLayerReinitRef
   );
-  
+
+  // Check if tour has been completed before
+  useEffect(() => {
+    const tourCompleted = localStorage.getItem('tourCompleted');
+    if (tourCompleted === 'true') {
+      setShowTour(false);
+    }
+  }, []);
+
+  // Handle map interaction (viewport changes)
+  const handleMapInteraction = useCallback((evt) => {
+    if (isMapLoaded) {
+      setViewport(evt.viewState);
+    }
+  }, [isMapLoaded]);
+
+  // Handle theme changes
+  const handleThemeChange = useCallback((darkMode) => {
+    setIsDarkMode(darkMode);
+    if (currentBasemap !== BASEMAPS.satellite.url) {
+      setCurrentBasemap(darkMode ? BASEMAPS.darkMatter.url : BASEMAPS.light.url);
+    }
+    needsLayerReinitRef.current = true;
+  }, [currentBasemap]);
+
+  // Handle basemap changes
   const handleBasemapChange = useCallback((newBasemap) => {
     setCurrentBasemap(newBasemap);
     needsLayerReinitRef.current = true;
     layerSetupComplete.current = false;
   }, []);
 
+  // Handle map load
+  const handleMapLoad = useCallback(() => {
+    if (layerSetupComplete.current) return;
+    
+    console.log('Map loaded, initializing...');
+    setIsMapLoaded(true);
+    
+    if (mapRef.current) {
+      const map = mapRef.current.getMap();
+      setMapInstance(map);
+      
+      // Wait for style to be loaded
+      if (!map.isStyleLoaded()) {
+        map.once('style.load', () => {
+          censusLayerManager.initializeLayer(map, isDarkMode);
+        });
+      } else {
+        censusLayerManager.initializeLayer(map, isDarkMode);
+      }
+    }
+  }, [isDarkMode]);
+
+  // Handle map click
   const handleMapClick = useCallback((e) => {
     // Don't handle clicks when tour is active
     if (showTour) return;
@@ -268,26 +207,17 @@ const MapComponent = () => {
         console.error('Error handling map click:', error);
       }
     }
-  }, [drawingMode, isPointSelected, mapInstance, setIsPlaying, isDarkMode, tempPolygon, lastClickTime, showTour]);
-    
+  }, [
+    drawingMode, 
+    isPointSelected, 
+    mapInstance, 
+    isDarkMode, 
+    tempPolygon, 
+    lastClickTime, 
+    showTour
+  ]);
 
-  const cleanupCensusLayers = useCallback((map) => {
-    if (!map) return;
-  
-    try {
-      if (map.getLayer('census-tracts-layer')) {
-        map.removeLayer('census-tracts-layer');
-      }
-      if (map.getSource('census-tracts')) {
-        map.removeSource('census-tracts');
-      }
-      layerSetupComplete.current = false;
-    } catch (error) {
-      console.error('Error cleaning up census layers:', error);
-    }
-  }, []);
-
-
+  // Clear polygon selection
   const clearPolygon = useCallback(() => {
     if (polygon) {
       // Clean up census highlight layers
@@ -310,10 +240,9 @@ const MapComponent = () => {
     if (mapInstance) {
       mapInstance.getCanvas().style.cursor = '';
     }
-  }, [mapInstance, polygon, setIsPlaying]);
+  }, [mapInstance, polygon]);
 
-
-  // Update cursor based on whether point selection is allowed
+  // Get map cursor based on current state
   const getCursor = useCallback(() => {
     if (showTour) return 'default'; // Don't change cursor during tour
     if (drawingMode) return 'crosshair';
@@ -321,7 +250,7 @@ const MapComponent = () => {
     return 'pointer';
   }, [drawingMode, isPointSelected, showTour]);
 
-  // Area selection controls
+  // Drawing mode handlers
   const startDrawing = useCallback(() => {
     setDrawingMode(true);
     setTempPolygon([]);
@@ -343,90 +272,62 @@ const MapComponent = () => {
     }
   }, [tempPolygon, mapInstance]);
 
-  // Set up data-tour attributes for feature elements once map is loaded
+  // Handle tour completion
+  const handleTourComplete = useCallback(() => {
+    setShowTour(false);
+    localStorage.setItem('tourCompleted', 'true');
+  }, []);
+
+  // Set up tour attributes
   useEffect(() => {
     if (!mapInstance || !isMapLoaded) return;
     
-    // Create a more robust way to add tour attributes
     const addTourAttributes = () => {
-      // Create a more robust way to add tour attributes
-      const addTourAttributes = () => {
-        console.log("Attempting to add tour attributes to UI elements");
-        
-        // First, add ID attributes to make elements easier to find
-        const timeControls = document.querySelector('.fixed.bottom-4.left-1\\/2.-translate-x-1\\/2');
-        if (timeControls) {
-          timeControls.id = 'tour-time-controls';
-          timeControls.setAttribute('data-tour', 'time-controls');
-          console.log("Found time controls and added ID");
+      console.log("Attempting to add tour attributes to UI elements");
+      
+      // Define the elements to target
+      const tourElements = [
+        { selector: '.fixed.bottom-4.left-1\\/2.-translate-x-1\\/2', id: 'tour-time-controls', attr: 'time-controls' },
+        { selector: '.fixed.top-4 .flex.items-center.gap-4 > :first-child', id: 'tour-pm25-threshold', attr: 'pm25-threshold' },
+        { selector: '.fixed.top-4 .flex.items-center.gap-4 > :nth-child(2)', id: 'tour-date-time', attr: 'date-time' },
+        { selector: '.fixed.top-4 .flex.items-center.gap-4 > :nth-child(3)', id: 'tour-theme-controls', attr: 'theme-controls' },
+        { selector: '.fixed.top-4 .flex.items-center.gap-4 > :nth-child(3) button', id: 'tour-draw-button', attr: 'draw-button' },
+        { selector: '.fixed.left-4.bottom-4', id: 'tour-zoom-controls', attr: 'zoom-controls' }
+      ];
+      
+      // Add attributes to each element
+      let foundCount = 0;
+      tourElements.forEach(item => {
+        const element = document.querySelector(item.selector);
+        if (element) {
+          element.id = item.id;
+          element.setAttribute('data-tour', item.attr);
+          foundCount++;
         }
-        
-        const pm25Element = document.querySelector('.fixed.top-4 .flex.items-center.gap-4 > :first-child');
-        if (pm25Element) {
-          pm25Element.id = 'tour-pm25-threshold';
-          pm25Element.setAttribute('data-tour', 'pm25-threshold');
-          console.log("Found PM2.5 threshold and added ID");
-        }
-        
-        const dateTimeElement = document.querySelector('.fixed.top-4 .flex.items-center.gap-4 > :nth-child(2)');
-        if (dateTimeElement) {
-          dateTimeElement.id = 'tour-date-time';
-          dateTimeElement.setAttribute('data-tour', 'date-time');
-          console.log("Found date/time and added ID");
-        }
-        
-        const themeElement = document.querySelector('.fixed.top-4 .flex.items-center.gap-4 > :nth-child(3)');
-        if (themeElement) {
-          themeElement.id = 'tour-theme-controls';
-          themeElement.setAttribute('data-tour', 'theme-controls');
-          console.log("Found theme controls and added ID");
-        }
-        
-        const drawButton = document.querySelector('.fixed.top-4 .flex.items-center.gap-4 > :nth-child(3) button');
-        if (drawButton) {
-          drawButton.id = 'tour-draw-button';
-          drawButton.setAttribute('data-tour', 'draw-button');
-          console.log("Found draw button and added ID");
-        }
-        
-        const zoomControls = document.querySelector('.fixed.left-4.bottom-4');
-        if (zoomControls) {
-          zoomControls.id = 'tour-zoom-controls';
-          zoomControls.setAttribute('data-tour', 'zoom-controls');
-          console.log("Found zoom controls and added ID");
-        }
-        
-        // Count how many we found
-        const elements = document.querySelectorAll('[data-tour]');
-        console.log(`Found ${elements.length} elements for tour out of 6 expected`);
-        
-        // If we didn't find all elements, try again in a bit
-        if (elements.length < 6) {
-          setTimeout(addTourAttributes, 1000);
-        }
-      };
+      });
+      
+      console.log(`Found ${foundCount} elements for tour out of ${tourElements.length} expected`);
+      
+      // Retry if not all elements found
+      if (foundCount < tourElements.length) {
+        setTimeout(addTourAttributes, 1000);
+      }
     };
     
-    // Add the tour attributes after a small delay to ensure the UI is rendered
+    // Add tour attributes after the UI is rendered
     setTimeout(addTourAttributes, 1000);
   }, [mapInstance, isMapLoaded]);
 
+  // Initialize census layers
   useEffect(() => {
     if (!mapInstance || !isMapLoaded) return;
-
+  
     const initializeCensusLayer = async () => {
       setCensusLoading(true);
       setCensusError(null);
-
+  
       try {
-        // Subscribe to progress updates
-        const unsubscribe = censusPreloader.onProgress(({ stage, progress }) => {
-          console.debug(`Census ${stage} progress: ${progress}%`);
-        });
-
-        // Initialize the layer
-        await censusPreloader.preloadAll(mapInstance, isDarkMode);
-
+        await censusLayerManager.preloadAll(mapInstance, isDarkMode);
       } catch (error) {
         console.error('Failed to initialize census layer:', error);
         setCensusError(error.message);
@@ -434,54 +335,53 @@ const MapComponent = () => {
         setCensusLoading(false);
       }
     };
-
+  
     initializeCensusLayer();
-
+  
     // Cleanup function
     return () => {
-      censusPreloader.cleanup(mapInstance);
+      censusLayerManager.cleanup(mapInstance);
     };
   }, [mapInstance, isMapLoaded, isDarkMode]);
 
+  // Update census layer colors on theme change
   useEffect(() => {
     if (!mapInstance || !isMapLoaded) return;
-    censusPreloader.updateColors(mapInstance, isDarkMode);
+    censusLayerManager.updateColors(mapInstance, isDarkMode);
   }, [isDarkMode, mapInstance, isMapLoaded]);
 
+  // Handle map style changes
   useEffect(() => {
     if (!mapInstance || !isMapLoaded) return;
-
+  
     const handleStyleData = () => {
       if (!mapInstance.isStyleLoaded()) {
         console.log('Waiting for style to load...');
         return;
       }
-
-      if (needsLayerReinitRef.current || !mapInstance.getLayer('census-tracts-layer')) {
-        const success = setupCensusLayers(mapInstance, isDarkMode);
-        if (success) {
-          needsLayerReinitRef.current = false;
-          if (!initialSetupDone.current) {
-            console.log('Initial setup completed');
-            initialSetupDone.current = true;
-          }
-        }
+  
+      if (needsLayerReinitRef.current) {
+        censusLayerManager.initializeLayer(mapInstance, isDarkMode);
+        updateLayers(mapInstance);
+        needsLayerReinitRef.current = false;
       }
     };
-
+  
     // Handle initial setup
     if (!initialSetupDone.current) {
       handleStyleData();
+      initialSetupDone.current = true;
     }
-
+  
     // Listen for style changes
     mapInstance.on('styledata', handleStyleData);
-
+  
     return () => {
       mapInstance.off('styledata', handleStyleData);
     };
-  }, [mapInstance, isMapLoaded, isDarkMode, setupCensusLayers]);
+  }, [mapInstance, isMapLoaded, isDarkMode, updateLayers]);
 
+  // Track mouse position during drawing
   useEffect(() => {
     if (!mapInstance || !drawingMode) return;
 
@@ -496,28 +396,7 @@ const MapComponent = () => {
     };
   }, [mapInstance, drawingMode]);
 
-  useEffect(() => {
-    return () => {
-      if (mapInstance) {
-        cleanupCensusLayers(mapInstance);
-        layerSetupComplete.current = false;
-      }
-    };
-  }, [mapInstance, cleanupCensusLayers]);
-
-  useEffect(() => {
-    return () => {
-      if (mapInstance) {
-        if (mapInstance.getLayer('census-tracts-layer')) {
-          mapInstance.removeLayer('census-tracts-layer');
-        }
-        if (mapInstance.getSource('census-tracts')) {
-          mapInstance.removeSource('census-tracts');
-        }
-      }
-    };
-  }, [mapInstance]);
-
+  // Manage double-click zoom based on drawing mode
   useEffect(() => {
     if (!mapInstance) return;
     
@@ -535,7 +414,7 @@ const MapComponent = () => {
     };
   }, [mapInstance, drawingMode]);
 
-
+  // Manage polygon drawing visualization
   useEffect(() => {
     if (!mapInstance || mapInstance._removed) return;
   
@@ -546,9 +425,9 @@ const MapComponent = () => {
     const vertexSourceId = `${sourceId}-vertices`;
     const vertexLayerId = `${layerId}-vertices`;
   
-    // Initial setup - this will run only once when mapInstance first becomes available
-    const setupSources = () => {
-      // Main polygon source
+    // Initialize polygon sources and layers if they don't exist
+    const initializePolygonResources = () => {
+      // Set up sources
       if (!mapInstance.getSource(sourceId)) {
         mapInstance.addSource(sourceId, {
           type: 'geojson',
@@ -562,7 +441,6 @@ const MapComponent = () => {
         });
       }
       
-      // Vertex source
       if (!mapInstance.getSource(vertexSourceId)) {
         mapInstance.addSource(vertexSourceId, {
           type: 'geojson',
@@ -572,11 +450,8 @@ const MapComponent = () => {
           }
         });
       }
-    };
-  
-    // Setup layers if they don't exist
-    const setupLayers = () => {
-      // Main fill layer
+      
+      // Set up layers
       if (!mapInstance.getLayer(layerId)) {
         mapInstance.addLayer({
           id: layerId,
@@ -589,7 +464,6 @@ const MapComponent = () => {
         });
       }
   
-      // Outline layer
       if (!mapInstance.getLayer(outlineLayerId)) {
         mapInstance.addLayer({
           id: outlineLayerId,
@@ -602,7 +476,6 @@ const MapComponent = () => {
         });
       }
   
-      // Preview line layer (dashed line)
       if (!mapInstance.getLayer(previewLayerId)) {
         mapInstance.addLayer({
           id: previewLayerId,
@@ -619,7 +492,6 @@ const MapComponent = () => {
         });
       }
   
-      // Vertex points layer
       if (!mapInstance.getLayer(vertexLayerId)) {
         mapInstance.addLayer({
           id: vertexLayerId,
@@ -634,24 +506,14 @@ const MapComponent = () => {
         });
       }
     };
-  
-    // Try to setup sources and layers
-    try {
-      setupSources();
-      setupLayers();
-    } catch (error) {
-      console.error('Error setting up map sources/layers:', error);
-    }
-  
-    // Update the data instead of recreating sources
-    try {
-      // Update polygon source data
+    
+    // Update polygon data without recreating sources/layers
+    const updatePolygonData = () => {
+      // Update polygon source with current state
       if (mapInstance.getSource(sourceId)) {
-        const coordinates = polygon ? 
-          [polygon] : 
-          tempPolygon.length > 0 && mousePosition ? 
-            [[...tempPolygon, mousePosition, tempPolygon[0]]] : 
-            tempPolygon.length > 0 ? [tempPolygon] : [[]];
+        const coordinates = polygon ? [polygon] : 
+          tempPolygon.length > 0 && mousePosition ? [[...tempPolygon, mousePosition, tempPolygon[0]]] : 
+          tempPolygon.length > 0 ? [tempPolygon] : [[]];
             
         mapInstance.getSource(sourceId).setData({
           type: 'Feature',
@@ -662,7 +524,7 @@ const MapComponent = () => {
         });
       }
   
-      // Update vertices source data
+      // Update vertices source
       if (mapInstance.getSource(vertexSourceId)) {
         mapInstance.getSource(vertexSourceId).setData({
           type: 'FeatureCollection',
@@ -686,7 +548,7 @@ const MapComponent = () => {
         );
       }
   
-      // Update vertex layer visibility
+      // Update vertex points visibility
       if (mapInstance.getLayer(vertexLayerId)) {
         mapInstance.setLayoutProperty(
           vertexLayerId, 
@@ -694,15 +556,17 @@ const MapComponent = () => {
           tempPolygon.length > 0 ? 'visible' : 'none'
         );
       }
+    };
+  
+    try {
+      initializePolygonResources();
+      updatePolygonData();
     } catch (error) {
-      console.error('Error updating polygon data:', error);
+      console.error('Error managing polygon visualization:', error);
     }
   
-    // Cleanup function
-    return () => {
-      // We don't remove sources and layers here anymore
-      // This prevents the flickering effect
-    };
+    // We intentionally don't clean up these resources on unmount
+    // to prevent flickering when redrawing
   }, [
     mapInstance,
     polygon,
@@ -775,9 +639,7 @@ const MapComponent = () => {
             isPlaying={isPlaying}
             polygon={polygon}
             isDarkMode={isDarkMode}
-            onExpandChange={(expanded) => {
-              // Optional callback for when panel expands/collapses
-            }}
+            onExpandChange={() => {}}
           />
   
           <MapAdditionalControls
@@ -787,13 +649,8 @@ const MapComponent = () => {
             polygon={polygon}
             currentDateTime={getCurrentDateTime()}
             isDarkMode={isDarkMode}
-            isPlaying={isPlaying}
-            setIsPlaying={setIsPlaying}
-            currentHour={currentHour}
-            setCurrentHour={setCurrentHour}
-            onExpandChange={(expanded) => {
-              // Optional callback for when panel expands/collapses
-            }}
+            pm25Threshold={pm25Threshold}
+            onExpandChange={() => {}}
           />
   
           <DrawingTooltip 
@@ -832,7 +689,6 @@ const MapComponent = () => {
             setPM25Threshold={setPM25Threshold}
           />
           
-
           {showTour && (
             <IntroTour 
               onComplete={handleTourComplete}

@@ -1,6 +1,6 @@
 // src/hooks/map/useCensusPreloader.js
 import { useState, useEffect } from 'react';
-import { censusPreloader } from '../../utils/map/censusPreloader';
+import { censusLayerManager } from '../../utils/map/CensusLayerManager';
 
 export const useCensusPreloader = (map, isDarkMode) => {
   const [progress, setProgress] = useState({
@@ -18,7 +18,7 @@ export const useCensusPreloader = (map, isDarkMode) => {
     setError(null);
 
     // Subscribe to progress updates
-    const unsubscribe = censusPreloader.onProgress(({ stage, progress }) => {
+    const unsubscribe = censusLayerManager.onProgress(({ stage, progress }) => {
       setProgress(prev => ({
         ...prev,
         [stage]: progress
@@ -26,7 +26,7 @@ export const useCensusPreloader = (map, isDarkMode) => {
     });
 
     // Start preloading
-    censusPreloader
+    censusLayerManager
       .preloadAll(map, isDarkMode)
       .then(() => {
         setStatus('complete');
@@ -45,7 +45,7 @@ export const useCensusPreloader = (map, isDarkMode) => {
   // Update colors when theme changes
   useEffect(() => {
     if (map && status === 'complete') {
-      censusPreloader.updateColors(map, isDarkMode);
+      censusLayerManager.updateColors(map, isDarkMode);
     }
   }, [isDarkMode, map, status]);
 
