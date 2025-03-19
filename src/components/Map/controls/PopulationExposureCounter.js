@@ -556,18 +556,18 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
   };
 
   return (
-    <div className={`backdrop-blur-md rounded-xl border-2 border-purple-500 shadow-lg px-6 py-4 ${
+    <div className={`backdrop-blur-md rounded-xl border-2 border-forest shadow-lg px-6 py-4 ${
       isDarkMode ? 'bg-gray-900/95' : 'bg-white/95'
     }`}>
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <Users2 className="w-5 h-5 text-purple-400" />
+          <Users2 className="w-5 h-5 text-gold" />
           <div>
             <div className={`text-sm font-medium ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+              isDarkMode ? 'text-sage' : 'text-forest-light'
             }`}>Population</div>
             <div className={`text-xl font-semibold ${
-              isDarkMode ? 'text-gray-100' : 'text-gray-900'
+              isDarkMode ? 'text-gold-light' : 'text-forest'
             }`}>
               {stats.censusStats.isLoading ? (
                 'Calculating...'

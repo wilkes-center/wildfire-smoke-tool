@@ -15,8 +15,8 @@ export const DrawingControls = ({
         onClick={finishDrawing}
         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
           isDarkMode
-            ? 'bg-blue-900/50 hover:bg-blue-900/70 text-blue-400'
-            : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
+            ? 'bg-forest-dark/50 hover:bg-forest/70 text-gold'
+            : 'bg-sage-light hover:bg-sage text-forest-dark'
         }`}
       >
         Finish Drawing
@@ -30,8 +30,8 @@ export const DrawingControls = ({
         onClick={startDrawing}
         className={`h-10 px-4 rounded-lg flex items-center gap-2 transition-colors ${
           isDarkMode
-            ? 'bg-blue-900/50 hover:bg-blue-900/70 text-blue-400'
-            : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
+            ? 'bg-forest-dark/50 hover:bg-forest/70 text-gold'
+            : 'bg-sage-light hover:bg-sage text-forest-dark'
         }`}
       >
         <Pen className="w-5 h-5" />
@@ -45,8 +45,8 @@ export const DrawingControls = ({
       onClick={clearPolygon}
       className={`h-12 px-6 rounded-lg flex items-center gap-2 transition-colors ${
         isDarkMode
-          ? 'bg-red-900/20 hover:bg-red-900/30 text-red-400'
-          : 'bg-red-50 hover:bg-red-100 text-red-600'
+          ? 'bg-rust-dark/20 hover:bg-rust/30 text-gold-light'
+          : 'bg-rust-light/20 hover:bg-rust-light/30 text-rust-dark'
       }`}
     >
       <X className="w-5 h-5" />

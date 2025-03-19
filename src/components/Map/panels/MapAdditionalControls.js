@@ -73,7 +73,7 @@ const MapAdditionalControls = ({
         type: 'fill',
         source: sourceId,
         paint: {
-          'fill-color': isDarkMode ? '#60A5FA' : '#3B82F6',
+          'fill-color': isDarkMode ? '#cea25d' : '#2d5954', // gold in dark mode, forest in light mode
           'fill-opacity': isDarkMode ? 0.3 : 0.2
         }
       });
@@ -84,7 +84,7 @@ const MapAdditionalControls = ({
         type: 'line',
         source: sourceId,
         paint: {
-          'line-color': isDarkMode ? '#60A5FA' : '#3B82F6',
+          'line-color': isDarkMode ? '#cea25d' : '#2d5954', // gold in dark mode, forest in light mode
           'line-width': 2
         }
       });
@@ -263,7 +263,7 @@ const MapAdditionalControls = ({
         map.setPaintProperty(
           currentLayerId,
           'circle-opacity',
-          isDarkMode ? 0.6 : 0.4
+          isDarkMode ? 0.6 : 0.5
         );
         map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
       }

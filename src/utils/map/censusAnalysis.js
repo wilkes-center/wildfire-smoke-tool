@@ -221,9 +221,9 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
       type: 'fill',
       source: HIGHLIGHT_SOURCE,
       paint: {
-        'fill-color': isDarkMode ? '#7C3AED' : '#8B5CF6',
+        'fill-color': isDarkMode ? '#cea25d' : '#2d5954', // Using gold in dark mode, forest in light mode
         'fill-opacity': isDarkMode ? 0.4 : 0.3,
-        'fill-outline-color': isDarkMode ? '#9F7AEA' : '#7C3AED'
+        'fill-outline-color': isDarkMode ? '#deb77d' : '#3a7370' // Light variants for outlines
       }
     }, topmostLayerId); // Insert above the topmost layer
 
@@ -233,9 +233,9 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
       type: 'line',
       source: HIGHLIGHT_SOURCE,
       paint: {
-        'line-color': isDarkMode ? '#A78BFA' : '#7C3AED',
+        'line-color': isDarkMode ? '#deb77d' : '#3a7370', // Light variants for better visibility
         'line-width': 1.5,
-        'line-opacity': isDarkMode ? 0.8 : 0.6
+        'line-opacity': isDarkMode ? 0.8 : 0.7
       }
     }); // This will be added at the top
 

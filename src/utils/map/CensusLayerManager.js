@@ -5,12 +5,12 @@ const CENSUS_SOURCE_ID = 'census-tracts';
 const CENSUS_LAYER_ID = 'census-tracts-layer';
 const CENSUS_COLORS = {
   'fill-color': {
-    light: '#6B7280',
-    dark: '#374151'
+    light: '#99aa88', // sage color
+    dark: '#3a7370'  // forest-light color
   },
   'fill-outline-color': {
-    light: '#374151',
-    dark: '#4B5563'
+    light: '#7d8f6d', // sage-dark color
+    dark: '#2d5954'  // forest color
   }
 };
 

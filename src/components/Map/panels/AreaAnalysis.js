@@ -405,8 +405,8 @@ const AreaAnalysis = ({
         className={`px-3 py-1 rounded-md text-sm transition-colors ${
           activeTab === 'chart'
             ? isDarkMode
-              ? 'bg-blue-500/70 text-white'
-              : 'bg-blue-500/70 text-white'
+              ? 'bg-forest/70 text-gold-light'
+              : 'bg-forest/70 text-cream'
             : isDarkMode
               ? 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
               : 'bg-gray-100/50 text-gray-600 hover:bg-gray-200/50'
@@ -419,8 +419,8 @@ const AreaAnalysis = ({
         className={`px-3 py-1 rounded-md text-sm transition-colors ${
           activeTab === 'table'
             ? isDarkMode
-              ? 'bg-blue-500/70 text-white'
-              : 'bg-blue-500/70 text-white'
+              ? 'bg-forest/70 text-gold-light'
+              : 'bg-forest/70 text-cream'
             : isDarkMode
               ? 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
               : 'bg-gray-100/50 text-gray-600 hover:bg-gray-200/50'
@@ -454,8 +454,8 @@ const AreaAnalysis = ({
           {error && (
             <div className={`mb-4 p-4 rounded-lg border ${
               isDarkMode 
-                ? 'bg-red-900/50 text-red-300 border-red-800/50' 
-                : 'bg-red-50/50 text-red-700 border-red-200/50'
+                ? 'bg-rust/50 text-gold-light border-rust-dark/50' 
+                : 'bg-rust-light/20 text-rust-dark border-rust/30'
             }`}>
               {error}
             </div>

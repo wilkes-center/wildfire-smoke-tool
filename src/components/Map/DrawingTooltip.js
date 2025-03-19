@@ -31,7 +31,7 @@ const DrawingTooltip = ({ drawingMode, tempPolygon }) => {
 
   return (
     <div 
-      className="fixed pointer-events-none z-50 flex items-center bg-white/90 backdrop-blur-sm shadow-lg rounded-lg px-3 py-2 text-sm text-gray-700 font-medium"
+      className="fixed pointer-events-none z-50 flex items-center bg-cream/90 backdrop-blur-sm shadow-lg rounded-lg px-3 py-2 text-sm text-forest font-medium"
       style={{
         left: position.x + 16,
         top: position.y + 16,
@@ -39,7 +39,7 @@ const DrawingTooltip = ({ drawingMode, tempPolygon }) => {
       }}
     >
       {showIcon && (
-        <CornerUpLeft className="w-4 h-4 mr-2 text-gray-500" />
+        <CornerUpLeft className="w-4 h-4 mr-2 text-sage" />
       )}
       {message}
     </div>

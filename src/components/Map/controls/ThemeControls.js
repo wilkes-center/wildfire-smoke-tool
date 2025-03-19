@@ -17,8 +17,8 @@ export const ThemeControls = ({
         onClick={() => setIsDarkMode(!isDarkMode)}
         className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
           isDarkMode 
-            ? 'bg-gray-800 text-red-400 hover:bg-gray-700' 
-            : 'bg-gray-50 text-red-500 hover:bg-gray-100'
+            ? 'bg-gray-800 text-gold hover:bg-gray-700' 
+            : 'bg-gray-50 text-forest hover:bg-gray-100'
         }`}
         title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
       >
@@ -31,8 +31,8 @@ export const ThemeControls = ({
           onClick={() => setShowBasemaps(!showBasemaps)}
           className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
             isDarkMode 
-              ? 'bg-gray-800 text-purple-400 hover:bg-gray-700' 
-              : 'bg-gray-50 text-purple-500 hover:bg-gray-100'
+              ? 'bg-gray-800 text-sage hover:bg-gray-700' 
+              : 'bg-gray-50 text-forest hover:bg-gray-100'
           }`}
           title="Change map style"
         >
@@ -41,7 +41,7 @@ export const ThemeControls = ({
 
         {showBasemaps && (
           <div className={`absolute top-full right-0 mt-2 rounded-lg shadow-lg border min-w-[140px] ${
-            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+            isDarkMode ? 'bg-gray-800 border-forest-dark' : 'bg-white border-forest-light'
           }`}>
             {Object.values(basemapOptions).map((basemap) => (
               <button
@@ -53,8 +53,8 @@ export const ThemeControls = ({
                 className={`w-full px-4 py-2 flex items-center gap-2 transition-colors ${
                   currentBasemap === basemap.url
                     ? isDarkMode 
-                      ? 'bg-gray-700 text-blue-400' 
-                      : 'bg-blue-50 text-blue-600'
+                      ? 'bg-forest-dark text-gold' 
+                      : 'bg-sage-light text-forest'
                     : isDarkMode
                       ? 'text-gray-300 hover:bg-gray-700'
                       : 'text-gray-600 hover:bg-gray-50'

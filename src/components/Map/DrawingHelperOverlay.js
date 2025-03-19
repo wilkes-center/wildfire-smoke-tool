@@ -28,12 +28,12 @@ const DrawingHelperOverlay = ({ drawingMode, tempPolygon, isDarkMode, finishDraw
   return (
     <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[60] py-2 px-3 rounded-lg backdrop-blur-md shadow-lg max-w-md ${
       isDarkMode 
-        ? 'bg-gray-900/90 border border-purple-500 text-white'
-        : 'bg-white/90 border border-purple-500 text-gray-800'
+        ? 'bg-gray-900/90 border border-forest text-gold-light'
+        : 'bg-white/90 border border-forest text-forest'
     }`}>
       <div className="flex flex-col items-center gap-2">
         <div className="flex items-center gap-3 w-full">
-          <div className="w-16 h-12 flex-shrink-0 bg-blue-100/50 rounded">
+          <div className="w-16 h-12 flex-shrink-0 bg-sage-light/50 rounded">
             <DrawingAnimation isDarkMode={isDarkMode} />
           </div>
           
@@ -42,7 +42,7 @@ const DrawingHelperOverlay = ({ drawingMode, tempPolygon, isDarkMode, finishDraw
               {stageInfo.instruction}
             </div>
             
-            <div className="text-xs text-gray-500">
+            <div className={`text-xs ${isDarkMode ? 'text-sage' : 'text-forest-light'}`}>
               Points added: <span className="font-medium">{tempPolygon.length}</span>
             </div>
           </div>
@@ -52,8 +52,8 @@ const DrawingHelperOverlay = ({ drawingMode, tempPolygon, isDarkMode, finishDraw
               onClick={finishDrawing}
               className={`h-8 px-2 rounded flex items-center gap-1 transition-colors text-xs ${
                 isDarkMode
-                  ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                  : 'bg-purple-500 hover:bg-purple-600 text-white'
+                  ? 'bg-forest hover:bg-forest-dark text-gold-light' 
+                  : 'bg-forest hover:bg-forest-dark text-cream'
               }`}
             >
               <Check className="w-3 h-3" />
@@ -64,8 +64,8 @@ const DrawingHelperOverlay = ({ drawingMode, tempPolygon, isDarkMode, finishDraw
         
         {showCompletionButton && (
           <div className={`w-full flex items-center ${
-            isDarkMode ? 'bg-gray-800/50' : 'bg-gray-100/50'
-          } rounded py-1 px-2 text-xs`}>
+            isDarkMode ? 'bg-gray-800/50' : 'bg-sage-light/50'
+          } rounded py-1 px-2 text-xs ${isDarkMode ? 'text-gold' : 'text-forest'}`}>
             <span className="font-medium">Double-click to finish the shape</span>
           </div>
         )}

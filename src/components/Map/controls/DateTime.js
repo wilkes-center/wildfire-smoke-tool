@@ -7,43 +7,43 @@ export const DateTime = ({ currentDateTime, isDarkMode }) => {
   return (
     <div className={`backdrop-blur-md rounded-lg border-2 shadow-lg px-6 py-3 ${
       isDarkMode 
-        ? 'bg-gray-900/95 border-purple-500' 
-        : 'bg-white/95 border-purple-500'
+        ? 'bg-gray-900/95 border-forest' 
+        : 'bg-white/95 border-forest'
     }`}>
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-md ${
             isDarkMode 
-              ? 'bg-purple-500/10 text-purple-400' 
-              : 'bg-purple-100 text-purple-600'
+              ? 'bg-forest/10 text-gold' 
+              : 'bg-sage-light text-forest'
           }`}>
             <Calendar className="w-5 h-5" />
           </div>
           <span className={`text-lg font-medium ${
-            isDarkMode ? 'text-gray-200' : 'text-gray-700'
+            isDarkMode ? 'text-gold-light' : 'text-forest'
           }`}>
             {currentDateTime.date}
           </span>
         </div>
 
         <div className={`h-6 w-px ${
-          isDarkMode ? 'bg-purple-500/30' : 'bg-purple-300'
+          isDarkMode ? 'bg-forest/30' : 'bg-sage'
         }`} />
 
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-md ${
             isDarkMode 
-              ? 'bg-purple-500/10 text-purple-400' 
-              : 'bg-purple-100 text-purple-600'
+              ? 'bg-forest/10 text-gold' 
+              : 'bg-sage-light text-forest'
           }`}>
             <Clock className="w-5 h-5" />
           </div>
           <div className={`text-lg font-medium ${
-            isDarkMode ? 'text-gray-200' : 'text-gray-700'
+            isDarkMode ? 'text-gold-light' : 'text-forest'
           }`}>
             {String(currentDateTime.hour).padStart(2, '0')}:00
             <span className={`ml-2 text-sm ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              isDarkMode ? 'text-sage' : 'text-forest-light'
             }`}>
               UTC
             </span>

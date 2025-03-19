@@ -17,35 +17,35 @@ const ThemedPanel = ({
     return (
       <div className={`w-[480px] rounded-xl shadow-xl overflow-hidden border-2 ${
         isDarkMode 
-          ? 'bg-gray-900/95 border-purple-500' 
-          : 'bg-white/95 border-purple-500'
+          ? 'bg-gray-900/95 border-forest' 
+          : 'bg-white/95 border-forest'
       } ${className} backdrop-blur-md`}>
         <div className="w-full h-full flex flex-col">
           <div className={`px-4 py-3 border-b-2 ${
             isDarkMode 
-              ? 'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-500' 
-              : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-500'
+              ? 'bg-gradient-to-r from-forest-dark/30 to-sage-dark/30 border-forest' 
+              : 'bg-gradient-to-r from-cream to-sage-light/30 border-forest'
           }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {Icon && (
                   <div className={`p-2 rounded-lg ${
                     isDarkMode
-                      ? 'bg-purple-500/10 text-purple-400'
-                      : 'bg-purple-100 text-purple-600'
+                      ? 'bg-forest/10 text-gold'
+                      : 'bg-sage-light text-forest'
                   }`}>
                     <Icon className="w-5 h-5" />
                   </div>
                 )}
                 <div>
                   <h2 className={`text-lg font-semibold leading-none ${
-                    isDarkMode ? 'text-purple-100' : 'text-purple-900'
+                    isDarkMode ? 'text-gold-light' : 'text-forest'
                   }`}>
                     {title}
                   </h2>
                   {subtitle && (
                     <div className={`text-sm mt-1 ${
-                      isDarkMode ? 'text-purple-300' : 'text-purple-600'
+                      isDarkMode ? 'text-gold' : 'text-forest-light'
                     }`}>
                       {subtitle}
                     </div>
@@ -58,8 +58,8 @@ const ThemedPanel = ({
                   onClick={onClose}
                   className={`p-1.5 rounded-lg transition-colors ${
                     isDarkMode
-                      ? 'hover:bg-purple-500/10 text-purple-400 hover:text-purple-300'
-                      : 'hover:bg-purple-100 text-purple-500 hover:text-purple-600'
+                      ? 'hover:bg-forest/10 text-gold hover:text-gold-light'
+                      : 'hover:bg-sage-light text-forest hover:text-forest-dark'
                   }`}
                   title="Minimize"
                 >
@@ -85,12 +85,12 @@ const ThemedPanel = ({
       onClick={onClose}
       className={`rounded-xl shadow-lg transition-all duration-300 w-12 h-12 flex items-center justify-center backdrop-blur-md
         ${isDarkMode 
-          ? 'bg-gray-900/90 hover:bg-gray-800/90 hover:shadow-purple-500/20 hover:shadow-lg border-2 border-purple-500' 
-          : 'bg-white/90 hover:bg-gray-50/90 hover:shadow-purple-500/10 hover:shadow-lg border-2 border-purple-500'
+          ? 'bg-gray-900/90 hover:bg-gray-800/90 hover:shadow-forest/20 hover:shadow-lg border-2 border-forest' 
+          : 'bg-white/90 hover:bg-gray-50/90 hover:shadow-forest/10 hover:shadow-lg border-2 border-forest'
         } transform hover:scale-105`}
     >
       <Icon className={`w-5 h-5 ${
-        isDarkMode ? 'text-purple-400' : 'text-purple-600'
+        isDarkMode ? 'text-gold' : 'text-forest'
       }`} />
     </button>
   );

@@ -19,7 +19,7 @@ const TooltipBase = ({
   const [isVisible, setIsVisible] = useState(false);
 
   const getTooltipClasses = () => {
-    const baseClasses = 'absolute z-50 px-2 py-1 text-xs font-medium text-white bg-gray-900/90 rounded shadow-lg whitespace-nowrap pointer-events-none transition-opacity duration-200';
+    const baseClasses = 'absolute z-50 px-2 py-1 text-xs font-medium text-cream bg-forest/95 rounded shadow-lg whitespace-nowrap pointer-events-none transition-opacity duration-200';
     
     const positionClasses = {
       top: 'bottom-full left-1/2 -translate-x-1/2 mb-1',
