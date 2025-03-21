@@ -33,7 +33,12 @@
   "eslintConfig": {
     "extends": [
       "react-app"
-    ]
+    ],
+    "env": {
+      "browser": true,
+      "node": true,
+      "es6": true
+    }
   },
   "browserslist": {
     "production": [
