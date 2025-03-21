@@ -1,12 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import MapComponent from './components/Map/MapComponent';
+import IntroPage from './components/IntroPage/IntroPage';
+import './App.css';
 
 const App = () => {
+  const [showIntro, setShowIntro] = useState(true);
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+  };
+
   return (
     <div className="App">
-      <main>
-        <MapComponent />
-      </main>
+      {showIntro ? (
+        <IntroPage onComplete={handleIntroComplete} />
+      ) : (
+        <main>
+          <MapComponent />
+        </main>
+      )}
     </div>
   );
 };

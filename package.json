@@ -32,15 +32,8 @@
   },
   "eslintConfig": {
     "extends": [
-      "react-app",
-      "react-app/jest"
-    ],
-    "plugins": [
-      "jest"
-    ],
-    "env": {
-      "jest/globals": true
-    }
+      "react-app"
+    ]
   },
   "browserslist": {
     "production": [
