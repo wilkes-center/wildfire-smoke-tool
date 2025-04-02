@@ -1,6 +1,6 @@
 {
-  "name": "wildfire-webapp",
-  "version": "0.1.2",
+  "name": "wildfire-smoke-tool",
+  "version": "0.2.5",
   "homepage": "https://wilkes-center.github.io/wildfire-smoke-tool",
   "private": true,
   "dependencies": {
@@ -27,7 +27,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "predeploy": "npm run build",
+    "increment-version": "node -e \"const pkg = require('./package.json'); const [major, minor, patch] = pkg.version.split('.').map(Number); pkg.version = major + '.' + minor + '.' + (patch + 1); require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\\n');\"",
+    "predeploy": "npm run increment-version && npm run build",
     "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
