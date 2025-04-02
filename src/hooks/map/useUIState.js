@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 export const useUIState = () => {
-  const [showTour, setShowTour] = useState(true);
+  const [showTour, setShowTour] = useState(false);
   const [censusLoading, setCensusLoading] = useState(false);
   const [censusError, setCensusError] = useState(null);
 

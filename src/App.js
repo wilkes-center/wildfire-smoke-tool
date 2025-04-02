@@ -10,6 +10,10 @@ const App = () => {
     setShowIntro(false);
   };
 
+  const handleShowIntro = () => {
+    setShowIntro(true);
+  };
+
   return (
     <div className="App font-sora">
       {showIntro ? (
@@ -20,7 +24,7 @@ const App = () => {
             <h1 className="font-sora font-semibold text-xl">Wildfire Smoke Tool</h1>
           </header>
           <main>
-            <MapComponent />
+            <MapComponent onShowIntro={handleShowIntro} />
           </main>
         </>
       )}

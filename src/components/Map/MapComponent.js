@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import Map from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { HelpCircle } from 'lucide-react';
 
 import { MAPBOX_TOKEN } from '../../utils/map/constants.js'; 
 import { BASEMAPS } from '../../constants/map/basemaps';
@@ -14,7 +15,6 @@ import DrawingTooltip from './DrawingTooltip';
 import PopulationExposureCounter from './controls/PopulationExposureCounter';
 import ZoomControls from './controls/ZoomControls';
 import IntroTour from './IntroTour';
-import TourButton from './TourButton';
 import DrawingHelperOverlay from './DrawingHelperOverlay';
 
 // Custom hooks
@@ -35,7 +35,7 @@ import {
   useCensusDataManager
 } from '../../hooks';
 
-const MapComponent = () => {
+const MapComponent = ({ onShowIntro }) => {
   // Reference variables
   const needsLayerReinitRef = useRef(false);
   const initialSetupDone = useRef(false);
@@ -307,10 +307,19 @@ const MapComponent = () => {
           )}
           
           {!showTour && (
-            <TourButton 
-              onClick={() => setShowTour(true)}
-              isDarkMode={isDarkMode}
-            />
+            <div className="fixed z-50 right-4 bottom-24">
+              <button
+                onClick={onShowIntro}
+                className={`w-12 h-12 rounded-full shadow-lg backdrop-blur-sm flex items-center justify-center transition-all ${
+                  isDarkMode 
+                    ? 'bg-mahogany/90 hover:bg-mahogany/80 text-white border-2 border-white/50' 
+                    : 'bg-white/90 hover:bg-gray-50/90 text-mahogany border-2 border-mahogany/50'
+                } hover:scale-110 font-sora`}
+                title="Show introduction page"
+              >
+                <HelpCircle className="w-6 h-6" />
+              </button>
+            </div>
           )}
         </>
       )}

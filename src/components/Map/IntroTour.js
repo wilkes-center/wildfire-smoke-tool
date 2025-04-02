@@ -475,7 +475,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
                 <Info className="w-5 h-5" />
               </div>
               <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                You can access this tour again at any time by clicking the help button in the bottom right corner of the screen.
+                The help button in the bottom right will return you to the full introduction page at any time.
               </p>
             </div>
           </div>
