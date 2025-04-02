@@ -8,9 +8,8 @@ An interactive web application that visualizes wildfire smoke PM2.5 concentratio
 - 4-day data window: 2 days of historical data and 2 days of forecast data
 - Timeline controls for navigating through the temporal data
 - PM2.5 threshold adjustment for filtering visible smoke concentrations
-- Drawing tools for custom area analysis
+- Drawing tools for custom area analysis and population exposure analysis
 - Light and dark mode for different viewing preferences
-- Responsive design for desktop and mobile devices
 
 ## Technology Stack
 

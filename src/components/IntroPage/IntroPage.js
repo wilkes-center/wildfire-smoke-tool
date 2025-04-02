@@ -1,8 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import './IntroPage.css';
 import { Wind, Clock, PenLine, Sun, Moon, MapPin, Github, MessageSquare } from 'lucide-react';
 
 const IntroPage = ({ onComplete }) => {
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = "//gc.zgo.at/count.js";
+    script.async = true;
+    script.dataset.goatcounter = "https://wilkes-wildfire-smoke.goatcounter.com/count";
+    document.body.appendChild(script);
+    
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
   return (
     <div className="intro-page">
       <div className="intro-content">
