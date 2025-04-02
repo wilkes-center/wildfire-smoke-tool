@@ -1,7 +1,7 @@
 {
   "name": "wildfire-webapp",
   "version": "0.1.2",
-  "homepage": "https://praveenaak.github.io/wildfire-webapp",
+  "homepage": "https://wilkes-center.github.io/wildfire-smoke-tool",
   "private": true,
   "dependencies": {
     "@nebula.gl/edit-modes": "^1.0.4",
