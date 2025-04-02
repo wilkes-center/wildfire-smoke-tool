@@ -11,13 +11,18 @@ const App = () => {
   };
 
   return (
-    <div className="App">
+    <div className="App font-sora">
       {showIntro ? (
         <IntroPage onComplete={handleIntroComplete} />
       ) : (
-        <main>
-          <MapComponent />
-        </main>
+        <>
+          <header className="App-header bg-obsidian text-white">
+            <h1 className="font-sora font-semibold text-xl">Wildfire Smoke Tool</h1>
+          </header>
+          <main>
+            <MapComponent />
+          </main>
+        </>
       )}
     </div>
   );

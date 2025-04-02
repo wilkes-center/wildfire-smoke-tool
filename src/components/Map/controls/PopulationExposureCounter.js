@@ -556,7 +556,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
   };
 
   return (
-    <div className={`backdrop-blur-md rounded-xl border-2 border-forest shadow-lg px-6 py-4 ${
+    <div className={`backdrop-blur-md rounded-xl border-2 border-mahogany shadow-lg px-6 py-4 ${
       isDarkMode ? 'bg-gray-900/95' : 'bg-white/95'
     }`}>
       <div className="space-y-4">

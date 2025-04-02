@@ -28,11 +28,11 @@ const DrawingAnimation = ({ isDarkMode }) => {
       landmass: isDarkMode ? '#374151' : '#e5e7eb',
       water: isDarkMode ? '#1e3a8a' : '#bfdbfe',
       cursor: '#ffffff',
-      cursorBorder: isDarkMode ? '#a855f7' : '#8b5cf6',
-      polygonStroke: isDarkMode ? '#a855f7' : '#8b5cf6',
-      polygonFill: isDarkMode ? 'rgba(168, 85, 247, 0.3)' : 'rgba(139, 92, 246, 0.3)',
-      pointFill: isDarkMode ? '#a855f7' : '#8b5cf6',
-      pointStroke: '#ffffff'
+      pointFill: isDarkMode ? '#c084fc' : '#c084fc',
+      pointStroke: isDarkMode ? '#8b5cf6' : '#8b5cf6',
+      polygonFill: isDarkMode ? 'rgba(168, 85, 247, 0.3)' : 'rgba(168, 85, 247, 0.3)',
+      polygonStroke: isDarkMode ? '#8b5cf6' : '#8b5cf6',
+      cursorBorder: isDarkMode ? '#751d0c' : '#751d0c',
     };
     
     const points = [];

@@ -428,14 +428,14 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
         <div 
           className={`relative w-[500px] rounded-xl shadow-xl overflow-hidden ${
             isDarkMode 
-              ? 'bg-gray-900 border-2 border-purple-500' 
-              : 'bg-white border-2 border-purple-500'
+              ? 'bg-gray-900 border-2 border-mahogany' 
+              : 'bg-white border-2 border-mahogany'
           } pointer-events-auto`}
         >
           <div className={`px-6 py-4 border-b ${
             isDarkMode 
-              ? 'border-gray-700' 
-              : 'border-gray-200'
+              ? 'border-mahogany/50' 
+              : 'border-mahogany/30'
           }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -470,7 +470,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
               {tourSteps[currentStep].description}
             </p>
             
-            <div className="mt-4 flex gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <div className="mt-4 flex gap-3 p-4 rounded-lg bg-blue-500/10 border border-mahogany/20">
               <div className="text-blue-500 shrink-0 mt-1">
                 <Info className="w-5 h-5" />
               </div>
@@ -482,8 +482,8 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
           
           <div className={`px-6 py-4 border-t flex justify-between ${
             isDarkMode 
-              ? 'border-gray-700' 
-              : 'border-gray-200'
+              ? 'border-mahogany/50' 
+              : 'border-mahogany/30'
           }`}>
             <button
               onClick={handleSkip}
@@ -630,8 +630,8 @@ const FeatureTooltip = ({
     <div 
       className={`absolute w-[300px] rounded-lg shadow-lg pointer-events-auto ${
         isDarkMode 
-          ? 'bg-gray-900 border border-purple-500' 
-          : 'bg-white border border-purple-500'
+          ? 'bg-gray-900 border border-mahogany' 
+          : 'bg-white border border-mahogany'
       }`}
       style={{
         top: `${position.top}px`,
@@ -639,7 +639,7 @@ const FeatureTooltip = ({
       }}
     >
       <div className={`px-4 py-3 border-b flex items-center gap-2 ${
-        isDarkMode ? 'border-gray-700' : 'border-gray-200'
+        isDarkMode ? 'border-mahogany/50' : 'border-mahogany/30'
       }`}>
         <div className={`p-1.5 rounded-lg ${
           isDarkMode ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-100 text-purple-600'
@@ -667,7 +667,7 @@ const FeatureTooltip = ({
       </div>
       
       <div className={`px-4 py-3 border-t flex justify-between ${
-        isDarkMode ? 'border-gray-700' : 'border-gray-200'
+        isDarkMode ? 'border-mahogany/50' : 'border-mahogany/30'
       }`}>
         <div className="flex gap-2">
           <button

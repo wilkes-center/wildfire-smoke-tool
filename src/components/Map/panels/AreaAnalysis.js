@@ -9,8 +9,8 @@ const CustomTooltip = ({ active, payload, label, isDarkMode }) => {
     return (
       <div className={`p-4 shadow-lg rounded-lg border ${
         isDarkMode 
-          ? 'bg-gray-800 border-gray-700 text-gray-100' 
-          : 'bg-white border-gray-200 text-gray-800'
+          ? 'bg-gray-800 border-mahogany/70 text-gray-100' 
+          : 'bg-white border-mahogany/50 text-gray-800'
       }`}>
         <p className="font-semibold">{label}</p>
         {payload.map((entry, index) => (
@@ -108,7 +108,7 @@ const StatsTable = ({ data, isDarkMode }) => {
           {data.map((row, index) => (
             <tr 
               key={index} 
-              className="border-b border-gray-200/20"
+              className="border-b border-mahogany/20"
             >
               <td className="py-2 px-4 text-gray-600 bg-transparent">
                 {row.time}
@@ -454,8 +454,8 @@ const AreaAnalysis = ({
           {error && (
             <div className={`mb-4 p-4 rounded-lg border ${
               isDarkMode 
-                ? 'bg-rust/50 text-gold-light border-rust-dark/50' 
-                : 'bg-rust-light/20 text-rust-dark border-rust/30'
+                ? 'bg-rust/50 text-gold-light border-mahogany/50' 
+                : 'bg-rust-light/20 text-rust-dark border-mahogany/30'
             }`}>
               {error}
             </div>

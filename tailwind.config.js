@@ -3,43 +3,41 @@ module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        'sora': ['Sora', 'sans-serif'],
+        'redhat': ['Red Hat Display', 'sans-serif'],
+      },
       colors: {
-        // Brand colors
-        gold: {
-          DEFAULT: '#cea25d',
-          light: '#deb77d',
-          dark: '#ad8040',
+        // Brand colors from style guide
+        obsidian: {
+          DEFAULT: '#1a1a1a', // Olympic Park Obsidian
+        },
+        tan: {
+          DEFAULT: '#cea25d', // Canyonlands Tan
         },
         sage: {
-          DEFAULT: '#99aa88',
-          light: '#b5c2a9',
-          dark: '#7d8f6d',
+          DEFAULT: '#99aa88', // Spiral Jetty Sage 
         },
-        forest: {
-          DEFAULT: '#2d5954',
-          light: '#3a7370',
-          dark: '#1e3c38', 
+        green: {
+          DEFAULT: '#2d5954', // Great Salt Lake Green
         },
-        cream: {
-          DEFAULT: '#f9f6ef',
-          light: '#ffffff',
-          dark: '#eae4d4',
+        white: {
+          DEFAULT: '#f9f6ef', // Snowbird White
+        },
+        mahogany: {
+          DEFAULT: '#751d0c', // Moab Mahogany
+        },
+        blue: {
+          DEFAULT: '#789ba8', // Bonneville Salt Flats Blue
         },
         rust: {
-          DEFAULT: '#751d0c',
-          light: '#9a2811',
-          dark: '#591508',
+          DEFAULT: '#dd3b00', // Rocky Mountain Rust
         },
-        brick: {
-          DEFAULT: '#dd3b00',
-          light: '#f74e1e',
-          dark: '#b42f00',
-        },
-        sky: {
-          DEFAULT: '#789ba8',
-          light: '#a0b8c2',
-          dark: '#5b7d8a',
-        },
+      },
+      fontSize: {
+        'section-header': ['36px', { lineHeight: '1.2' }],
+        'sub-header': ['20px', { lineHeight: '1.2' }],
+        'body': ['9pt', { lineHeight: '1.5' }],
       },
     },
   },

@@ -17,21 +17,21 @@ const ThemedPanel = ({
     return (
       <div className={`w-[480px] rounded-xl shadow-xl overflow-hidden border-2 ${
         isDarkMode 
-          ? 'bg-gray-900/95 border-forest' 
-          : 'bg-white/95 border-forest'
+          ? 'bg-gray-900/95 border-white' 
+          : 'bg-white/95 border-mahogany'
       } ${className} backdrop-blur-md`}>
         <div className="w-full h-full flex flex-col">
           <div className={`px-4 py-3 border-b-2 ${
             isDarkMode 
-              ? 'bg-gradient-to-r from-forest-dark/30 to-sage-dark/30 border-forest' 
-              : 'bg-gradient-to-r from-cream to-sage-light/30 border-forest'
+              ? 'bg-gradient-to-r from-forest-dark/30 to-sage-dark/30 border-white' 
+              : 'bg-gradient-to-r from-cream to-sage-light/30 border-mahogany'
           }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {Icon && (
                   <div className={`p-2 rounded-lg ${
                     isDarkMode
-                      ? 'bg-forest/10 text-gold'
+                      ? 'bg-forest/10 text-white'
                       : 'bg-sage-light text-forest'
                   }`}>
                     <Icon className="w-5 h-5" />
@@ -39,13 +39,13 @@ const ThemedPanel = ({
                 )}
                 <div>
                   <h2 className={`text-lg font-semibold leading-none ${
-                    isDarkMode ? 'text-gold-light' : 'text-forest'
+                    isDarkMode ? 'text-white' : 'text-forest'
                   }`}>
                     {title}
                   </h2>
                   {subtitle && (
                     <div className={`text-sm mt-1 ${
-                      isDarkMode ? 'text-gold' : 'text-forest-light'
+                      isDarkMode ? 'text-white/80' : 'text-forest-light'
                     }`}>
                       {subtitle}
                     </div>
@@ -58,7 +58,7 @@ const ThemedPanel = ({
                   onClick={onClose}
                   className={`p-1.5 rounded-lg transition-colors ${
                     isDarkMode
-                      ? 'hover:bg-forest/10 text-gold hover:text-gold-light'
+                      ? 'hover:bg-forest/10 text-white hover:text-white'
                       : 'hover:bg-sage-light text-forest hover:text-forest-dark'
                   }`}
                   title="Minimize"
@@ -85,12 +85,12 @@ const ThemedPanel = ({
       onClick={onClose}
       className={`rounded-xl shadow-lg transition-all duration-300 w-12 h-12 flex items-center justify-center backdrop-blur-md
         ${isDarkMode 
-          ? 'bg-gray-900/90 hover:bg-gray-800/90 hover:shadow-forest/20 hover:shadow-lg border-2 border-forest' 
-          : 'bg-white/90 hover:bg-gray-50/90 hover:shadow-forest/10 hover:shadow-lg border-2 border-forest'
+          ? 'bg-gray-900/90 hover:bg-gray-800/90 hover:shadow-white/20 hover:shadow-lg border-2 border-white' 
+          : 'bg-white/90 hover:bg-gray-50/90 hover:shadow-mahogany/10 hover:shadow-lg border-2 border-mahogany'
         } transform hover:scale-105`}
     >
       <Icon className={`w-5 h-5 ${
-        isDarkMode ? 'text-gold' : 'text-forest'
+        isDarkMode ? 'text-white' : 'text-forest'
       }`} />
     </button>
   );

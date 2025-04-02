@@ -1,18 +1,8 @@
 import React from 'react';
 
 const LoadingOverlay = () => (
-  <div style={{
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: 'rgba(255, 255, 255, 0.8)',
-  }}>
-    Loading map...
+  <div className="absolute inset-0 flex justify-center items-center bg-white/80">
+    <div className="text-obsidian font-sora font-semibold">Loading map...</div>
   </div>
 );
 

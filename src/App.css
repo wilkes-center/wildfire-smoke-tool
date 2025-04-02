@@ -3,22 +3,11 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: #1a1a1a; /* Olympic Park Obsidian */
   padding: 20px;
-  color: white;
+  color: #f9f6ef; /* Snowbird White */
 }
-
-
 
 main {
-  height: calc(100vh - 140px); 
-}
-
-footer {
-  background-color: #282c34;
-  color: white;
-  padding: 10px;
-  position: fixed;
-  bottom: 0;
-  width: 100%;
+  height: calc(100vh - 80px); /* Adjusted for header only */
 }
