@@ -1,6 +1,6 @@
 export const BASEMAPS = {
   light: {
-    url: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+    url: 'mapbox://styles/pkulandh/cm9iyi6qq00jo01rce7xjcfay',
     name: 'Light'
   },
   dark: {

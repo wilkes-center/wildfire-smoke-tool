@@ -3,8 +3,8 @@ import { useState, useRef } from 'react';
 const INITIAL_VIEWPORT = {
   latitude: 39.8283,
   longitude: -98.5795,
-  zoom: 4.5,
-  minZoom: 4.5,
+  zoom: 4,
+  minZoom: 4,
   maxZoom: 9,
 };
 

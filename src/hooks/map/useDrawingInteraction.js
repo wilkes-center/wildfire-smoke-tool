@@ -38,6 +38,39 @@ export const useDrawingInteraction = ({
         
         if (mapInstance) {
           mapInstance.getCanvas().style.cursor = '';
+          
+          // Calculate bounds for the drawn polygon
+          const bounds = finalPolygon.reduce(
+            (acc, [lng, lat]) => ({
+              minLng: Math.min(acc.minLng, lng),
+              maxLng: Math.max(acc.maxLng, lng),
+              minLat: Math.min(acc.minLat, lat),
+              maxLat: Math.max(acc.maxLat, lat),
+            }),
+            { minLng: Infinity, maxLng: -Infinity, minLat: Infinity, maxLat: -Infinity }
+          );
+
+          // Add padding
+          const padding = 0.2;
+          const latSpan = (bounds.maxLat - bounds.minLat) * (1 + padding);
+          const lngSpan = (bounds.maxLng - bounds.minLng) * (1 + padding);
+
+          // Calculate center and zoom
+          const center = [
+            (bounds.minLng + bounds.maxLng) / 2,
+            (bounds.minLat + bounds.maxLat) / 2
+          ];
+
+          // Calculate zoom level
+          const latZoom = Math.log2(180 / latSpan) - 1;
+          const lngZoom = Math.log2(360 / lngSpan) - 1;
+          const zoom = Math.min(latZoom, lngZoom, 8.9); // Limit zoom to 8.9
+
+          mapInstance.flyTo({
+            center: center,
+            zoom: Math.max(zoom, 3), // Don't zoom out further than level 3
+            duration: 1000
+          });
         }
         
         setLastClickTime(0);
@@ -52,7 +85,7 @@ export const useDrawingInteraction = ({
     if (!isPointSelected && mapInstance) {
       try {
         handleEnhancedMapClick(e, mapInstance, {
-          initialZoomLevel: 7,
+          initialZoomLevel: Math.min(mapInstance.getZoom(), 8.9), // Limit zoom to 8.9
           zoomDuration: 1000,
           selectionDelay: 500,
           selectionRadius: 0.1

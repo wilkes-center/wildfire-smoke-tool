@@ -164,11 +164,13 @@ export const TimeControls = ({
                   />
                   {/* Date label */}
                   <div 
-                    className="text-xs font-medium mt-1 -translate-x-1/2" 
+                    className="text-xs font-medium mt-1" 
                     style={{ 
                       position: 'absolute',
                       whiteSpace: 'nowrap',
-                      color: primaryColor
+                      color: primaryColor,
+                      transform: 'translateX(80%)',
+                      right: 0
                     }}
                   >
                     {marker.label}

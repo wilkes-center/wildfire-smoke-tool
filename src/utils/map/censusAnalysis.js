@@ -211,33 +211,52 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
       data: geojson
     });
 
-    // Get the current layers to find the topmost one
-    const layers = map.getStyle().layers;
-    const topmostLayerId = layers[layers.length - 1].id;
-
-    // Add highlight fill layer above the topmost layer
+    // Add highlight fill layer
     map.addLayer({
       id: HIGHLIGHT_LAYER,
       type: 'fill',
       source: HIGHLIGHT_SOURCE,
       paint: {
-        'fill-color': isDarkMode ? '#cea25d' : '#2d5954', // Using gold in dark mode, forest in light mode
-        'fill-opacity': isDarkMode ? 0.4 : 0.3,
-        'fill-outline-color': isDarkMode ? '#deb77d' : '#3a7370' // Light variants for outlines
+        'fill-color': '#751d0c', // Mahogany color for both modes
+        'fill-opacity': isDarkMode ? 0.5 : 0.3,
+        'fill-outline-color': '#751d0c' // Mahogany for outline
       }
-    }, topmostLayerId); // Insert above the topmost layer
+    });
 
-    // Add outline layer at the very top
+    // Add outline layer
     map.addLayer({
       id: OUTLINE_LAYER,
       type: 'line',
       source: HIGHLIGHT_SOURCE,
       paint: {
-        'line-color': isDarkMode ? '#deb77d' : '#3a7370', // Light variants for better visibility
+        'line-color': '#751d0c', // Mahogany for outline
         'line-width': 1.5,
-        'line-opacity': isDarkMode ? 0.8 : 0.7
+        'line-opacity': isDarkMode ? 0.9 : 0.7
       }
-    }); // This will be added at the top
+    });
+
+    // Ensure these layers are always on top by moving them after any other layer is added
+    const moveLayersToTop = () => {
+      const layers = map.getStyle().layers;
+      const lastLayerId = layers[layers.length - 1].id;
+      
+      // Only move if not already at the top
+      if (lastLayerId !== OUTLINE_LAYER) {
+        if (map.getLayer(HIGHLIGHT_LAYER)) {
+          map.moveLayer(HIGHLIGHT_LAYER);
+        }
+        if (map.getLayer(OUTLINE_LAYER)) {
+          map.moveLayer(OUTLINE_LAYER);
+        }
+      }
+    };
+
+    // Move layers to top initially
+    moveLayersToTop();
+
+    // Add event listener to ensure layers stay on top when new layers are added
+    map.on('sourcedata', moveLayersToTop);
+    map.on('styledata', moveLayersToTop);
 
   } catch (error) {
     console.error('Error updating highlight layers:', error);
