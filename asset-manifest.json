@@ -1,17 +1,17 @@
 {
   "files": {
     "main.css": "/wildfire-smoke-tool/static/css/main.652adffb.css",
-    "main.js": "/wildfire-smoke-tool/static/js/main.b42cfb0d.js",
+    "main.js": "/wildfire-smoke-tool/static/js/main.6e66399c.js",
     "static/js/879.230e76f6.chunk.js": "/wildfire-smoke-tool/static/js/879.230e76f6.chunk.js",
     "static/js/453.1f99e84d.chunk.js": "/wildfire-smoke-tool/static/js/453.1f99e84d.chunk.js",
     "index.html": "/wildfire-smoke-tool/index.html",
     "main.652adffb.css.map": "/wildfire-smoke-tool/static/css/main.652adffb.css.map",
-    "main.b42cfb0d.js.map": "/wildfire-smoke-tool/static/js/main.b42cfb0d.js.map",
+    "main.6e66399c.js.map": "/wildfire-smoke-tool/static/js/main.6e66399c.js.map",
     "879.230e76f6.chunk.js.map": "/wildfire-smoke-tool/static/js/879.230e76f6.chunk.js.map",
     "453.1f99e84d.chunk.js.map": "/wildfire-smoke-tool/static/js/453.1f99e84d.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.652adffb.css",
-    "static/js/main.b42cfb0d.js"
+    "static/js/main.6e66399c.js"
   ]
 }
