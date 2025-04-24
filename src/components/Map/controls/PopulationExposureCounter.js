@@ -47,7 +47,7 @@ const findActiveLayer = (map, date, hour) => {
 
 
 
-const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }) => {
+const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, isPlaying }) => {
   const [stats, setStats] = useState({
     censusStats: {
       value: null,
@@ -530,9 +530,9 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
     }
   }, [map, polygon, currentDateTime]);
 
-  // Use a less aggressive debounce to ensure data persists
+  // Use a less aggressive debounce to ensure data persists on both animation start and end
   const debouncedCalculateExposure = useCallback(
-    _.debounce(() => calculateExposure(), 500, { leading: true, trailing: false }),
+    _.debounce(() => calculateExposure(), 500, { leading: true, trailing: true }),
     [calculateExposure]
   );
 
@@ -541,11 +541,25 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime }
     updateCensusData();
   }, [updateCensusData]);
 
-  // Update exposure when time changes
+  // Update exposure when time changes - force direct calculation during animation
   useEffect(() => {
-    debouncedCalculateExposure();
+    // Skip the debounce during animation for immediate updates
+    calculateExposure();
     return () => debouncedCalculateExposure.cancel();
-  }, [debouncedCalculateExposure]);
+  }, [calculateExposure, currentDateTime]);
+  
+  // Additional effect to force update during animation
+  useEffect(() => {
+    if (isPlaying) {
+      const animationTimer = setInterval(() => {
+        if (currentDateTime) {
+          calculateExposure();
+        }
+      }, 100); // Update frequently during animation
+      
+      return () => clearInterval(animationTimer);
+    }
+  }, [isPlaying, calculateExposure, currentDateTime]);
 
   if (!polygon) return null;
 

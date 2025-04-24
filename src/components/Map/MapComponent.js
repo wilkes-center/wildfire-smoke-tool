@@ -231,6 +231,7 @@ const MapComponent = ({ onShowIntro }) => {
                       polygon={polygon}
                       isDarkMode={isDarkMode}
                       currentDateTime={getCurrentDateTime()}
+                      isPlaying={isPlaying}
                     />
                   </div>
                 </div>
