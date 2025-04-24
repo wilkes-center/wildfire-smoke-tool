@@ -15,7 +15,7 @@ export const formatDateTime = (timestamp) => {
   const [year, month, day] = dateStr.split('-').map(Number);
   
   // Create a date using UTC values to prevent timezone conversion issues
-  const dateOptions = { month: 'short', day: 'numeric', timeZone: 'UTC' };
+  const dateOptions = { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' };
   const utcDate = new Date(Date.UTC(year, month - 1, day));
   const formattedDate = utcDate.toLocaleDateString('en-US', dateOptions);
   
