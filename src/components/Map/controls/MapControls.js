@@ -57,10 +57,10 @@ const MapControls = ({
               <>
                 <button
                   onClick={startDrawing}
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors backdrop-blur-sm shadow-lg ${
                     isDarkMode
-                      ? 'bg-gray-800 text-purple-400 hover:bg-gray-700'
-                      : 'bg-gray-50 text-purple-500 hover:bg-gray-100'
+                      ? 'bg-white/90 text-purple-400 hover:bg-white/80'
+                      : 'bg-white/90 text-purple-500 hover:bg-white/80'
                   }`}
                   title="Draw Area"
                 >

@@ -3,8 +3,8 @@ export const PM25_LEVELS = [
       value: 0, 
       label: 'Good',
       maxValue: 12.0,
-      color: '#00e400',  // Light mode color
-      darkColor: '#00ff9d',  // Dark mode color
+      color: '#00d600',  // Brighter green
+      darkColor: '#00ff99',  // Vibrant neon green
       bgColor: 'bg-green-500',
       textColor: 'text-green-700',
       textDark: 'text-emerald-400',
@@ -15,8 +15,8 @@ export const PM25_LEVELS = [
       value: 12.1, 
       label: 'Moderate',
       maxValue: 35.4,
-      color: '#ffff00', 
-      darkColor: '#fff700',
+      color: '#ffee00',  // Saturated yellow
+      darkColor: '#ffff00',  // Bright neon yellow
       bgColor: 'bg-yellow-500',
       textColor: 'text-yellow-700',
       textDark: 'text-yellow-400',
@@ -28,8 +28,8 @@ export const PM25_LEVELS = [
       label: 'Unhealthy for Sensitive Groups',
       shortLabel: 'USG',
       maxValue: 55.4,
-      color: '#ff7e00',
-      darkColor: '#ff9100',
+      color: '#ff8800',  // Vibrant orange
+      darkColor: '#ffa500',  // Bright neon orange
       bgColor: 'bg-orange-500',
       textColor: 'text-orange-700',
       textDark: 'text-orange-400',
@@ -40,8 +40,8 @@ export const PM25_LEVELS = [
       value: 55.5, 
       label: 'Unhealthy',
       maxValue: 150.4,
-      color: '#ff0000',
-      darkColor: '#ff0055',
+      color: '#ff1a1a',  // Vibrant red
+      darkColor: '#ff0066',  // Bright neon red
       bgColor: 'bg-red-500',
       textColor: 'text-red-700',
       textDark: 'text-rose-400',
@@ -52,8 +52,8 @@ export const PM25_LEVELS = [
       value: 150.5, 
       label: 'Very Unhealthy',
       maxValue: 250.4,
-      color: '#8f3f97',
-      darkColor: '#bf00ff',
+      color: '#9933ff',  // Vibrant purple
+      darkColor: '#cc00ff',  // Bright neon purple
       bgColor: 'bg-purple-500',
       textColor: 'text-purple-700',
       textDark: 'text-purple-400',
@@ -64,8 +64,8 @@ export const PM25_LEVELS = [
       value: 250.5, 
       label: 'Hazardous',
       maxValue: 500,
-      color: '#7e0023',
-      darkColor: '#ff00ff',
+      color: '#990033',  // Deep red
+      darkColor: '#ff00cc',  // Bright neon pink
       bgColor: 'bg-rose-500',
       textColor: 'text-rose-700',
       textDark: 'text-fuchsia-400',
@@ -76,8 +76,8 @@ export const PM25_LEVELS = [
       value: 500, 
       label: 'Hazardous',
       maxValue: Infinity,
-      color: '#7e0023',
-      darkColor: '#ff00ff',
+      color: '#990033',  // Deep red
+      darkColor: '#ff00cc',  // Bright neon pink
       bgColor: 'bg-rose-500',
       textColor: 'text-rose-700',
       textDark: 'text-fuchsia-400',

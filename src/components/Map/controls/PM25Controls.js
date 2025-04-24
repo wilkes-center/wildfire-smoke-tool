@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Wind } from 'lucide-react';
 import { PM25_LEVELS, getPM25Level } from '../../../constants/pm25Levels';
 
-const DEFAULT_THRESHOLD = 1;
+const DEFAULT_THRESHOLD = 5;
 
 
 
@@ -65,7 +65,7 @@ export const PM25Controls = ({
             <div className="relative pt-1">
               <input
                 type="range"
-                min="0"
+                min="5"
                 max="500"
                 step="0.1"
                 value={pm25Threshold}
@@ -82,7 +82,7 @@ export const PM25Controls = ({
               />
               
               <div className="flex justify-between mt-2">
-                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>0</span>
+                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>5</span>
                 <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>500</span>
               </div>
             </div>
@@ -96,7 +96,7 @@ export const PM25Controls = ({
             </div>
 
             <div className="grid grid-cols-3 gap-1">
-              {[1, 12, 35.5, 55.5, 150.5, 250.5].map(value => (
+              {[5, 12, 35.5, 55.5, 150.5, 250.5].map(value => (
                 <button
                   key={value}
                   onClick={() => setPM25Threshold(value)}

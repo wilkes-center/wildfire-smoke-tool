@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react';
-import { TOTAL_HOURS, START_DATE } from '../../../utils/map/constants.js';
+import { TOTAL_HOURS, START_DATE, TILESET_INFO } from '../../../utils/map/constants.js';
 
 export const TimeControls = ({
   currentHour,
@@ -32,11 +32,32 @@ export const TimeControls = ({
     if (onTimeChange) onTimeChange(newHour);
   };
 
-  // Generate dates for each day
+  // Generate labels for each day looking at the actual tileset data
   const generateDateLabel = (dayOffset) => {
+    // Important: tilesets are ordered by date, with 2 per day (0-11 hours and 12-23 hours)
+    const tilesetIndex = dayOffset * 2; // First chunk of the day (0-11 hours)
+    
+    if (tilesetIndex < TILESET_INFO.length) {
+      // Get the date directly from TILESET_INFO to ensure alignment
+      console.log(`Day ${dayOffset} date from tileset: ${TILESET_INFO[tilesetIndex].date}`);
+      
+      // Parse the date string in UTC to avoid timezone shifts
+      const dateStr = TILESET_INFO[tilesetIndex].date;
+      const [year, month, day] = dateStr.split('-').map(Number);
+      
+      // Create a date using UTC values to prevent timezone conversion issues
+      const dateOptions = { month: 'short', day: 'numeric', timeZone: 'UTC' };
+      const utcDate = new Date(Date.UTC(year, month - 1, day));
+      return utcDate.toLocaleDateString('en-US', dateOptions);
+    }
+    
+    // Fallback calculation if tileset not found
+    console.warn(`No tileset found for day offset ${dayOffset} (index ${tilesetIndex})`);
     const date = new Date(START_DATE);
-    date.setDate(date.getDate() + dayOffset);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    date.setUTCDate(date.getUTCDate() + dayOffset);
+    
+    // Apply the same UTC formatting for consistency
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   };
 
   // Position day markers at the start of each day (0, 24, 48, 72 hours)
@@ -74,18 +95,18 @@ export const TimeControls = ({
 
           <button
             onClick={() => setShowSpeedOptions(!showSpeedOptions)}
-            className={`h-10 px-4 rounded-lg text-sm font-medium transition-all border ${
+            className={`h-10 px-4 rounded-lg text-sm font-medium transition-colors backdrop-blur-sm shadow-lg ${
               isDarkMode
-                ? 'border-white bg-gray-800 hover:bg-gray-700 text-white'
-                : 'border-mahogany bg-gray-100 hover:bg-gray-200 text-mahogany'
+                ? 'bg-white/90 text-gray-800 hover:bg-white/80'
+                : 'bg-white/90 text-mahogany hover:bg-white/80'
             }`}
           >
             {playbackSpeed}x
           </button>
 
           {showSpeedOptions && (
-            <div className={`absolute bottom-full mb-2 rounded-lg shadow-lg border ${
-              isDarkMode ? 'border-white bg-gray-800' : 'border-mahogany bg-white'
+            <div className={`absolute bottom-full mb-2 rounded-lg shadow-lg backdrop-blur-sm ${
+              isDarkMode ? 'bg-white/90 border border-gray-200' : 'bg-white/90 border border-mahogany/20'
             }`}>
               {[1, 2, 3].map((speed) => (
                 <button
@@ -97,10 +118,10 @@ export const TimeControls = ({
                   className={`w-full px-4 py-2 text-sm transition-all ${
                     playbackSpeed === speed
                       ? isDarkMode
-                        ? 'bg-forest/20 text-white'
+                        ? 'bg-forest/20 text-gray-800'
                         : 'bg-sage-light text-mahogany'
                       : isDarkMode
-                        ? 'hover:bg-gray-700 text-gray-300'
+                        ? 'hover:bg-gray-100 text-gray-600'
                         : 'hover:bg-gray-50 text-gray-600'
                   }`}
                 >
@@ -169,8 +190,10 @@ export const TimeControls = ({
                       position: 'absolute',
                       whiteSpace: 'nowrap',
                       color: primaryColor,
-                      transform: 'translateX(80%)',
-                      right: 0
+                      transform: index === 0 ? 'translateX(0)' : 
+                               index === 3 ? 'translateX(-100%)' : 'translateX(-50%)',
+                      left: index === 0 ? 0 : 
+                            index === 3 ? '100%' : '50%'
                     }}
                   >
                     {marker.label}

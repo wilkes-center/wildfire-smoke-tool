@@ -193,7 +193,7 @@ const MapAdditionalControls = ({
               9, 90
             ],
             'circle-color': getPM25ColorInterpolation(isDarkMode),
-            'circle-blur': 0.85,
+            'circle-blur': 0.6,
             'circle-opacity': 0
           },
           layout: {
@@ -304,7 +304,7 @@ const MapAdditionalControls = ({
                 9, 90
               ],
               'circle-color': getPM25ColorInterpolation(isDarkMode),
-              'circle-blur': 0.85,
+              'circle-blur': 0.6,
               'circle-opacity': 0
             },
             layout: {
@@ -324,7 +324,7 @@ const MapAdditionalControls = ({
 
         // If very close to transition, start fading in next layer
         if (hour === currentTileset.endHour) {
-          map.setPaintProperty(nextLayerId, 'circle-opacity', 0.2);
+          map.setPaintProperty(nextLayerId, 'circle-opacity', 0.5);
         }
       }
 

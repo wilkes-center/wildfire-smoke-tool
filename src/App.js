@@ -21,7 +21,6 @@ const App = () => {
       ) : (
         <>
           <header className="App-header bg-obsidian text-white">
-            <h1 className="font-sora font-semibold text-xl">Wildfire Smoke Tool</h1>
           </header>
           <main>
             <MapComponent onShowIntro={handleShowIntro} />

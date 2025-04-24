@@ -6,12 +6,20 @@
 export const formatDateTime = (timestamp) => {
   if (!timestamp || !timestamp.date) return '';
   
-  const date = new Date(timestamp.date);
-  const formattedDate = date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
+  // Convert to Date object, handling both date string and Date objects
+  const dateStr = typeof timestamp.date === 'string' 
+    ? timestamp.date 
+    : timestamp.date.toISOString().split('T')[0];
+    
+  // Parse the date string in UTC to avoid timezone shifts
+  const [year, month, day] = dateStr.split('-').map(Number);
+  
+  // Create a date using UTC values to prevent timezone conversion issues
+  const dateOptions = { month: 'short', day: 'numeric', timeZone: 'UTC' };
+  const utcDate = new Date(Date.UTC(year, month - 1, day));
+  const formattedDate = utcDate.toLocaleDateString('en-US', dateOptions);
+  
+  console.log(`Formatting date: ${timestamp.date}, hour: ${timestamp.hour} -> ${formattedDate}`);
   
   return formattedDate;
 }; 

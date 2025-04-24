@@ -31,12 +31,20 @@ export const useMapInteraction = ({
       const map = mapRef.current.getMap();
       setMapInstance(map);
       
+      console.log("Map loaded, initializing layers");
+      
       if (!map.isStyleLoaded()) {
+        console.log("Style not loaded yet, waiting for style.load event");
         map.once('style.load', () => {
+          console.log("Style loaded, initializing census layer");
           censusLayerManager.initializeLayer(map, isDarkMode);
+          // Mark as initialized to prevent re-initialization
+          layerSetupComplete.current = true;
         });
       } else {
+        console.log("Style already loaded, initializing census layer immediately");
         censusLayerManager.initializeLayer(map, isDarkMode);
+        layerSetupComplete.current = true;
       }
     }
   }, [isDarkMode, mapRef, setIsMapLoaded, setMapInstance, layerSetupComplete]);

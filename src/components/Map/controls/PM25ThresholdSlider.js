@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PM25_LEVELS } from '../../../constants/pm25Levels';
 
 const PM25ThresholdSlider = ({ 
-  pm25Threshold = 1,
+  pm25Threshold = 5,
   setPM25Threshold, 
   isDarkMode 
 }) => {
@@ -34,7 +34,7 @@ const PM25ThresholdSlider = ({
         const positionRange = nextLevel.position - currentLevel.position;
         const valueRange = nextLevel.value - currentLevel.value;
         const percent = (position - currentLevel.position) / positionRange;
-        return currentLevel.value + (percent * valueRange);
+        return Math.max(5, currentLevel.value + (percent * valueRange));
       }
     }
     return 500;
@@ -49,7 +49,7 @@ const PM25ThresholdSlider = ({
 
   const handleSliderChange = (e) => {
     const position = parseFloat(e.target.value);
-    const value = positionToValue(position);
+    const value = Math.max(5, positionToValue(position));
     setPM25Threshold(value);
     setInputValue(value.toFixed(1));
   };
@@ -65,7 +65,7 @@ const PM25ThresholdSlider = ({
     if (isNaN(newValue)) {
       newValue = pm25Threshold;
     } else {
-      newValue = Math.max(0, Math.min(500, newValue));
+      newValue = Math.max(5, Math.min(500, newValue));
     }
     
     setPM25Threshold(newValue);
@@ -115,7 +115,7 @@ const PM25ThresholdSlider = ({
           />
         ) : (
           <span style={{ color: currentLevel?.color }}>
-            {pm25Threshold.toFixed(1)}+
+            {pm25Threshold.toFixed(1)}+ μg/m³
           </span>
         )}
       </div>

@@ -4,7 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { HelpCircle } from 'lucide-react';
 
 import { MAPBOX_TOKEN } from '../../utils/map/constants.js'; 
-import { BASEMAPS } from '../../constants/map/basemaps';
+import { DEFAULT_DARK_BASEMAP, DEFAULT_LIGHT_BASEMAP } from '../../constants/map/basemaps.js';
 
 // Map UI Components
 import MapControls from './controls'; 
@@ -71,8 +71,6 @@ const MapComponent = ({ onShowIntro }) => {
   const {
     isDarkMode,
     setIsDarkMode,
-    currentBasemap,
-    setCurrentBasemap,
     pm25Threshold,
     setPM25Threshold
   } = themeState;
@@ -178,26 +176,30 @@ const MapComponent = ({ onShowIntro }) => {
     isDarkMode
   });
 
-  const { handleThemeChange, handleBasemapChange } = useThemeControl({
+  const { handleThemeChange } = useThemeControl({
     setIsDarkMode,
-    currentBasemap,
-    setCurrentBasemap,
     needsLayerReinitRef,
     layerSetupComplete
   });
+
+  // Using standard map styles to avoid feature namespace warnings
+  const mapStyle = isDarkMode 
+    ? DEFAULT_DARK_BASEMAP
+    : DEFAULT_LIGHT_BASEMAP;
 
   return (
     <div className={`fixed inset-0 overflow-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
       <Map
         {...viewport}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={currentBasemap}
+        mapStyle={mapStyle}
         mapboxAccessToken={MAPBOX_TOKEN}
         onMove={handleMapInteraction}
         ref={mapRef}
         onLoad={handleMapLoad}
         onClick={handleMapClick}
         cursor={getCursor()}
+        projection="globe"
       />
       
       {!isMapLoaded && <LoadingOverlay isDarkMode={isDarkMode} />}
@@ -210,13 +212,7 @@ const MapComponent = ({ onShowIntro }) => {
         </div>
       )}
 
-      {censusError && (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg ${
-          isDarkMode ? 'bg-red-900/90 text-red-200' : 'bg-red-50 text-red-600'
-        } shadow-lg z-50`}>
-          {censusError}
-        </div>
-      )}
+      {censusError && console.error('Census data error:', censusError)}
       
       {isMapLoaded && mapInstance && (
         <>
@@ -254,7 +250,7 @@ const MapComponent = ({ onShowIntro }) => {
   
           <MapAdditionalControls
             map={mapInstance}
-            mapStyle={currentBasemap}
+            mapStyle={mapStyle}
             mapboxAccessToken={MAPBOX_TOKEN}
             polygon={polygon}
             currentDateTime={getCurrentDateTime()}
@@ -291,9 +287,6 @@ const MapComponent = ({ onShowIntro }) => {
             polygon={polygon}
             isDarkMode={isDarkMode}
             setIsDarkMode={handleThemeChange}
-            currentBasemap={currentBasemap}
-            setCurrentBasemap={handleBasemapChange}
-            basemapOptions={BASEMAPS}
             mapInstance={mapInstance}
             pm25Threshold={pm25Threshold}
             setPM25Threshold={setPM25Threshold}

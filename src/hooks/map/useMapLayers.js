@@ -23,13 +23,22 @@ export const useMapLayers = (
     const tilesets = new Set();
     let currentDate = new Date(date);
     let currentHour = hour;
+    
+    console.log(`Getting relevant tilesets for date: ${currentDate.toISOString().split('T')[0]}, hour: ${currentHour}`);
 
     const currentTileset = TILESET_INFO.find(tileset => 
       tileset.date === currentDate.toISOString().split('T')[0] && 
       currentHour >= tileset.startHour && 
       currentHour <= tileset.endHour
     );
-    if (currentTileset) tilesets.add(currentTileset);
+    
+    if (currentTileset) {
+      tilesets.add(currentTileset);
+      console.log(`Added current tileset: ${currentTileset.id}`);
+    } else {
+      console.warn(`No current tileset found for date: ${currentDate.toISOString().split('T')[0]}, hour: ${currentHour}`);
+      console.log("Available tilesets:", TILESET_INFO);
+    }
 
     for (let i = 0; i < count; i++) {
       currentHour++;
@@ -44,7 +53,10 @@ export const useMapLayers = (
         currentHour <= tileset.endHour
       );
 
-      if (nextTileset) tilesets.add(nextTileset);
+      if (nextTileset) {
+        tilesets.add(nextTileset);
+        console.log(`Added next tileset: ${nextTileset.id}`);
+      }
     }
 
     currentDate = new Date(date);
@@ -59,9 +71,15 @@ export const useMapLayers = (
       currentHour >= tileset.startHour && 
       currentHour <= tileset.endHour
     );
-    if (prevTileset) tilesets.add(prevTileset);
+    
+    if (prevTileset) {
+      tilesets.add(prevTileset);
+      console.log(`Added previous tileset: ${prevTileset.id}`);
+    }
 
-    return Array.from(tilesets);
+    const result = Array.from(tilesets);
+    console.log(`Returning ${result.length} relevant tilesets:`, result);
+    return result;
   }, []);
 
 
@@ -109,18 +127,25 @@ export const useMapLayers = (
   const updateLayerColors = useCallback((map) => {
     if (!map || !map.getStyle()) return;
 
-    const { date, hour } = getCurrentDateTime();
-    const currentTileset = TILESET_INFO.find(tileset => 
-      tileset.date === date && 
-      hour >= tileset.startHour && 
-      hour <= tileset.endHour
-    );
+    // Get current date/time and possible tileset info
+    const dateTimeInfo = getCurrentDateTime();
+    const { date, hour, tileset: tilesetId } = dateTimeInfo;
+    
+    // Use the tileset ID if provided, otherwise search by date/hour
+    const currentTileset = tilesetId 
+      ? TILESET_INFO.find(tileset => tileset.id === tilesetId)
+      : TILESET_INFO.find(tileset => 
+          tileset.date === date && 
+          hour >= tileset.startHour && 
+          hour <= tileset.endHour
+        );
 
     if (!currentTileset) return;
 
     const currentLayerId = `layer-${currentTileset.id}`;
     const timeString = `${date}T${String(hour).padStart(2, '0')}:00:00`;
 
+    // First hide all layers and update colors
     loadedLayersRef.current.forEach(layerId => {
       if (map.getLayer(layerId)) {
         // Update colors for all layers
@@ -129,21 +154,32 @@ export const useMapLayers = (
           'circle-color',
           getPM25ColorInterpolation(isDarkMode)
         );
-        map.setPaintProperty(
-          layerId,
-          'circle-opacity',
-          isDarkMode ? 0.6 : 0.4
-        );
-        if (layerId === currentLayerId) {
-          map.setFilter(layerId, [
-            'all',
-            ['==', ['get', 'time'], timeString],
-            ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
-          ]);
-          map.setLayoutProperty(layerId, 'visibility', 'visible');
-        }
+        
+        // Hide all layers initially
+        map.setLayoutProperty(layerId, 'visibility', 'none');
+        console.log(`Hidden layer: ${layerId}`);
       }
     });
+    
+    // Then only show the current layer
+    if (map.getLayer(currentLayerId)) {
+      // Set filter for current time and PM2.5 threshold
+      map.setFilter(currentLayerId, [
+        'all',
+        ['==', ['get', 'time'], timeString],
+        ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+      ]);
+      
+      // Make current layer visible and set opacity
+      map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
+      map.setPaintProperty(
+        currentLayerId,
+        'circle-opacity',
+        isDarkMode ? 0.9 : 0.75
+      );
+      
+      console.log(`Made layer ${currentLayerId} visible with opacity ${isDarkMode ? 0.9 : 0.75}`);
+    }
   }, [isDarkMode, getCurrentDateTime, pm25Threshold]);
 
   
@@ -172,12 +208,14 @@ export const useMapLayers = (
       const { date, hour } = getCurrentDateTime();
       
       const relevantTilesets = getRelevantTilesets(new Date(date), hour);
+      console.log('Initializing relevant tilesets:', relevantTilesets);
       
       relevantTilesets.forEach(tileset => {
         const sourceId = `source-${tileset.id}`;
         const layerId = `layer-${tileset.id}`;
 
         if (!map.getSource(sourceId)) {
+          console.log(`Adding source: ${sourceId}, url: mapbox://${tileset.id}`);
           map.addSource(sourceId, {
             type: 'vector',
             url: `mapbox://${tileset.id}`,
@@ -188,6 +226,7 @@ export const useMapLayers = (
 
         // Add layer
         if (!map.getLayer(layerId)) {
+          console.log(`Adding layer: ${layerId}, source-layer: ${tileset.layer}`);
           map.addLayer({
             id: layerId,
             type: 'circle',
@@ -207,8 +246,8 @@ export const useMapLayers = (
                 9, 90
               ],
               'circle-color': getPM25ColorInterpolation(isDarkMode),
-              'circle-blur': 0.9,
-              'circle-opacity': isDarkMode ? 0.6 : 0.4
+              'circle-blur': 0.6,
+              'circle-opacity': 0 // Always start with zero opacity
             },
             layout: {
               'visibility': 'none'
@@ -233,18 +272,28 @@ const updateLayers = useCallback((map) => {
   if (!map || !map.getStyle()) return;
 
   try {
-    const { date, hour } = getCurrentDateTime();
+    // Get current date/time and possible tileset info
+    const dateTimeInfo = getCurrentDateTime();
+    const { date, hour, tileset: tilesetId } = dateTimeInfo;
     
-    const currentTileset = TILESET_INFO.find(tileset => 
-      tileset.date === date && 
-      hour >= tileset.startHour && 
-      hour <= tileset.endHour
-    );
+    console.log('Current date/hour:', { date, hour, tilesetId });
+    console.log('Available tilesets:', TILESET_INFO);
+    
+    // Use the tileset ID if provided, otherwise search by date/hour
+    const currentTileset = tilesetId
+      ? TILESET_INFO.find(tileset => tileset.id === tilesetId)
+      : TILESET_INFO.find(tileset => 
+          tileset.date === date && 
+          hour >= tileset.startHour && 
+          hour <= tileset.endHour
+        );
 
     if (!currentTileset) {
       console.warn('No tileset found for:', { date, hour });
       return;
     }
+    
+    console.log('Using tileset:', currentTileset);
 
     // Calculate next hour for transition preparation
     const nextHour = (hour + 1) % 24;
@@ -260,26 +309,87 @@ const updateLayers = useCallback((map) => {
 
     // Update current layer
     const currentLayerId = `layer-${currentTileset.id}`;
+    const currentSourceId = `source-${currentTileset.id}`;
     const timeString = `${date}T${String(hour).padStart(2, '0')}:00:00`;
+    
+    console.log(`Timeline data mapping: currentHour=${currentHour}, date=${date}, hour=${hour}, tileset=${currentTileset.id}`);
+    console.log(`Looking for time ${timeString} in layer ${currentLayerId}`);
+    
+    console.log(`Setting filter for layer ${currentLayerId} with time ${timeString}`);
 
-    // Set all layer opacities to 0 first
+    // Hide all layers first
     loadedLayersRef.current.forEach(layerId => {
       if (map.getLayer(layerId)) {
-        map.setPaintProperty(layerId, 'circle-opacity', 0);
+        // Set to invisible instead of just opacity 0
+        map.setLayoutProperty(layerId, 'visibility', 'none');
+        console.log(`Hidden layer: ${layerId}`);
       }
     });
 
-    // Then set only the current layer to be visible
-    if (map.getLayer(currentLayerId)) {
-      map.setFilter(currentLayerId, [
-        'all',
-        ['==', ['get', 'time'], timeString],
-        ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
-      ]);
+    // Check if the current layer exists, if not, create it
+    if (!map.getLayer(currentLayerId)) {
+      console.log(`Creating missing layer: ${currentLayerId}`);
       
-      map.setPaintProperty(currentLayerId, 'circle-opacity', isDarkMode ? 0.6 : 0.4);
-      map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
+      // First check if the source exists, if not create it
+      if (!map.getSource(currentSourceId)) {
+        console.log(`Adding source: ${currentSourceId}, url: mapbox://${currentTileset.id}`);
+        map.addSource(currentSourceId, {
+          type: 'vector',
+          url: `mapbox://${currentTileset.id}`,
+          maxzoom: 9
+        });
+        loadedSourcesRef.current.add(currentSourceId);
+      }
+      
+      // Add the layer
+      console.log(`Adding layer: ${currentLayerId}, source-layer: ${currentTileset.layer}`);
+      map.addLayer({
+        id: currentLayerId,
+        type: 'circle',
+        source: currentSourceId,
+        'source-layer': currentTileset.layer,
+        maxzoom: 9,
+        paint: {
+          'circle-radius': [
+            'interpolate',
+            ['exponential', 2],
+            ['zoom'],
+            4, 2,
+            5, 5,
+            6, 10,
+            7, 55,
+            8, 70,
+            9, 90
+          ],
+          'circle-color': getPM25ColorInterpolation(isDarkMode),
+          'circle-blur': 0.6,
+          'circle-opacity': 0
+        },
+        layout: {
+          'visibility': 'none' // Start as hidden
+        }
+      });
+      loadedLayersRef.current.add(currentLayerId);
+      preloadedChunksRef.current.add(currentTileset.id);
     }
+
+    // Now that we're sure the layer exists, update it
+    console.log(`Current layer exists: ${currentLayerId}`);
+    
+    // Set visibility first
+    map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
+    
+    // Then set opacity
+    map.setPaintProperty(currentLayerId, 'circle-opacity', isDarkMode ? 0.9 : 0.75);
+    console.log(`Set opacity to ${isDarkMode ? 0.9 : 0.75} for layer: ${currentLayerId}`);
+    
+    // Finally set filter
+    map.setFilter(currentLayerId, [
+      'all',
+      ['==', ['get', 'time'], timeString],
+      ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+    ]);
+    console.log(`Set filter for ${currentLayerId} with PM25 threshold: ${pm25Threshold}`);
 
     // Preload next chunk's data if we're near the end of current chunk
     if (nextTileset && hour === currentTileset.endHour) {
@@ -317,11 +427,11 @@ const updateLayers = useCallback((map) => {
               9, 90
             ],
             'circle-color': getPM25ColorInterpolation(isDarkMode),
-            'circle-blur': 0.85,
+            'circle-blur': 0.6,
             'circle-opacity': 0
           },
           layout: {
-            'visibility': 'visible'
+            'visibility': 'none' // Start as hidden
           }
         });
         loadedLayersRef.current.add(nextLayerId);
@@ -346,7 +456,7 @@ const updateLayers = useCallback((map) => {
   } catch (error) {
     console.error('Error updating layers:', error);
   }
-}, [getCurrentDateTime, cleanupOldChunks, pm25Threshold, isDarkMode]);
+}, [getCurrentDateTime, cleanupOldChunks, pm25Threshold, isDarkMode, getRelevantTilesets]);
 
 
   
@@ -406,8 +516,15 @@ const updateLayers = useCallback((map) => {
     const map = mapRef.current?.getMap();
     if (!map || !isMapLoaded) return;
 
+    // First, initialize the layers
+    if (!loadedLayersRef.current.size) {
+      console.log('Initial layer initialization');
+      initializeLayers(map);
+    }
+    
+    // Then update them
     updateLayers(map);
-  }, [isMapLoaded, updateLayers, currentHour]);
+  }, [isMapLoaded, updateLayers, initializeLayers, currentHour]);
 
   return { updateLayers, initializeLayers };
 };

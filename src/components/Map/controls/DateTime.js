@@ -7,6 +7,9 @@ export const DateTime = ({ timestamp, currentDateTime, isDarkMode }) => {
   const dateTimeObj = timestamp || currentDateTime;
   if (!dateTimeObj || !dateTimeObj.date) return null;
   
+  // Enhanced debugging to see what's being passed in
+  console.log('DateTime component received:', dateTimeObj);
+  
   const formattedDateTime = formatDateTime(dateTimeObj);
 
   return (

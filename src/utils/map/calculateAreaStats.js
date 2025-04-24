@@ -9,6 +9,8 @@ const calculateAreaStats = async (map, polygon) => {
   const stats = [];
   const processedLayers = new Set();
 
+  console.log("Calculating area stats with tilesets:", TILESET_INFO);
+
   for (const tileset of TILESET_INFO) {
     const sourceId = `source-${tileset.id}`;
     const layerId = `layer-${tileset.id}`;
@@ -35,6 +37,8 @@ const calculateAreaStats = async (map, polygon) => {
       continue;
     }
 
+    console.log(`Found source and layer for ${tileset.id}`);
+
     // Mark layer as processed
     processedLayers.add(layerId);
 
@@ -48,6 +52,7 @@ const calculateAreaStats = async (map, polygon) => {
     // Process each hour in the chunk
     for (let hour = tileset.startHour; hour <= tileset.endHour; hour++) {
       const formattedTime = `${tileset.date}T${String(hour).padStart(2, '0')}:00:00`;
+      console.log(`Processing hour ${hour} with formatted time: ${formattedTime}`);
 
       try {
         // Query features within the polygon for this specific hour
@@ -65,6 +70,8 @@ const calculateAreaStats = async (map, polygon) => {
           const coords = feature.geometry.coordinates;
           return isPointInPolygon(coords, polygon);
         });
+
+        console.log(`Found ${features.length} features for hour ${hour} in tileset ${tileset.id}`);
 
         if (features.length === 0) {
           continue;
@@ -93,6 +100,8 @@ const calculateAreaStats = async (map, polygon) => {
           minPM25: Math.round(minPM25 * 100) / 100,
           numPoints: features.length
         });
+        
+        console.log(`Added stats for hour ${hour}: avg=${Math.round(averagePM25 * 100) / 100}, max=${Math.round(maxPM25 * 100) / 100}, min=${Math.round(minPM25 * 100) / 100}`);
       } catch (error) {
         console.warn(`Error processing hour ${hour} for tileset ${tileset.id}:`, error);
         continue;
@@ -101,9 +110,11 @@ const calculateAreaStats = async (map, polygon) => {
 
     if (tilesetStats.hourlyData.length > 0) {
       stats.push(tilesetStats);
+      console.log(`Added tileset stats for ${tileset.id} with ${tilesetStats.hourlyData.length} hours of data`);
     }
   }
 
+  console.log("Final area stats:", stats);
   return stats;
 };
 
