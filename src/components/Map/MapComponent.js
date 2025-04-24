@@ -219,7 +219,7 @@ const MapComponent = ({ onShowIntro }) => {
           <ZoomControls map={mapInstance} isDarkMode={isDarkMode} />
   
           {/* Left side overlays container */}
-          <div className="fixed top-4 left-4 z-50">
+          <div className="fixed top-24 left-4 z-50">
             <div className="flex flex-col gap-2">
               {polygon && (
                 <div className="w-80">

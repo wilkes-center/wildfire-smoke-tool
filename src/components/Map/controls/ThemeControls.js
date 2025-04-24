@@ -10,10 +10,10 @@ export const ThemeControls = ({
       {/* Dark Mode Toggle */}
       <button
         onClick={() => setIsDarkMode(!isDarkMode)}
-        className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors backdrop-blur-sm shadow-lg ${
+        className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors backdrop-blur-sm shadow-lg border-2 border-mahogany ${
           isDarkMode 
-            ? 'bg-white/90 text-gray-800 hover:bg-white/80' 
-            : 'bg-white/90 text-forest hover:bg-white/80'
+            ? 'bg-white/90 text-mahogany hover:bg-white/80' 
+            : 'bg-white/90 text-mahogany hover:bg-white/80'
         }`}
         title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
       >

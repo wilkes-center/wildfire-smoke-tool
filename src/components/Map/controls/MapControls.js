@@ -34,42 +34,47 @@ const MapControls = ({
     <div className="relative w-full h-full pointer-events-none">
       {/* Top Controls Container */}
       <div className="fixed top-4 inset-x-4 z-50">
-        {/* Center Controls - DateTime, Theme, and Draw */}
-        <div className="absolute left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-4">
+        {/* Left Controls - PM25 Threshold */}
+        <div className="absolute left-4 pointer-events-auto">
           <PM25ThresholdSlider 
             pm25Threshold={pm25Threshold}
             setPM25Threshold={setPM25Threshold}
             isDarkMode={isDarkMode}
           />
-          <DateTime
-            currentDateTime={getCurrentDateTime()}
-            isDarkMode={isDarkMode}
-          />
-          <div className="flex items-center gap-2">
-            <ThemeControls
-              isDarkMode={isDarkMode}
-              setIsDarkMode={setIsDarkMode}
-              currentBasemap={currentBasemap}
-              setCurrentBasemap={setCurrentBasemap}
-              basemapOptions={basemapOptions}
-            />
-            {!polygon && !drawingMode && (
-              <>
-                <button
-                  onClick={startDrawing}
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors backdrop-blur-sm shadow-lg ${
-                    isDarkMode
-                      ? 'bg-white/90 text-purple-400 hover:bg-white/80'
-                      : 'bg-white/90 text-purple-500 hover:bg-white/80'
-                  }`}
-                  title="Draw Area"
-                >
-                  <Pen className="w-5 h-5" />
-                </button>
-              </>
-            )}
-          </div>
         </div>
+      </div>
+
+      {/* Top Center Controls Row */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 pointer-events-auto">
+        {/* Dark Mode Control (Left of DateTime) */}
+        <ThemeControls
+          isDarkMode={isDarkMode}
+          setIsDarkMode={setIsDarkMode}
+          currentBasemap={currentBasemap}
+          setCurrentBasemap={setCurrentBasemap}
+          basemapOptions={basemapOptions}
+        />
+        
+        {/* Centered DateTime */}
+        <DateTime
+          currentDateTime={getCurrentDateTime()}
+          isDarkMode={isDarkMode}
+        />
+        
+        {/* Draw Button (Right of DateTime) */}
+        {!polygon && !drawingMode && (
+          <button
+            onClick={startDrawing}
+            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors backdrop-blur-sm shadow-lg border-2 border-mahogany ${
+              isDarkMode
+                ? 'bg-white/90 text-mahogany hover:bg-white/80'
+                : 'bg-white/90 text-mahogany hover:bg-white/80'
+            }`}
+            title="Draw Area"
+          >
+            <Pen className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Bottom Time Controls */}
@@ -124,8 +129,6 @@ const MapControls = ({
           }}
         />
       </div>
-
-      {/* Drawing mode controls - Remove since we now have the finish button in the overlay */}
 
       {/* Clear button - Only show when area is selected */}
       {polygon && !drawingMode && (
