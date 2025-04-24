@@ -199,7 +199,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
       <ResponsiveContainer>
         <LineChart 
           data={data}
-          margin={{ top: 20, right: 10, left: 0, bottom: 30 }}
+          margin={{ top: 20, right: 10, left: 30, bottom: 30 }}
         >
           <CartesianGrid 
             strokeDasharray="3 3" 
@@ -228,6 +228,18 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
             }}
             domain={[0, max]} // Start from 0, go to calculated max
             axisLine={{ stroke: isDarkMode ? '#374151' : '#E5E7EB' }}
+            label={{
+              value: 'PM2.5 (μg/m³)',
+              angle: -90,
+              position: 'insideLeft',
+              style: {
+                textAnchor: 'middle',
+                fill: isDarkMode ? '#9CA3AF' : '#6B7280',
+                fontSize: 12,
+                fontWeight: 500,
+                paddingLeft: 10
+              }
+            }}
           />
           <Tooltip content={<CustomTooltip isDarkMode={isDarkMode} />} />
           <Line 
