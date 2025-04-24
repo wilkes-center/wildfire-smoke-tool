@@ -34,7 +34,6 @@ export const useDrawingInteraction = ({
         setPolygon(finalPolygon);
         setDrawingMode(false);
         setTempPolygon([]);
-        setIsPlaying(true);
         
         if (mapInstance) {
           mapInstance.getCanvas().style.cursor = '';
@@ -92,7 +91,6 @@ export const useDrawingInteraction = ({
         }).then(selection => {
           setPolygon(selection.polygon);
           setIsPointSelected(true);
-          setIsPlaying(true);
           
           getSelectedCensusTracts(mapInstance, selection.polygon, isDarkMode)
             .then(censusData => {
@@ -116,7 +114,6 @@ export const useDrawingInteraction = ({
     setPolygon,
     setDrawingMode,
     setTempPolygon,
-    setIsPlaying,
     setIsPointSelected,
     setLastClickTime
   ]);

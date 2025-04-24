@@ -79,7 +79,6 @@ export const useAreaSelection = (mapInstance, setIsPlaying, onAreaSelected) => {
           mapInstance.getCanvas().style.cursor = '';
         }
 
-        setIsPlaying(true);
         onAreaSelected?.({
           type: 'polygon',
           points: tempPolygon,
@@ -101,7 +100,6 @@ export const useAreaSelection = (mapInstance, setIsPlaying, onAreaSelected) => {
         mapInstance.getCanvas().style.cursor = '';
       }
 
-      setIsPlaying(true);
       onAreaSelected?.({
         type: 'point',
         center: point,
@@ -109,7 +107,7 @@ export const useAreaSelection = (mapInstance, setIsPlaying, onAreaSelected) => {
         polygon: circlePolygon
       });
     }
-  }, [drawingMode, selectionMode, mapInstance, setIsPlaying, onAreaSelected, tempPolygon]);
+  }, [drawingMode, selectionMode, mapInstance, onAreaSelected, tempPolygon]);
 
   // Drawing preview effect
   useEffect(() => {
