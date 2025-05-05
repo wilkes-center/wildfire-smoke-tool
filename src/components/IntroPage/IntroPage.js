@@ -88,8 +88,12 @@ const IntroPage = ({ onComplete }) => {
                   <h2 className="text-3xl font-bold text-forest mb-6">About This Tool</h2>
                   <div className="h-1 w-20 bg-mahogany mb-6"></div>
                   
-                  <p className="text-lg text-forest-dark mb-8 font-redhat">
-                    This product depicts a smoke forecast for the Western U.S. using the CMAQ chemical transport model, with smoke emissions estimated using version 1 of TraceAQs fire activity parameterization. Smoke forecasts are generated out to 4 days and have a spatial grid spacing of 12-km. Smoke emissions within CMAQ are vertically lofted using a 1-D plume rise model. Wildfire emissions within our smoke forecast model are initialized from satellite fire detection data from NASA and NOAA satellites (GOES, VIIRS, MODIS). This model is supported by the Wilkes Center for Climate Science and Policy, National Science Foundation CIVIC Innovation Program, and the University of Utah's Center for High Performance Computing.
+                  <p className="text-xl text-forest-dark mb-4 font-redhat">
+                    This product depicts a smoke forecast for the Western U.S. using the CMAQ chemical transport model, with smoke emissions estimated using version 1 of TraceAQs fire activity parameterization. Smoke forecasts are generated out to 4 days and have a spatial grid spacing of 12-km. Smoke emissions within CMAQ are vertically lofted using a 1-D plume rise model. Wildfire emissions within our smoke forecast model are initialized from satellite fire detection data from NASA and NOAA satellites (GOES, VIIRS, MODIS).
+                  </p>
+                  
+                  <p className="text-xl text-forest-dark mb-8 font-redhat">
+                    This model is supported by the Wilkes Center for Climate Science and Policy, National Science Foundation CIVIC Innovation Program, and the University of Utah's Center for High Performance Computing.
                   </p>
                 </div>
               </div>
@@ -106,38 +110,40 @@ const IntroPage = ({ onComplete }) => {
                   </p>
                   
                   <div className="mb-10">
-                    <h4 className="text-xl font-semibold text-forest mb-6">Air Quality Index (AQI) Levels</h4>
+                    <h4 className="text-xl font-semibold text-forest mb-6">PM2.5 Levels</h4>
                     
-                    <div className="relative py-20">
-                      {/* Category labels with alternating up/down pointers */}
-                      <div className="relative h-[340px]">
-                        {/* Top row labels (above gradient) */}
-                        {/* Good - top */}
-                        <div className="absolute left-[6%] top-0 transform -translate-x-1/2 flex flex-col items-center">
-                          <div className="font-medium text-green-700 whitespace-nowrap">Good</div>
-                          <div className="text-xs text-forest-light mb-8 whitespace-nowrap">0-12 μg/m³</div>
-                          <div className="w-[1px] h-[90px] bg-green-700"></div>
+                    <div className="relative py-8">
+                      {/* Simplified, more aligned PM2.5 level visualization */}
+                      <div className="w-full h-[260px] flex flex-col">
+                        {/* Top row labels */}
+                        <div className="flex mb-2 relative h-20">
+                          <div className="w-[12%]"></div> {/* Spacer */}
+                          <div className="flex flex-col items-center text-center w-[23%]">
+                            <div className="font-medium text-green-700">Good</div>
+                            <div className="text-xs text-forest-light">0-12 μg/m³</div>
+                            <div className="absolute top-12 w-[1px] h-8 bg-green-700 left-[12%]"></div>
+                          </div>
+                          
+                          <div className="w-[18%]"></div> {/* Spacer */}
+                          <div className="flex flex-col items-center text-center w-[23%]">
+                            <div className="font-medium text-orange-700">Unhealthy for Sensitive Groups</div>
+                            <div className="text-xs text-forest-light">35.5-55.4 μg/m³</div>
+                            <div className="absolute top-12 w-[1px] h-8 bg-orange-700 left-[48%]"></div>
+                          </div>
+                          
+                          <div className="w-[18%]"></div> {/* Spacer */}
+                          <div className="flex flex-col items-center text-center w-[23%]">
+                            <div className="font-medium text-purple-700">Very Unhealthy</div>
+                            <div className="text-xs text-forest-light">150.5-250.4 μg/m³</div>
+                            <div className="absolute top-12 w-[1px] h-8 bg-purple-700 left-[82%]"></div>
+                          </div>
                         </div>
                         
-                        {/* Unhealthy for Sensitive Groups - top */}
-                        <div className="absolute left-[40%] top-0 transform -translate-x-1/2 flex flex-col items-center">
-                          <div className="font-medium text-orange-700 whitespace-nowrap">Unhealthy for Sensitive Groups</div>
-                          <div className="text-xs text-forest-light mb-8 whitespace-nowrap">35.5-55.4 μg/m³</div>
-                          <div className="w-[1px] h-[90px] bg-orange-700"></div>
-                        </div>
-                        
-                        {/* Very Unhealthy - top */}
-                        <div className="absolute left-[76%] top-0 transform -translate-x-1/2 flex flex-col items-center">
-                          <div className="font-medium text-purple-700 whitespace-nowrap">Very Unhealthy</div>
-                          <div className="text-xs text-forest-light mb-8 whitespace-nowrap">150.5-250.4 μg/m³</div>
-                          <div className="w-[1px] h-[90px] bg-purple-700"></div>
-                        </div>
-                        
-                        {/* Main gradient bar - centered */}
-                        <div className="absolute left-0 right-0 top-[130px] h-16 w-full rounded-lg bg-gradient-to-r from-[#00d600] via-[#ffee00] via-[#ff8800] via-[#ff1a1a] via-[#9933ff] to-[#990033]"></div>
+                        {/* Main gradient bar */}
+                        <div className="h-16 w-full rounded-lg bg-gradient-to-r from-[#00d600] via-[#ffee00] via-[#ff8800] via-[#ff1a1a] via-[#9933ff] to-[#990033]"></div>
                         
                         {/* Value markers */}
-                        <div className="absolute left-0 right-0 top-[148px] flex justify-between text-xs text-forest-dark px-1">
+                        <div className="flex justify-between text-xs text-forest-dark px-1 mt-1">
                           <div>0</div>
                           <div>12</div>
                           <div>35.4</div>
@@ -147,26 +153,28 @@ const IntroPage = ({ onComplete }) => {
                           <div>500+</div>
                         </div>
                         
-                        {/* Bottom row labels (below gradient) */}
-                        {/* Moderate - bottom */}
-                        <div className="absolute left-[23%] bottom-0 transform -translate-x-1/2 flex flex-col items-center">
-                          <div className="w-[1px] h-[40px] bg-yellow-700 mt-[70px]"></div>
-                          <div className="font-medium text-yellow-700 mt-8 whitespace-nowrap">Moderate</div>
-                          <div className="text-xs text-forest-light mt-1 whitespace-nowrap">12.1-35.4 μg/m³</div>
-                        </div>
-                        
-                        {/* Unhealthy - bottom */}
-                        <div className="absolute left-[58%] bottom-0 transform -translate-x-1/2 flex flex-col items-center">
-                          <div className="w-[1px] h-[40px] bg-red-700 mt-[70px]"></div>
-                          <div className="font-medium text-red-700 mt-8 whitespace-nowrap">Unhealthy</div>
-                          <div className="text-xs text-forest-light mt-1 whitespace-nowrap">55.5-150.4 μg/m³</div>
-                        </div>
-                        
-                        {/* Hazardous - bottom */}
-                        <div className="absolute left-[93%] bottom-0 transform -translate-x-1/2 flex flex-col items-center">
-                          <div className="w-[1px] h-[40px] bg-rose-800 mt-[70px]"></div>
-                          <div className="font-medium text-rose-800 mt-8 whitespace-nowrap">Hazardous</div>
-                          <div className="text-xs text-forest-light mt-1 whitespace-nowrap">250.5+ μg/m³</div>
+                        {/* Bottom row labels */}
+                        <div className="flex mt-12 relative h-20">
+                          <div className="w-[23%]"></div> {/* Spacer */}
+                          <div className="flex flex-col items-center text-center w-[23%]">
+                            <div className="absolute top-0 w-[1px] h-8 bg-yellow-700 left-[23%]"></div>
+                            <div className="font-medium text-yellow-700 mt-10">Moderate</div>
+                            <div className="text-xs text-forest-light">12.1-35.4 μg/m³</div>
+                          </div>
+                          
+                          <div className="w-[12%]"></div> {/* Spacer */}
+                          <div className="flex flex-col items-center text-center w-[23%]">
+                            <div className="absolute top-0 w-[1px] h-8 bg-red-700 left-[58%]"></div>
+                            <div className="font-medium text-red-700 mt-10">Unhealthy</div>
+                            <div className="text-xs text-forest-light">55.5-150.4 μg/m³</div>
+                          </div>
+                          
+                          <div className="w-[18%]"></div> {/* Spacer */}
+                          <div className="flex flex-col items-center text-center w-[23%]">
+                            <div className="absolute top-0 w-[1px] h-8 bg-rose-800 left-[93%]"></div>
+                            <div className="font-medium text-rose-800 mt-10">Hazardous</div>
+                            <div className="text-xs text-forest-light">250.5+ μg/m³</div>
+                          </div>
                         </div>
                       </div>
                     </div>
