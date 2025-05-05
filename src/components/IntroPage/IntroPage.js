@@ -29,6 +29,17 @@ const IntroPage = ({ onComplete }) => {
             </h1>
           </div>
           
+          {/* Enter Map Button - Moved here */}
+          <div className="flex justify-center mb-6">
+            <button 
+              onClick={onComplete}
+              className="bg-mahogany hover:bg-mahogany-light text-white font-bold text-lg py-3 px-10 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center justify-center"
+            >
+              <MapPin className="w-5 h-5 mr-2" />
+              Enter Map
+            </button>
+          </div>
+          
           <div className="flex justify-center">
             <div className="flex gap-4 p-1 bg-white/50 backdrop-blur-sm rounded-xl shadow-md">
               <button 
@@ -83,7 +94,8 @@ const IntroPage = ({ onComplete }) => {
         <div className="flex-1 overflow-hidden mb-8">
           {activeSection === 'about' && (
             <div className="h-full flex gap-10">
-              <div className="w-3/5">
+              {/* Left column - About This Tool */}
+              <div className="w-1/2">
                 <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg h-full">
                   <h2 className="text-3xl font-bold text-forest mb-6">About This Tool</h2>
                   <div className="h-1 w-20 bg-mahogany mb-6"></div>
@@ -98,85 +110,61 @@ const IntroPage = ({ onComplete }) => {
                 </div>
               </div>
               
-              <div className="w-2/5">
+              {/* Right column - PM2.5 Information */}
+              <div className="w-1/2">
                 <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg h-full">
                   <h3 className="text-2xl font-semibold text-forest mb-6">Understanding PM2.5</h3>
                   <div className="h-1 w-20 bg-mahogany mb-6"></div>
                   
+                  {/* Add the improved PM2.5 content here */}
                   <p className="text-lg text-forest-dark mb-6 font-redhat">
                     PM2.5 refers to fine particulate matter with a diameter of 2.5 micrometers or smaller. 
                     These tiny particles can penetrate deep into the lungs and potentially enter the 
                     bloodstream, posing significant health risks.
                   </p>
                   
-                  <div className="mb-10">
-                    <h4 className="text-xl font-semibold text-forest mb-6">PM2.5 Levels</h4>
+                  {/* PM2.5 Levels visualization here */}
+                  <div className="mb-6">
+                    <h4 className="text-xl font-semibold text-forest mb-4">PM2.5 Levels</h4>
                     
-                    <div className="relative py-8">
-                      {/* Simplified, more aligned PM2.5 level visualization */}
-                      <div className="w-full h-[260px] flex flex-col">
-                        {/* Top row labels */}
-                        <div className="flex mb-2 relative h-20">
-                          <div className="w-[12%]"></div> {/* Spacer */}
-                          <div className="flex flex-col items-center text-center w-[23%]">
-                            <div className="font-medium text-green-700">Good</div>
-                            <div className="text-xs text-forest-light">0-12 μg/m³</div>
-                            <div className="absolute top-12 w-[1px] h-8 bg-green-700 left-[12%]"></div>
-                          </div>
-                          
-                          <div className="w-[18%]"></div> {/* Spacer */}
-                          <div className="flex flex-col items-center text-center w-[23%]">
-                            <div className="font-medium text-orange-700">Unhealthy for Sensitive Groups</div>
-                            <div className="text-xs text-forest-light">35.5-55.4 μg/m³</div>
-                            <div className="absolute top-12 w-[1px] h-8 bg-orange-700 left-[48%]"></div>
-                          </div>
-                          
-                          <div className="w-[18%]"></div> {/* Spacer */}
-                          <div className="flex flex-col items-center text-center w-[23%]">
-                            <div className="font-medium text-purple-700">Very Unhealthy</div>
-                            <div className="text-xs text-forest-light">150.5-250.4 μg/m³</div>
-                            <div className="absolute top-12 w-[1px] h-8 bg-purple-700 left-[82%]"></div>
-                          </div>
+                    <div className="relative py-4">
+                      <div className="h-8 w-full rounded-lg overflow-hidden">
+                        <div className="w-full h-full" style={{
+                          background: "linear-gradient(to right, #00d600, #ffee00, #ff8800, #ff1a1a, #9933ff, #990033)"
+                        }}></div>
+                      </div>
+                      
+                      {/* Value markers and labels */}
+                      <div className="mt-2 flex justify-between text-xs text-forest-dark">
+                        <div className="text-center">
+                          <div className="font-medium" style={{ color: "#00d600" }}>Good</div>
+                          <div>0-12 μg/m³</div>
                         </div>
-                        
-                        {/* Main gradient bar */}
-                        <div className="h-16 w-full rounded-lg bg-gradient-to-r from-[#00d600] via-[#ffee00] via-[#ff8800] via-[#ff1a1a] via-[#9933ff] to-[#990033]"></div>
-                        
-                        {/* Value markers */}
-                        <div className="flex justify-between text-xs text-forest-dark px-1 mt-1">
-                          <div>0</div>
-                          <div>12</div>
-                          <div>35.4</div>
-                          <div>55.4</div>
-                          <div>150.4</div>
-                          <div>250.4</div>
-                          <div>500+</div>
+                        <div className="text-center">
+                          <div className="font-medium" style={{ color: "#ffee00" }}>Moderate</div>
+                          <div>12.1-35.4</div>
                         </div>
-                        
-                        {/* Bottom row labels */}
-                        <div className="flex mt-12 relative h-20">
-                          <div className="w-[23%]"></div> {/* Spacer */}
-                          <div className="flex flex-col items-center text-center w-[23%]">
-                            <div className="absolute top-0 w-[1px] h-8 bg-yellow-700 left-[23%]"></div>
-                            <div className="font-medium text-yellow-700 mt-10">Moderate</div>
-                            <div className="text-xs text-forest-light">12.1-35.4 μg/m³</div>
-                          </div>
-                          
-                          <div className="w-[12%]"></div> {/* Spacer */}
-                          <div className="flex flex-col items-center text-center w-[23%]">
-                            <div className="absolute top-0 w-[1px] h-8 bg-red-700 left-[58%]"></div>
-                            <div className="font-medium text-red-700 mt-10">Unhealthy</div>
-                            <div className="text-xs text-forest-light">55.5-150.4 μg/m³</div>
-                          </div>
-                          
-                          <div className="w-[18%]"></div> {/* Spacer */}
-                          <div className="flex flex-col items-center text-center w-[23%]">
-                            <div className="absolute top-0 w-[1px] h-8 bg-rose-800 left-[93%]"></div>
-                            <div className="font-medium text-rose-800 mt-10">Hazardous</div>
-                            <div className="text-xs text-forest-light">250.5+ μg/m³</div>
-                          </div>
+                        <div className="text-center">
+                          <div className="font-medium" style={{ color: "#ff8800" }}>USG</div>
+                          <div>35.5-55.4</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium" style={{ color: "#ff1a1a" }}>Unhealthy</div>
+                          <div>55.5-150.4</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium" style={{ color: "#9933ff" }}>Very Unhealthy</div>
+                          <div>150.5-250.4</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium" style={{ color: "#990033" }}>Hazardous</div>
+                          <div>250.5+</div>
                         </div>
                       </div>
+                    </div>
+                    
+                    <div className="text-xs text-forest-light italic mt-4">
+                      Note: USG stands for "Unhealthy for Sensitive Groups" - including children, older adults, and people with respiratory or heart conditions.
                     </div>
                   </div>
                 </div>
@@ -291,17 +279,6 @@ const IntroPage = ({ onComplete }) => {
               </div>
             </div>
           )}
-        </div>
-        
-        {/* Enter Map Button */}
-        <div className="flex justify-center">
-          <button 
-            onClick={onComplete}
-            className="bg-mahogany hover:bg-mahogany-light text-white font-bold text-xl py-5 px-16 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center justify-center"
-          >
-            <MapPin className="w-7 h-7 mr-3" />
-            Enter Map
-          </button>
         </div>
       </div>
     </div>
