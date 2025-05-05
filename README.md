@@ -1,4 +1,4 @@
-# Wildfire Smoke Tool
+# Wildfire Smoke Forecast Tool
 
 An interactive web application that visualizes wildfire smoke PM2.5 concentrations across the United States, providing both historical data and forecasts.
 
