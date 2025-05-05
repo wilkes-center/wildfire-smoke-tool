@@ -84,8 +84,10 @@ const PM25ThresholdSlider = ({
   return (
     <div 
       onClick={() => !isEditing && setIsExpanded(!isExpanded)}
-      className={`backdrop-blur-sm rounded-xl shadow-lg px-6 py-3 flex items-center cursor-pointer transition-all duration-300 ${
-        isDarkMode ? 'bg-gray-800/95 text-gray-200' : 'bg-white/95 text-gray-800'
+      className={`backdrop-blur-sm rounded-xl shadow-lg px-6 py-3 flex items-center cursor-pointer transition-all duration-300 border-2 ${
+        isDarkMode 
+          ? 'bg-gray-800/95 text-gray-200 border-white' 
+          : 'bg-white/95 text-gray-800 border-mahogany'
       }`}
     >
       <div className="text-xl font-medium">
@@ -122,7 +124,11 @@ const PM25ThresholdSlider = ({
 
       {isExpanded && !isEditing && (
         <div 
-          className="absolute left-0 right-0 top-full mt-2 backdrop-blur-sm rounded-xl shadow-lg px-6 py-4 cursor-default z-10"
+          className={`absolute left-0 right-0 top-full mt-2 backdrop-blur-sm rounded-xl shadow-lg px-6 py-4 cursor-default z-10 border-2 ${
+            isDarkMode 
+              ? 'border-white' 
+              : 'border-mahogany'
+          }`}
           onClick={(e) => e.stopPropagation()}
           style={{
             backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)'
