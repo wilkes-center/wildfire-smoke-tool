@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MapPin, Info, HelpCircle, MessageSquare, Github, Play, ChevronRight } from 'lucide-react';
 
 const IntroPage = ({ onComplete }) => {
-  const [activeSection, setActiveSection] = useState('howto');
+  const [activeSection, setActiveSection] = useState('about');
 
   return (
     <div className="fixed inset-0 font-sora bg-cream">
