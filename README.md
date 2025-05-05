@@ -19,29 +19,6 @@ An interactive web application that visualizes wildfire smoke PM2.5 concentratio
 - Tailwind CSS for styling
 - Recharts for data visualization
 
-## Installation
-
-1. Clone the repository:
-   ```
-   git clone https://github.com/wilkes-center/wildfire-smoke-tool.git
-   cd wildfire-smoke-tool
-   ```
-
-2. Install dependencies:
-   ```
-   npm install
-   ```
-
-3. Create a `.env` file in the root directory with your Mapbox API key and census_api_key:
-   ```
-   REACT_APP_MAPBOX_TOKEN=your_mapbox_api_key
-   REACT_APP_CENSUS_API_KEY=your_census_api_key
-   ```
-
-4. Start the development server:
-   ```
-   npm start
-   ```
 
 ## Usage
 
@@ -51,15 +28,6 @@ An interactive web application that visualizes wildfire smoke PM2.5 concentratio
 - Toggle between light and dark mode for your preferred viewing experience
 - Use drawing tools to analyze custom areas
 
-## Deployment
-
-The application is configured for deployment to GitHub Pages:
-
-```
-npm run deploy
-```
-
-This will automatically increment the version, build the project, and deploy it to GitHub Pages.
 
 ## Contributing
 
