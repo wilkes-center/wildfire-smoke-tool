@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Wind, Clock, MapPin, ChevronRight, Github, MessageSquare, Info, HelpCircle } from 'lucide-react';
+import { MapPin, Info, HelpCircle, MessageSquare, Github, Play, ChevronRight } from 'lucide-react';
 
 const IntroPage = ({ onComplete }) => {
-  const [activeSection, setActiveSection] = useState('about');
+  const [activeSection, setActiveSection] = useState('howto');
 
   return (
     <div className="fixed inset-0 font-sora bg-cream">
@@ -13,7 +13,7 @@ const IntroPage = ({ onComplete }) => {
       </div>
       
       {/* Main container */}
-      <div className="w-full h-full p-10 flex flex-col">
+      <div className="w-full h-full p-8 flex flex-col max-h-screen overflow-auto">
         {/* Header with title and tabs */}
         <header className="mb-8">
           <div className="flex items-center justify-center gap-4 mb-6">
@@ -25,22 +25,23 @@ const IntroPage = ({ onComplete }) => {
               />
             </div>
             <h1 className="text-5xl font-bold text-obsidian">
-              <span className="text-mahogany">Wildfire</span> Smoke Map Tool
+              <span className="text-mahogany">Wildfire</span> Smoke Forecast Tool
             </h1>
           </div>
           
-          {/* Enter Map Button - Moved here */}
-          <div className="flex justify-center mb-6">
+          {/* Enter Map Button */}
+          <div className="flex justify-center mb-8">
             <button 
               onClick={onComplete}
-              className="bg-mahogany hover:bg-mahogany-light text-white font-bold text-lg py-3 px-10 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center justify-center"
+              className="bg-mahogany hover:bg-mahogany/90 text-white font-bold text-lg py-3 px-10 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center justify-center"
             >
               <MapPin className="w-5 h-5 mr-2" />
               Enter Map
             </button>
           </div>
           
-          <div className="flex justify-center">
+          {/* Navigation Tabs */}
+          <div className="flex justify-center mb-6">
             <div className="flex gap-4 p-1 bg-white/50 backdrop-blur-sm rounded-xl shadow-md">
               <button 
                 onClick={() => setActiveSection('about')}
@@ -91,81 +92,76 @@ const IntroPage = ({ onComplete }) => {
         </header>
         
         {/* Content container */}
-        <div className="flex-1 overflow-hidden mb-8">
+        <div className="flex-1 mb-8">
           {activeSection === 'about' && (
-            <div className="h-full flex gap-10">
-              {/* Left column - About This Tool */}
-              <div className="w-1/2">
-                <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg h-full">
-                  <h2 className="text-3xl font-bold text-forest mb-6">About This Tool</h2>
-                  <div className="h-1 w-20 bg-mahogany mb-6"></div>
-                  
-                  <p className="text-xl text-forest-dark mb-4 font-redhat">
-                    This product depicts a smoke forecast for the Western U.S. using the CMAQ chemical transport model, with smoke emissions estimated using version 1 of TraceAQs fire activity parameterization. Smoke forecasts are generated out to 4 days and have a spatial grid spacing of 12-km. Smoke emissions within CMAQ are vertically lofted using a 1-D plume rise model. Wildfire emissions within our smoke forecast model are initialized from satellite fire detection data from NASA and NOAA satellites (GOES, VIIRS, MODIS).
-                  </p>
-                  
-                  <p className="text-xl text-forest-dark mb-8 font-redhat">
-                    This model is supported by the Wilkes Center for Climate Science and Policy, National Science Foundation CIVIC Innovation Program, and the University of Utah's Center for High Performance Computing.
-                  </p>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* About This Tool */}
+              <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg">
+                <h2 className="text-3xl font-bold text-forest mb-6">About This Tool</h2>
+                <div className="h-1 w-20 bg-mahogany mb-6"></div>
+                
+                <p className="text-xl text-forest-dark mb-4 font-redhat">
+                  This product depicts a smoke forecast for the Western U.S. using the CMAQ chemical transport model, with smoke emissions estimated using version 1 of TraceAQs fire activity parameterization. Smoke forecasts are generated out to 4 days and have a spatial grid spacing of 12-km.
+                </p>
+                
+                <p className="text-xl text-forest-dark mb-8 font-redhat">
+                  This model is supported by the Wilkes Center for Climate Science and Policy, National Science Foundation CIVIC Innovation Program, and the University of Utah's Center for High Performance Computing.
+                </p>
               </div>
               
-              {/* Right column - PM2.5 Information */}
-              <div className="w-1/2">
-                <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg h-full">
-                  <h3 className="text-2xl font-semibold text-forest mb-6">Understanding PM2.5</h3>
-                  <div className="h-1 w-20 bg-mahogany mb-6"></div>
+              {/* PM2.5 Information */}
+              <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg">
+                <h3 className="text-2xl font-semibold text-forest mb-6">Understanding PM2.5</h3>
+                <div className="h-1 w-20 bg-mahogany mb-6"></div>
+                
+                <p className="text-lg text-forest-dark mb-6 font-redhat">
+                  PM2.5 refers to fine particulate matter with a diameter of 2.5 micrometers or smaller. 
+                  These tiny particles can penetrate deep into the lungs and potentially enter the 
+                  bloodstream, posing significant health risks.
+                </p>
+                
+                {/* PM2.5 Levels visualization */}
+                <div className="mb-6">
+                  <h4 className="text-xl font-semibold text-forest mb-4">PM2.5 Levels</h4>
                   
-                  {/* Add the improved PM2.5 content here */}
-                  <p className="text-lg text-forest-dark mb-6 font-redhat">
-                    PM2.5 refers to fine particulate matter with a diameter of 2.5 micrometers or smaller. 
-                    These tiny particles can penetrate deep into the lungs and potentially enter the 
-                    bloodstream, posing significant health risks.
-                  </p>
-                  
-                  {/* PM2.5 Levels visualization here */}
-                  <div className="mb-6">
-                    <h4 className="text-xl font-semibold text-forest mb-4">PM2.5 Levels</h4>
-                    
-                    <div className="relative py-4">
-                      <div className="h-8 w-full rounded-lg overflow-hidden">
-                        <div className="w-full h-full" style={{
-                          background: "linear-gradient(to right, #00d600, #ffee00, #ff8800, #ff1a1a, #9933ff, #990033)"
-                        }}></div>
-                      </div>
-                      
-                      {/* Value markers and labels */}
-                      <div className="mt-2 flex justify-between text-xs text-forest-dark">
-                        <div className="text-center">
-                          <div className="font-medium" style={{ color: "#00d600" }}>Good</div>
-                          <div>0-12 μg/m³</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium" style={{ color: "#ffee00" }}>Moderate</div>
-                          <div>12.1-35.4</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium" style={{ color: "#ff8800" }}>USG</div>
-                          <div>35.5-55.4</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium" style={{ color: "#ff1a1a" }}>Unhealthy</div>
-                          <div>55.5-150.4</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium" style={{ color: "#9933ff" }}>Very Unhealthy</div>
-                          <div>150.5-250.4</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium" style={{ color: "#990033" }}>Hazardous</div>
-                          <div>250.5+</div>
-                        </div>
-                      </div>
+                  <div className="relative py-4">
+                    <div className="h-8 w-full rounded-lg overflow-hidden">
+                      <div className="w-full h-full" style={{
+                        background: "linear-gradient(to right, #00d600, #ffee00, #ff8800, #ff1a1a, #9933ff, #990033)"
+                      }}></div>
                     </div>
                     
-                    <div className="text-xs text-forest-light italic mt-4">
-                      Note: USG stands for "Unhealthy for Sensitive Groups" - including children, older adults, and people with respiratory or heart conditions.
+                    {/* Value markers and labels */}
+                    <div className="mt-2 flex justify-between text-xs text-forest-dark">
+                      <div className="text-center">
+                        <div className="font-medium" style={{ color: "#00d600" }}>Good</div>
+                        <div>0-12 μg/m³</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium" style={{ color: "#ffee00" }}>Moderate</div>
+                        <div>12.1-35.4</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium" style={{ color: "#ff8800" }}>USG</div>
+                        <div>35.5-55.4</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium" style={{ color: "#ff1a1a" }}>Unhealthy</div>
+                        <div>55.5-150.4</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium" style={{ color: "#9933ff" }}>Very Unhealthy</div>
+                        <div>150.5-250.4</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium" style={{ color: "#990033" }}>Hazardous</div>
+                        <div>250.5+</div>
+                      </div>
                     </div>
+                  </div>
+                  
+                  <div className="text-xs text-forest-light italic mt-4">
+                    Note: USG stands for "Unhealthy for Sensitive Groups" - including children, older adults, and people with respiratory or heart conditions.
                   </div>
                 </div>
               </div>
@@ -173,70 +169,91 @@ const IntroPage = ({ onComplete }) => {
           )}
 
           {activeSection === 'howto' && (
-            <div className="h-full flex gap-10">
-              <div className="w-2/5">
-                <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg h-full">
-                  <h2 className="text-3xl font-bold text-forest mb-6">Quick Start Guide</h2>
-                  <div className="h-1 w-20 bg-mahogany mb-6"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              {/* Quick Start Guide */}
+              <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg lg:col-span-2">
+                <h2 className="text-3xl font-bold text-forest mb-6">Quick Start Guide</h2>
+                <div className="h-1 w-20 bg-mahogany mb-6"></div>
+                
+                <ol className="space-y-6">
+                  <li className="flex">
+                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">1</span>
+                    <div>
+                      <h3 className="font-medium text-lg text-forest">Navigate the map</h3>
+                      <p className="text-forest-dark font-redhat">Use standard zoom and pan controls located on the left side of the screen.</p>
+                    </div>
+                  </li>
                   
-                  <ol className="space-y-5 text-lg text-forest-dark font-redhat">
-                    <li className="flex">
-                      <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">1</span>
-                      <div>
-                        <strong>Navigate the map</strong> using standard zoom and pan controls located on the left side of the screen.
-                      </div>
-                    </li>
-                    <li className="flex">
-                      <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">2</span>
-                      <div>
-                        <strong>Use the time controls</strong> at the bottom to play through the 4-day timeline or jump to a specific hour.
-                      </div>
-                    </li>
-                    <li className="flex">
-                      <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">3</span>
-                      <div>
-                        <strong>Adjust the PM2.5 threshold</strong> using the slider in the top-left to filter visible smoke concentrations.
-                      </div>
-                    </li>
-                    <li className="flex">
-                      <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">4</span>
-                      <div>
-                        <strong>Draw custom areas</strong> using the drawing tool to analyze population exposure to different PM2.5 levels.
-                      </div>
-                    </li>
-                    <li className="flex">
-                      <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">5</span>
-                      <div>
-                        <strong>Toggle between light and dark mode</strong> using the theme button for your preferred viewing experience.
-                      </div>
-                    </li>
-                  </ol>
+                  <li className="flex">
+                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">2</span>
+                    <div>
+                      <h3 className="font-medium text-lg text-forest">Use the time controls</h3>
+                      <p className="text-forest-dark font-redhat">Play through the 4-day timeline or jump to a specific hour using the controls at the bottom.</p>
+                    </div>
+                  </li>
                   
-                  <div className="mt-8 pt-6 border-t border-forest/20">
-                    <p className="text-lg text-forest-dark font-redhat">
+                  <li className="flex">
+                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">3</span>
+                    <div>
+                      <h3 className="font-medium text-lg text-forest">Adjust the PM2.5 threshold</h3>
+                      <p className="text-forest-dark font-redhat">Use the slider in the top-left to filter visible smoke concentrations.</p>
+                    </div>
+                  </li>
+                  
+                  <li className="flex">
+                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">4</span>
+                    <div>
+                      <h3 className="font-medium text-lg text-forest">Draw custom areas</h3>
+                      <p className="text-forest-dark font-redhat">Use the drawing tool to analyze population exposure to different PM2.5 levels.</p>
+                    </div>
+                  </li>
+                  
+                  <li className="flex">
+                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">5</span>
+                    <div>
+                      <h3 className="font-medium text-lg text-forest">Toggle light and dark mode</h3>
+                      <p className="text-forest-dark font-redhat">Use the theme button for your preferred viewing experience.</p>
+                    </div>
+                  </li>
+                </ol>
+                
+                <div className="mt-8 pt-6 border-t border-forest/20">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 mr-4">
+                      <HelpCircle className="w-6 h-6 text-mahogany" />
+                    </div>
+                    <p className="text-forest-dark font-redhat">
                       Need more help? A detailed guided tour is available by clicking the help button in the bottom-right corner of the map interface.
                     </p>
                   </div>
                 </div>
               </div>
               
-              <div className="w-3/5">
-                <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg h-full">
-                  {/* YouTube video embed placeholder */}
-                  <div className="w-full h-full flex flex-col items-center justify-center text-center p-12">
-                    <div className="w-20 h-20 rounded-full bg-mahogany/20 flex items-center justify-center mb-6">
-                      <div className="w-16 h-16 rounded-full bg-mahogany flex items-center justify-center">
-                        <div className="w-0 h-0 border-t-10 border-t-transparent border-l-16 border-l-white border-b-10 border-b-transparent ml-1"></div>
-                      </div>
+              {/* Video Tutorial - LARGER */}
+              <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg lg:col-span-3">
+                <div className="p-6 border-b border-gray-800">
+                  <h2 className="text-2xl font-bold text-cream mb-2">Video Tutorial</h2>
+                </div>
+                
+                <div className="aspect-video bg-gray-800 relative">
+                  {/* Play button overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <div className="w-20 h-20 rounded-full bg-mahogany/80 flex items-center justify-center cursor-pointer hover:bg-mahogany transition-colors">
+                      <Play className="w-10 h-10 text-cream ml-1" />
                     </div>
-                    <h3 className="text-2xl font-semibold text-white mb-4">Video Tutorial</h3>
-                    <p className="text-gray-300 max-w-xl text-lg mb-8 font-redhat">
-                    </p>
-                    
-                    <div className="w-full max-w-2xl aspect-video bg-black/50 rounded-lg flex items-center justify-center">
-                      <p className="text-gray-500 font-redhat">
-                        (YouTube video would be embedded here)
-                      </p>
+                  </div>
+                  
+                  {/* Video thumbnail/placeholder */}
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-500 font-redhat">
+                    (Video would be embedded here)
+                  </div>
+                </div>
+                
+                <div className="p-6 bg-gray-800 border-t border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-cream font-medium">Introduction to Wildfire Smoke Tool</h3>
+                      <p className="text-cream/70 text-sm font-redhat">Duration: 5:32</p>
                     </div>
                   </div>
                 </div>
@@ -245,36 +262,32 @@ const IntroPage = ({ onComplete }) => {
           )}
 
           {activeSection === 'feedback' && (
-            <div className="h-full flex gap-10">
-              <div className="w-full">
-                <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg h-full">
-                  <h2 className="text-3xl font-bold text-forest mb-6">Submit Feedback</h2>
-                  <div className="h-1 w-20 bg-mahogany mb-6"></div>
-                  
-                  <div className="bg-white rounded-xl p-6 shadow-sm mb-8">
-                    <div className="flex items-center mb-4">
-                      <Github className="w-6 h-6 text-gray-700 mr-3" />
-                      <h4 className="font-medium text-xl text-forest">GitHub Issues</h4>
-                    </div>
-                    
-                    <p className="text-lg text-forest-dark mb-6 font-redhat">
-                      For bug reports, feature requests, and technical feedback, please submit a GitHub issue. This helps us track and address your concerns effectively.
-                    </p>
-                    
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 flex items-center">
-                      <div className="flex-1 text-lg text-gray-800 overflow-hidden text-ellipsis font-redhat">
-                        github.com/wilkes-center/wildfire-smoke-tool/issues
-                      </div>
-                      <a 
-                        href="https://github.com/wilkes-center/wildfire-smoke-tool/issues" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="ml-4 px-5 py-2 bg-forest text-white rounded-lg hover:bg-forest-dark transition-colors font-medium flex-shrink-0"
-                      >
-                        Submit Issue
-                      </a>
-                    </div>
+            <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg">
+              <h2 className="text-3xl font-bold text-forest mb-6">Submit Feedback</h2>
+              <div className="h-1 w-20 bg-mahogany mb-6"></div>
+              
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <div className="flex items-center mb-4">
+                  <Github className="w-6 h-6 text-forest mr-3" />
+                  <h4 className="font-medium text-xl text-forest">GitHub Issues</h4>
+                </div>
+                
+                <p className="text-forest-dark mb-6 font-redhat">
+                  For bug reports, feature requests, and technical feedback, please submit a GitHub issue. This helps us track and address your concerns effectively.
+                </p>
+                
+                <div className="bg-cream border border-sage/50 rounded-lg p-5 flex items-center">
+                  <div className="flex-1 text-forest-dark overflow-hidden text-ellipsis font-redhat">
+                    github.com/wilkes-center/wildfire-smoke-tool/issues
                   </div>
+                  <a 
+                    href="https://github.com/wilkes-center/wildfire-smoke-tool/issues" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="ml-4 px-5 py-2 bg-forest text-cream rounded-lg hover:bg-forest-dark transition-colors font-medium flex-shrink-0"
+                  >
+                    Submit Issue
+                  </a>
                 </div>
               </div>
             </div>
