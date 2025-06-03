@@ -1,8 +1,29 @@
 import React, { useState } from 'react';
 import { MapPin, Info, HelpCircle, MessageSquare, Github, Play, ChevronRight } from 'lucide-react';
+// import StoryMapsDemo from './StoryMapsDemo';
 
 const IntroPage = ({ onComplete }) => {
   const [activeSection, setActiveSection] = useState('about');
+
+  // Handle launching the StoryMaps demo - DISABLED
+  // const handleLaunchDemo = () => {
+  //   setActiveSection('demo');
+  // };
+
+  // Handle launching the full tool from demo - DISABLED
+  // const handleLaunchTool = () => {
+  //   onComplete();
+  // };
+
+  // Handle returning from demo to intro - DISABLED
+  // const handleBackFromDemo = () => {
+  //   setActiveSection('about');
+  // };
+
+  // If demo is active, show full-screen StoryMaps - DISABLED
+  // if (activeSection === 'demo') {
+  //   return <StoryMapsDemo onLaunchTool={handleLaunchTool} onBack={handleBackFromDemo} />;
+  // }
 
   return (
     <div className="fixed inset-0 font-sora bg-cream">
@@ -107,6 +128,23 @@ const IntroPage = ({ onComplete }) => {
                 <p className="text-xl text-forest-dark mb-8 font-redhat">
                   This model is supported by the Wilkes Center for Climate Science and Policy, National Science Foundation CIVIC Innovation Program, and the University of Utah's Center for High Performance Computing.
                 </p>
+
+                {/* Interactive Demo Button - DISABLED */}
+                {/* 
+                <div className="mt-8 pt-6 border-t border-forest/20">
+                  <button
+                    onClick={handleLaunchDemo}
+                    className="w-full bg-gradient-to-r from-mahogany to-mahogany/80 hover:from-mahogany/90 hover:to-mahogany/70 text-white font-bold py-4 px-6 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center justify-center group"
+                  >
+                    <Presentation className="w-6 h-6 mr-3 group-hover:animate-pulse" />
+                    <span className="text-lg">Explore Interactive Demo</span>
+                    <ChevronRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                  <p className="text-sm text-forest/70 text-center mt-3 font-redhat">
+                    Experience a guided tour of the tool's capabilities
+                  </p>
+                </div>
+                */}
               </div>
               
               {/* PM2.5 Information */}
