@@ -26,7 +26,9 @@ const MapControls = ({
   basemapOptions,
   mapInstance,
   pm25Threshold,
-  setPM25Threshold
+  setPM25Threshold,
+  setDrawingMode,
+  setTempPolygon
 }) => {
   const dateTime = getCurrentDateTime ? getCurrentDateTime() : { date: '', hour: 0 };
 
@@ -65,7 +67,7 @@ const MapControls = ({
         {!polygon && !drawingMode && (
           <button
             onClick={startDrawing}
-            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors backdrop-blur-sm shadow-lg border-2 border-mahogany ${
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors backdrop-blur-sm shadow-lg border-2 border-mahogany ${
               isDarkMode
                 ? 'bg-white/90 text-mahogany hover:bg-white/80'
                 : 'bg-white/90 text-mahogany hover:bg-white/80'
@@ -73,6 +75,46 @@ const MapControls = ({
             title="Draw Area"
           >
             <Pen className="w-5 h-5" />
+            <span className="font-medium">Draw Area</span>
+          </button>
+        )}
+
+        {/* Clear Selection Button (Right of DateTime) */}
+        {polygon && !drawingMode && (
+          <button
+            onClick={clearPolygon}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors backdrop-blur-sm shadow-lg border-2 ${
+              isDarkMode
+                ? 'bg-red-900/90 hover:bg-red-900/80 text-red-400 border-red-400'
+                : 'bg-red-50/90 hover:bg-red-100/90 text-red-600 border-red-600'
+            }`}
+            title="Clear Area Selection"
+          >
+            <X className="w-5 h-5" />
+            <span className="font-medium">Clear Area</span>
+          </button>
+        )}
+
+        {/* Cancel Drawing Button (Right of DateTime) */}
+        {drawingMode && (
+          <button
+            onClick={() => {
+              // Cancel drawing and clear temporary polygon
+              setDrawingMode(false);
+              setTempPolygon([]);
+              if (mapInstance) {
+                mapInstance.getCanvas().style.cursor = '';
+              }
+            }}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors backdrop-blur-sm shadow-lg border-2 ${
+              isDarkMode
+                ? 'bg-gray-700/90 hover:bg-gray-600/90 text-gray-300 border-gray-400'
+                : 'bg-gray-100/90 hover:bg-gray-200/90 text-gray-700 border-gray-500'
+            }`}
+            title="Cancel Drawing"
+          >
+            <X className="w-5 h-5" />
+            <span className="font-medium">Cancel</span>
           </button>
         )}
       </div>
@@ -129,23 +171,6 @@ const MapControls = ({
           }}
         />
       </div>
-
-      {/* Clear button - Only show when area is selected */}
-      {polygon && !drawingMode && (
-        <div className="fixed bottom-4 right-4 z-50 pointer-events-auto">
-          <button
-            onClick={clearPolygon}
-            className={`h-12 px-6 rounded-lg flex items-center gap-2 transition-colors ${
-              isDarkMode
-                ? 'bg-red-900/20 hover:bg-red-900/30 text-red-400'
-                : 'bg-red-50 hover:bg-red-100 text-red-600'
-            }`}
-          >
-            <X className="w-5 h-5" />
-            <span className="font-medium">Clear Area Selection</span>
-          </button>
-        </div>
-      )}
     </div>
   );
 };

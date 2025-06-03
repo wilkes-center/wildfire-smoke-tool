@@ -47,3 +47,37 @@ export const getBoundingBox = (polygon) => {
     maxLat: -Infinity
   });
 };
+
+/**
+ * Calculates the area of a polygon in square kilometers
+ * @param {Array} polygon - Array of [lng, lat] coordinates forming the polygon
+ * @returns {number} Area in square kilometers
+ */
+export const calculatePolygonArea = (polygon) => {
+  if (!Array.isArray(polygon) || polygon.length < 3) {
+    return 0;
+  }
+
+  // Convert degrees to radians
+  const toRadians = (degrees) => degrees * (Math.PI / 180);
+  
+  // Earth's radius in kilometers
+  const EARTH_RADIUS = 6371;
+  
+  // Calculate area using spherical excess formula for better accuracy
+  let area = 0;
+  const n = polygon.length;
+  
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const lat1 = toRadians(polygon[i][1]);
+    const lat2 = toRadians(polygon[j][1]);
+    const deltaLng = toRadians(polygon[j][0] - polygon[i][0]);
+    
+    area += deltaLng * (2 + Math.sin(lat1) + Math.sin(lat2));
+  }
+  
+  area = Math.abs(area) * EARTH_RADIUS * EARTH_RADIUS / 2;
+  
+  return area;
+};

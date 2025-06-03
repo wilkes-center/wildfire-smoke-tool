@@ -181,6 +181,9 @@ export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
   }
 };
 
+// Store event listener reference for proper cleanup
+let layerPositionHandler = null;
+
 // Alternative approach - insert above the topmost layer
 const updateHighlightLayers = async (map, features, isDarkMode) => {
   const HIGHLIGHT_SOURCE = 'selected-tracts';
@@ -188,7 +191,13 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
   const OUTLINE_LAYER = 'selected-tracts-outline';
 
   try {
-    // Clean up existing layers
+    // Clean up existing layers and event listeners
+    if (layerPositionHandler) {
+      map.off('sourcedata', layerPositionHandler);
+      map.off('styledata', layerPositionHandler);
+      layerPositionHandler = null;
+    }
+
     [HIGHLIGHT_LAYER, OUTLINE_LAYER].forEach(id => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
@@ -235,28 +244,36 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
       }
     });
 
-    // Ensure these layers are always on top by moving them after any other layer is added
-    const moveLayersToTop = () => {
-      const layers = map.getStyle().layers;
-      const lastLayerId = layers[layers.length - 1].id;
-      
-      // Only move if not already at the top
-      if (lastLayerId !== OUTLINE_LAYER) {
+    // Create the layer positioning function
+    layerPositionHandler = () => {
+      try {
+        // First, move census highlight layers to top
         if (map.getLayer(HIGHLIGHT_LAYER)) {
           map.moveLayer(HIGHLIGHT_LAYER);
         }
         if (map.getLayer(OUTLINE_LAYER)) {
           map.moveLayer(OUTLINE_LAYER);
         }
+
+        // Then, position polygon layers just below census layers but above PM2.5
+        const polygonLayers = ['polygon-layer', 'polygon-layer-outline', 'polygon-layer-preview', 'polygon-layer-vertices'];
+        polygonLayers.forEach(layerId => {
+          if (map.getLayer(layerId)) {
+            // Position polygon layers before the census highlight layer
+            map.moveLayer(layerId, HIGHLIGHT_LAYER);
+          }
+        });
+      } catch (error) {
+        console.warn('Error positioning layers:', error);
       }
     };
 
-    // Move layers to top initially
-    moveLayersToTop();
+    // Position layers initially
+    layerPositionHandler();
 
-    // Add event listener to ensure layers stay on top when new layers are added
-    map.on('sourcedata', moveLayersToTop);
-    map.on('styledata', moveLayersToTop);
+    // Add event listeners to maintain proper layer order
+    map.on('sourcedata', layerPositionHandler);
+    map.on('styledata', layerPositionHandler);
 
   } catch (error) {
     console.error('Error updating highlight layers:', error);
@@ -271,6 +288,13 @@ export const cleanupHighlightLayers = (map) => {
   if (!map) return;
 
   try {
+    // Remove event listeners using stored reference
+    if (layerPositionHandler) {
+      map.off('sourcedata', layerPositionHandler);
+      map.off('styledata', layerPositionHandler);
+      layerPositionHandler = null;
+    }
+
     // Clean up outline layer separately since it shares the source with highlight layer
     if (map.getLayer(OUTLINE_LAYER)) {
       map.removeLayer(OUTLINE_LAYER);
@@ -282,7 +306,6 @@ export const cleanupHighlightLayers = (map) => {
     console.error('Error cleaning up highlight layers:', error);
   }
 };
-
 
 export const usePopulationExposure = (map, polygon, isDarkMode, currentDateTime) => {
   const [stats, setStats] = useState({
@@ -328,8 +351,6 @@ export const usePopulationExposure = (map, polygon, isDarkMode, currentDateTime)
 
   return stats;
 };
-
-
 
 export const clearCaches = () => {
   censusCache.data = null;

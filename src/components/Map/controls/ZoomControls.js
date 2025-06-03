@@ -27,7 +27,7 @@ const ZoomControls = ({ map, isDarkMode }) => {
   };
 
   return (
-    <div className="fixed left-4 bottom-10 z-50">
+    <div className="fixed left-4 bottom-16 z-50">
       <div className={`flex flex-col items-center gap-1 p-1 rounded-lg backdrop-blur-md ${
         isDarkMode 
           ? 'bg-gray-900/90 border border-white/30' 

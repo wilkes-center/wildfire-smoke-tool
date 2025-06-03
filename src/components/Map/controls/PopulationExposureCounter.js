@@ -45,8 +45,6 @@ const findActiveLayer = (map, date, hour) => {
   return map.getLayer(layerId) ? layerId : null;
 };
 
-
-
 const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, isPlaying }) => {
   const [stats, setStats] = useState({
     censusStats: {
@@ -627,6 +625,16 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
                 isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50/50'
               } p-3`}>
               <table className="w-full text-sm">
+                <thead>
+                  <tr className={`border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+                    <th className={`text-left pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
+                      PM2.5 Level
+                    </th>
+                    <th className={`text-right pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
+                      Percentage
+                    </th>
+                  </tr>
+                </thead>
                 <tbody>
                   {PM25_LEVELS.map(category => {
                     // Get population for this category
@@ -639,38 +647,35 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
                     const percentage = stats.exposureByPM25.distribution ? 
                       stats.exposureByPM25.distribution[category.label] || 0 : 0;
 
-                    // Set a minimum visible width for non-zero categories
-                    const barWidth = Math.max(5, percentage);
-
                     // Use the direct color method
                     const barColor = getPM25Color(category.label, isDarkMode);
                     
                     // Simplify AQI category name display
                     let displayName;
                     if (category.label === "Unhealthy for Sensitive Groups") {
-                      displayName = "USG";
+                      displayName = "Unhealthy (Sensitive)";
                     } else {
                       displayName = category.label;
                     }
 
                     return (
-                      <tr key={category.label} className="align-middle h-7">
-                        <td className="w-1/3">
+                      <tr key={category.label} className="align-middle h-8 border-b border-gray-200/20">
+                        <td className="py-1">
                           <div className={`flex items-center ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
                             <span 
-                              className="inline-block w-3 h-3 rounded-sm flex-shrink-0 mr-1.5"
+                              className="inline-block w-3 h-3 rounded-sm flex-shrink-0 mr-2"
                               style={{ backgroundColor: barColor }}
                             />
-                            <span className="font-medium text-left">{displayName}</span>
+                            <div>
+                              <span className="font-medium text-left">{displayName}</span>
+                              <div className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-gray-500'}`}>
+                                {category.value}+ µg/m³
+                              </div>
+                            </div>
                           </div>
                         </td>
-                        <td className="w-1/3 text-center">
-                          <span className={`font-normal ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
-                            {category.value} µg/m³+
-                          </span>
-                        </td>
-                        <td className="w-1/3 text-right">
-                          <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
+                        <td className="text-right py-1">
+                          <span className={`font-medium ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}>
                             {percentage.toFixed(1)}%
                           </span>
                         </td>
@@ -680,7 +685,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
                 </tbody>
               </table>
               
-              <div className="mt-2 space-y-1">
+              <div className="mt-3 space-y-1">
                 {PM25_LEVELS.map(category => {
                   // Get population for this category
                   const population = stats.exposureByPM25.value[category.label] || 0;

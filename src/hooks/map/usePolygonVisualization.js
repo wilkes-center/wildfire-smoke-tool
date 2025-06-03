@@ -95,6 +95,55 @@ export const usePolygonVisualization = ({
           }
         });
       }
+
+      // Position polygon layers above PM2.5 layers but below census tract highlighting
+      const positionPolygonLayers = () => {
+        try {
+          // Check if census tract highlight layers exist
+          const censusHighlightLayer = 'selected-tracts-highlight';
+          
+          // If census highlight layers exist, position polygon layers before them
+          if (mapInstance.getLayer(censusHighlightLayer)) {
+            // Move polygon layers before census highlight layers
+            if (mapInstance.getLayer(layerId)) {
+              mapInstance.moveLayer(layerId, censusHighlightLayer);
+            }
+            if (mapInstance.getLayer(outlineLayerId)) {
+              mapInstance.moveLayer(outlineLayerId, censusHighlightLayer);
+            }
+            if (mapInstance.getLayer(previewLayerId)) {
+              mapInstance.moveLayer(previewLayerId, censusHighlightLayer);
+            }
+            if (mapInstance.getLayer(vertexLayerId)) {
+              mapInstance.moveLayer(vertexLayerId, censusHighlightLayer);
+            }
+          } else {
+            // If no census layers, just move to top (above PM2.5 layers)
+            if (mapInstance.getLayer(layerId)) {
+              mapInstance.moveLayer(layerId);
+            }
+            if (mapInstance.getLayer(outlineLayerId)) {
+              mapInstance.moveLayer(outlineLayerId);
+            }
+            if (mapInstance.getLayer(previewLayerId)) {
+              mapInstance.moveLayer(previewLayerId);
+            }
+            if (mapInstance.getLayer(vertexLayerId)) {
+              mapInstance.moveLayer(vertexLayerId);
+            }
+          }
+        } catch (error) {
+          console.warn('Error positioning polygon layers:', error);
+        }
+      };
+
+      // Position layers after creation
+      positionPolygonLayers();
+
+      // Trigger a small delay to ensure any census layer positioning is also updated
+      setTimeout(() => {
+        positionPolygonLayers();
+      }, 100);
     };
     
     const updatePolygonData = () => {

@@ -76,11 +76,27 @@ export const useDrawingInteraction = ({
         return;
       }
       
+      // Check if this is the first point and handle zoom
+      if (tempPolygon.length === 0 && mapInstance) {
+        const currentZoom = mapInstance.getZoom();
+        if (currentZoom < 6.5) {
+          // Zoom to 6.5 centered on the first clicked point
+          mapInstance.flyTo({
+            center: [lng, lat],
+            zoom: 6.5,
+            duration: 1000
+          });
+        }
+      }
+      
       setTempPolygon(prev => [...prev, [lng, lat]]);
       setLastClickTime(now);
       return;
     }
     
+    // Temporarily disabled: census tract selection when clicking on areas
+    // Only allow exposure tracking when polygon is drawn
+    /*
     if (!isPointSelected && mapInstance) {
       try {
         handleEnhancedMapClick(e, mapInstance, {
@@ -103,6 +119,7 @@ export const useDrawingInteraction = ({
         console.error('Error handling map click:', error);
       }
     }
+    */
   }, [
     drawingMode, 
     isPointSelected, 
@@ -152,7 +169,7 @@ export const useDrawingInteraction = ({
     if (showTour) return 'default';
     if (drawingMode) return 'crosshair';
     if (isPointSelected) return 'not-allowed';
-    return 'pointer';
+    return 'default';
   }, [drawingMode, isPointSelected, showTour]);
 
   // Drawing mode handlers

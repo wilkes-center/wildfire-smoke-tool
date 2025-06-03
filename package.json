@@ -1,6 +1,6 @@
 {
   "name": "wildfire-smoke-tool",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "homepage": "https://wilkes-center.github.io/wildfire-smoke-tool",
   "private": true,
   "dependencies": {

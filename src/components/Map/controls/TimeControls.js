@@ -60,12 +60,10 @@ export const TimeControls = ({
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   };
 
-  // Position day markers at the start of each day (0, 24, 48, 72 hours)
+  // Position day markers at the start of each day (0, 24 hours)
   const dayMarkerPositions = [
     { label: generateDateLabel(0), hour: 0 },
-    { label: generateDateLabel(1), hour: 24 },
-    { label: generateDateLabel(2), hour: 48 },
-    { label: generateDateLabel(3), hour: 72 }
+    { label: generateDateLabel(1), hour: 24 }
   ].map(marker => ({
     ...marker,
     position: (marker.hour / (TOTAL_HOURS - 1)) * 100
@@ -191,9 +189,9 @@ export const TimeControls = ({
                       whiteSpace: 'nowrap',
                       color: primaryColor,
                       transform: index === 0 ? 'translateX(0)' : 
-                               index === 3 ? 'translateX(-100%)' : 'translateX(-50%)',
+                               index === 1 ? 'translateX(-100%)' : 'translateX(-50%)',
                       left: index === 0 ? 0 : 
-                            index === 3 ? '100%' : '50%'
+                            index === 1 ? '100%' : '50%'
                     }}
                   >
                     {marker.label}

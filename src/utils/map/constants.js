@@ -15,37 +15,27 @@ const getCurrentUTCDate = () => {
     ));
   };
   
-  // Calculate a range of dates for day before yesterday, yesterday, today, and tomorrow
+  // Calculate a range of dates for today and tomorrow only
   const getDateRange = () => {
     const today = getCurrentUTCDate();
     
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    const dayBeforeYesterday = new Date(today);
-    dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
   
     const endDate = new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000 - 1);
     
     console.log("Date range:", {
-      dayBeforeYesterday: dayBeforeYesterday.toISOString().split('T')[0],
-      yesterday: yesterday.toISOString().split('T')[0],
       today: today.toISOString().split('T')[0],
       tomorrow: tomorrow.toISOString().split('T')[0],
-      totalHours: Math.floor((endDate - dayBeforeYesterday) / (1000 * 60 * 60))
+      totalHours: Math.floor((endDate - today) / (1000 * 60 * 60))
     });
     
     return {
       today,
       tomorrow,
-      yesterday,
-      dayBeforeYesterday,
-      startDate: dayBeforeYesterday,
+      startDate: today,
       endDate,
-      totalHours: Math.floor((endDate - dayBeforeYesterday) / (1000 * 60 * 60))
+      totalHours: Math.floor((endDate - today) / (1000 * 60 * 60))
     };
   };
   
@@ -76,15 +66,13 @@ const getCurrentUTCDate = () => {
   
   export const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
   
-  const { startDate, endDate, totalHours, dayBeforeYesterday, yesterday, today, tomorrow } = getDateRange();
+  const { startDate, endDate, totalHours, today, tomorrow } = getDateRange();
   
   export const START_DATE = startDate;
   export const END_DATE = endDate;
   export const TOTAL_HOURS = totalHours;
   
   export const TILESET_INFO = [
-    ...generateTilesetInfo(dayBeforeYesterday),
-    ...generateTilesetInfo(yesterday),
     ...generateTilesetInfo(today),
     ...generateTilesetInfo(tomorrow)
   ];
