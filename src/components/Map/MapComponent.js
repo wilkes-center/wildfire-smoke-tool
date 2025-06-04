@@ -303,7 +303,7 @@ const MapComponent = ({ onShowIntro }) => {
           )}
           
           {!showTour && (
-            <div className="fixed z-50 right-4 bottom-24">
+            <div className="fixed z-50 right-4 bottom-4">
               <button
                 onClick={onShowIntro}
                 className={`w-12 h-12 rounded-full shadow-lg backdrop-blur-sm flex items-center justify-center transition-all ${
