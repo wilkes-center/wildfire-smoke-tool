@@ -321,12 +321,19 @@ const MapComponent = ({ onShowIntro }) => {
       )}
       
       {/* TraceAQ Logo Footer */}
-      <div className="fixed left-4 bottom-8 z-40">
-        <img 
-          src={`${process.env.PUBLIC_URL}/TraceAQ.png`}
-          alt="TraceAQ Logo" 
-          className="h-6 opacity-80 hover:opacity-100 transition-opacity duration-200"
-        />
+      <div className="fixed left-2 bottom-8 z-40">
+        <a 
+          href="https://www.traceaq.com/" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="block hover:scale-105 transition-transform duration-200"
+        >
+          <img 
+            src={`${process.env.PUBLIC_URL}/TraceAQ.png`}
+            alt="TraceAQ Logo" 
+            className="h-20 opacity-80 hover:opacity-100 transition-opacity duration-200"
+          />
+        </a>
       </div>
     </div>
   );
