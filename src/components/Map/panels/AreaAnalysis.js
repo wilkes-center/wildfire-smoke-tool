@@ -3,65 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { BarChart2, X } from 'lucide-react';
 import calculateAreaStats from '../../../utils/map/calculateAreaStats';
 import ThemedPanel from './ThemedPanel';
-
-const CustomTooltip = ({ active, payload, label, isDarkMode }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className={`p-4 shadow-lg rounded-lg border ${
-        isDarkMode 
-          ? 'bg-gray-800 border-mahogany/70 text-gray-100' 
-          : 'bg-white border-mahogany/50 text-gray-800'
-      }`}>
-        <p className="font-semibold">{label}</p>
-        {payload.map((entry, index) => (
-          <div key={index} className="flex items-center gap-2 mt-1">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></div>
-            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>{entry.name}:</span>
-            <span className="font-medium">{entry.value.toFixed(1)}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
-
-  const CustomXAxisTick = ({ x, y, payload, isDarkMode }) => {
-  const [date, time] = payload.value.split(' ');
-  const hour = parseInt(time);
-  
-  // Always show 0, 6, 12, 18 hours
-  const keyHours = [0, 6, 12, 18];
-  const showHour = keyHours.includes(hour);
-  const showDate = hour === 0;
-
-  // Always render key hours
-  if (!keyHours.includes(hour) && !showDate) return null;
-
-  const content = showDate ? (
-          <text
-      x={x}
-      y={y + 16}
-      textAnchor="middle"
-      fill={isDarkMode ? '#9CA3AF' : '#6B7280'}
-      style={{ fontSize: '12px', fontWeight: 'bold' }}
-    >
-      {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-    </text>
-  ) : (
-    <text
-      x={x}
-      y={y + 12}
-      textAnchor="middle"
-      fill={isDarkMode ? '#9CA3AF' : '#6B7280'}
-      style={{ fontSize: '11px' }}
-    >
-      {`${hour}:00`}
-    </text>
-  );
-
-  return content;
-};
+import { START_DATE, TOTAL_HOURS } from '../../../utils/map/constants';
 
 const DateSeparator = ({ x, isDarkMode }) => (
   <line
@@ -161,10 +103,47 @@ const StatsTable = ({ data, isDarkMode }) => {
 };
 
 const AreaStatsChart = ({ data, isDarkMode }) => {
-  // Find date change points
-  const dateChangePoints = data.reduce((acc, item, index) => {
+  // Generate complete 48-hour timeline from START_DATE
+  const generateComplete48HourTimeline = () => {
+    const timeline = [];
+    const startDate = new Date(START_DATE);
+    
+    // Generate all 48 hours from the start date
+    for (let hour = 0; hour < TOTAL_HOURS; hour++) {
+      const currentTime = new Date(startDate);
+      currentTime.setHours(startDate.getHours() + hour);
+      
+      const timeString = `${currentTime.toISOString().split('T')[0]} ${String(currentTime.getHours()).padStart(2, '0')}:00`;
+      timeline.push(timeString);
+    }
+    
+    return timeline;
+  };
+
+  // Create complete dataset with all 48 hours and original values
+  const createCompleteDataset = () => {
+    const completeTimeline = generateComplete48HourTimeline();
+    const dataMap = new Map(data.map(item => [item.time, item]));
+    
+    return completeTimeline.map(timePoint => {
+      const existingData = dataMap.get(timePoint);
+      
+      return {
+        time: timePoint,
+        minPM25: existingData?.minPM25 || null,
+        averagePM25: existingData?.averagePM25 || null,
+        maxPM25: existingData?.maxPM25 || null,
+        hasData: !!existingData
+      };
+    });
+  };
+
+  const completeData = createCompleteDataset();
+  
+  // Find date change points for the complete dataset (every 24 hours)
+  const dateChangePoints = completeData.reduce((acc, item, index) => {
     if (index === 0) return acc;
-    const [prevDate] = data[index - 1].time.split(' ');
+    const [prevDate] = completeData[index - 1].time.split(' ');
     const [currentDate] = item.time.split(' ');
     if (prevDate !== currentDate) {
       acc.push(index);
@@ -172,25 +151,93 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
     return acc;
   }, []);
   
-  // Find max value for better domain calculation
+  // Find max value for better domain calculation using original values
   const findMaxValue = () => {
-    const values = data.flatMap(item => [
+    const values = completeData.flatMap(item => [
       item.minPM25,
       item.averagePM25,
       item.maxPM25
-    ]).filter(val => val !== undefined && !isNaN(val));
+    ]).filter(val => val !== undefined && val !== null && !isNaN(val));
+    
+    if (values.length === 0) return 100; // Default fallback
     
     const max = Math.max(...values);
     
-
     if (max < 2) {
-      return Math.ceil(max * 1.05); // Only 5% padding for small values
+      return Math.ceil(max * 1.05);
     } else {
-      return Math.ceil(max * 1.1); // 10% padding for larger values
+      return Math.ceil(max * 1.1);
     }
   };
   
   const max = findMaxValue();
+
+  // Custom tick component that shows key time points across 48 hours
+  const CustomXAxisTick = ({ x, y, payload, isDarkMode }) => {
+    const [date, time] = payload.value.split(' ');
+    const hour = parseInt(time);
+    
+    // Show date at midnight and every 6 hours
+    const showDate = hour === 0;
+    const showHour = hour % 6 === 0;
+    
+    if (!showDate && !showHour) return null;
+
+    const content = showDate ? (
+      <text
+        x={x}
+        y={y + 16}
+        textAnchor="middle"
+        fill={isDarkMode ? '#9CA3AF' : '#6B7280'}
+        style={{ fontSize: '12px', fontWeight: 'bold' }}
+      >
+        {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+      </text>
+    ) : (
+      <text
+        x={x}
+        y={y + 12}
+        textAnchor="middle"
+        fill={isDarkMode ? '#9CA3AF' : '#6B7280'}
+        style={{ fontSize: '11px' }}
+      >
+        {`${hour}:00`}
+      </text>
+    );
+
+    return content;
+  };
+
+  // Custom tooltip showing original values
+  const CustomTooltip = ({ active, payload, label, isDarkMode }) => {
+    if (active && payload && payload.length) {
+      const dataPoint = completeData.find(item => item.time === label);
+      
+      return (
+        <div className={`p-4 shadow-lg rounded-lg border ${
+          isDarkMode 
+            ? 'bg-gray-800 border-mahogany/70 text-gray-100' 
+            : 'bg-white border-mahogany/50 text-gray-800'
+        }`}>
+          <p className="font-semibold">{label}</p>
+          {dataPoint?.hasData ? (
+            payload.map((entry, index) => (
+              <div key={index} className="flex items-center gap-2 mt-1">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></div>
+                <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>{entry.name}:</span>
+                <span className="font-medium">{entry.value?.toFixed(1) || 'N/A'}</span>
+              </div>
+            ))
+          ) : (
+            <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              No data available for this time
+            </div>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className={`h-[320px] w-full relative ${
@@ -198,7 +245,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
     }`}>
       <ResponsiveContainer>
         <LineChart 
-          data={data}
+          data={completeData}
           margin={{ top: 20, right: 10, left: 30, bottom: 30 }}
         >
           <CartesianGrid 
@@ -209,7 +256,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
           {dateChangePoints.map((index) => (
             <DateSeparator 
               key={index}
-              x={`${(index / (data.length - 1)) * 100}%`}
+              x={`${(index / (completeData.length - 1)) * 100}%`}
               isDarkMode={isDarkMode}
             />
           ))}
@@ -226,7 +273,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
               fill: isDarkMode ? '#9CA3AF' : '#6B7280',
               fontSize: 12 
             }}
-            domain={[0, max]} // Start from 0, go to calculated max
+            domain={[0, max]}
             axisLine={{ stroke: isDarkMode ? '#374151' : '#E5E7EB' }}
             label={{
               value: 'PM2.5 (μg/m³)',
@@ -249,6 +296,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
             stroke="#c52222"
             strokeWidth={2}
             dot={false}
+            connectNulls={false}
           />
           <Line 
             type="monotone"
@@ -257,6 +305,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
             stroke="#3B82F6"
             strokeWidth={2}
             dot={false}
+            connectNulls={false}
           />
           <Line 
             type="monotone"
@@ -265,6 +314,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
             stroke="#76f163"
             strokeWidth={2}
             dot={false}
+            connectNulls={false}
           />
         </LineChart>
       </ResponsiveContainer>
