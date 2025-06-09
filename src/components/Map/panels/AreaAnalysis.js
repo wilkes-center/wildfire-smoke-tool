@@ -3,7 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { BarChart2, X } from 'lucide-react';
 import calculateAreaStats from '../../../utils/map/calculateAreaStats';
 import ThemedPanel from './ThemedPanel';
-import { START_DATE, TOTAL_HOURS } from '../../../utils/map/constants';
+import { START_DATE, TOTAL_HOURS, TILESET_INFO } from '../../../utils/map/constants';
 
 const DateSeparator = ({ x, isDarkMode }) => (
   <line
@@ -103,19 +103,20 @@ const StatsTable = ({ data, isDarkMode }) => {
 };
 
 const AreaStatsChart = ({ data, isDarkMode }) => {
-  // Generate complete 48-hour timeline from START_DATE
+  // Generate complete 48-hour timeline using actual dates from TILESET_INFO
   const generateComplete48HourTimeline = () => {
     const timeline = [];
-    const startDate = new Date(START_DATE);
     
-    // Generate all 48 hours from the start date
-    for (let hour = 0; hour < TOTAL_HOURS; hour++) {
-      const currentTime = new Date(startDate);
-      currentTime.setHours(startDate.getHours() + hour);
-      
-      const timeString = `${currentTime.toISOString().split('T')[0]} ${String(currentTime.getHours()).padStart(2, '0')}:00`;
-      timeline.push(timeString);
-    }
+    // Get unique dates from TILESET_INFO and sort them
+    const uniqueDates = [...new Set(TILESET_INFO.map(tileset => tileset.date))].sort();
+    
+    // Generate 24 hours for each date
+    uniqueDates.forEach(dateStr => {
+      for (let hour = 0; hour < 24; hour++) {
+        const timeString = `${dateStr} ${String(hour).padStart(2, '0')}:00`;
+        timeline.push(timeString);
+      }
+    });
     
     return timeline;
   };
@@ -177,9 +178,9 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
     const [date, time] = payload.value.split(' ');
     const hour = parseInt(time);
     
-    // Show date at midnight and every 6 hours
+    // Show date at the start of each day (hour 0) and time every 6 hours
     const showDate = hour === 0;
-    const showHour = hour % 6 === 0;
+    const showHour = hour % 6 === 0 && hour !== 0; // Don't show hour when we're showing date
     
     if (!showDate && !showHour) return null;
 
@@ -191,7 +192,12 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
         fill={isDarkMode ? '#9CA3AF' : '#6B7280'}
         style={{ fontSize: '12px', fontWeight: 'bold' }}
       >
-        {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        {(() => {
+          // Parse date string properly to avoid timezone issues
+          const [year, month, day] = date.split('-').map(Number);
+          const dateObj = new Date(year, month - 1, day); // month is 0-indexed
+          return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        })()}
       </text>
     ) : (
       <text
