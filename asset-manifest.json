@@ -1,17 +1,17 @@
 {
   "files": {
-    "main.css": "/wildfire-smoke-tool/static/css/main.32869c2c.css",
-    "main.js": "/wildfire-smoke-tool/static/js/main.7e273088.js",
+    "main.css": "/wildfire-smoke-tool/static/css/main.6a34e61d.css",
+    "main.js": "/wildfire-smoke-tool/static/js/main.46810d81.js",
     "static/js/879.230e76f6.chunk.js": "/wildfire-smoke-tool/static/js/879.230e76f6.chunk.js",
     "static/js/453.1f99e84d.chunk.js": "/wildfire-smoke-tool/static/js/453.1f99e84d.chunk.js",
     "index.html": "/wildfire-smoke-tool/index.html",
-    "main.32869c2c.css.map": "/wildfire-smoke-tool/static/css/main.32869c2c.css.map",
-    "main.7e273088.js.map": "/wildfire-smoke-tool/static/js/main.7e273088.js.map",
+    "main.6a34e61d.css.map": "/wildfire-smoke-tool/static/css/main.6a34e61d.css.map",
+    "main.46810d81.js.map": "/wildfire-smoke-tool/static/js/main.46810d81.js.map",
     "879.230e76f6.chunk.js.map": "/wildfire-smoke-tool/static/js/879.230e76f6.chunk.js.map",
     "453.1f99e84d.chunk.js.map": "/wildfire-smoke-tool/static/js/453.1f99e84d.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.32869c2c.css",
-    "static/js/main.7e273088.js"
+    "static/css/main.6a34e61d.css",
+    "static/js/main.46810d81.js"
   ]
 }
