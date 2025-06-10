@@ -129,9 +129,9 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
       
       return {
         time: timePoint,
-        minPM25: existingData?.minPM25 || null,
-        averagePM25: existingData?.averagePM25 || null,
-        maxPM25: existingData?.maxPM25 || null,
+        minPM25: existingData?.minPM25 ?? 0,
+        averagePM25: existingData?.averagePM25 ?? 0,
+        maxPM25: existingData?.maxPM25 ?? 0,
         hasData: !!existingData
       };
     });
@@ -217,17 +217,16 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
             : 'bg-white border-mahogany/50 text-gray-800'
         }`}>
           <p className="font-semibold">{label}</p>
-          {dataPoint?.hasData ? (
-            payload.map((entry, index) => (
-              <div key={index} className="flex items-center gap-2 mt-1">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></div>
-                <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>{entry.name}:</span>
-                <span className="font-medium">{entry.value?.toFixed(1) || 'N/A'}</span>
-              </div>
-            ))
-          ) : (
-            <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              No data available for this time
+          {payload.map((entry, index) => (
+            <div key={index} className="flex items-center gap-2 mt-1">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></div>
+              <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>{entry.name}:</span>
+              <span className="font-medium">{entry.value?.toFixed(1) || '0.0'}</span>
+            </div>
+          ))}
+          {!dataPoint?.hasData && (
+            <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+              No smoke forecasted (PM2.5 = 0)
             </div>
           )}
         </div>
@@ -396,19 +395,32 @@ const AreaAnalysis = ({
       setIsLoading(true);
       setError(null);
       
-      const stats = await calculateAreaStats(map, polygon);
-      const formattedData = formatChartData(stats);
+      // Add a small delay to ensure layers are loaded
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      setData(prevData => {
-        const combinedData = [...prevData, ...formattedData];
-        const uniqueData = combinedData.filter((v, i, a) =>
-          a.findIndex(t => t.time === v.time) === i
-        );
-        return uniqueData.sort((a, b) => new Date(a.time) - new Date(b.time));
-      });
+      console.log('Starting area stats calculation...');
+      console.log('Map instance:', map);
+      console.log('Polygon:', polygon);
+      console.log('Map style loaded:', map.isStyleLoaded());
+      
+      const stats = await calculateAreaStats(map, polygon);
+      console.log('Raw stats from calculateAreaStats:', stats);
+      
+      const formattedData = formatChartData(stats);
+      console.log('Formatted chart data:', formattedData);
+      
+      if (formattedData.length === 0) {
+        console.warn('No data found for the selected area. This could be because:');
+        console.warn('1. The area is outside the data coverage');
+        console.warn('2. The map layers are not fully loaded yet');
+        console.warn('3. There is no PM2.5 data for this location');
+        setError('No smoke forecasted in this area.');
+      }
+      
+      setData(formattedData);
     } catch (err) {
       console.error('Error calculating area stats:', err);
-      setError('Failed to calculate area statistics');
+      setError('Failed to calculate area statistics. Please try again.');
       setData([]);
     } finally {
       setIsLoading(false);
@@ -416,14 +428,10 @@ const AreaAnalysis = ({
   }, [map, polygon, formatChartData]);
 
   useEffect(() => {
-    updateAreaStats();
-  }, [updateAreaStats]);
-
-  useEffect(() => {
-    if (isPlaying) {
+    if (polygon) {
       updateAreaStats();
     }
-  }, [isPlaying, currentDateTime, updateAreaStats]);
+  }, [polygon, updateAreaStats]);
 
   useEffect(() => {
     if (!polygon) {
@@ -524,7 +532,7 @@ const AreaAnalysis = ({
         <div className={`h-[320px] flex items-center justify-center ${
           isDarkMode ? 'text-gray-400' : 'text-gray-500'
         }`}>
-          <p>No data available for the selected area</p>
+          <p>No smoke forecasted in the selected area</p>
         </div>
       )}
     </div>

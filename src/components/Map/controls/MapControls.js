@@ -122,7 +122,7 @@ const MapControls = ({
       </div>
 
       {/* Bottom Time Controls */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl pointer-events-auto">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-3xl pointer-events-auto">
       <TimeControls
           currentHour={currentHour}
           setCurrentHour={setCurrentHour}

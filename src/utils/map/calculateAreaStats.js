@@ -10,6 +10,9 @@ const calculateAreaStats = async (map, polygon) => {
   const processedLayers = new Set();
 
   console.log("Calculating area stats with tilesets:", TILESET_INFO);
+  console.log("Map style loaded:", map.isStyleLoaded());
+  console.log("Available sources:", Object.keys(map.getStyle()?.sources || {}));
+  console.log("Available layers:", Object.keys(map.getStyle()?.layers || {}));
 
   for (const tileset of TILESET_INFO) {
     const sourceId = `source-${tileset.id}`;
@@ -55,25 +58,54 @@ const calculateAreaStats = async (map, polygon) => {
       console.log(`Processing hour ${hour} with formatted time: ${formattedTime}`);
 
       try {
-        // Query features within the polygon for this specific hour
-        const features = map.queryRenderedFeatures({
-          layers: [layerId],
-          filter: [
-            'all',
-            ['==', ['get', 'time'], formattedTime]
-          ]
-        }).filter(feature => {
-          // Additional filtering for polygon intersection
-          if (!feature.geometry || !feature.geometry.coordinates) {
-            return false;
-          }
-          const coords = feature.geometry.coordinates;
-          return isPointInPolygon(coords, polygon);
-        });
+        let features = [];
 
-        console.log(`Found ${features.length} features for hour ${hour} in tileset ${tileset.id}`);
+        // Method 1: Try queryRenderedFeatures first
+        try {
+          features = map.queryRenderedFeatures({
+            layers: [layerId],
+            filter: [
+              'all',
+              ['==', ['get', 'time'], formattedTime]
+            ]
+          }).filter(feature => {
+            // Additional filtering for polygon intersection
+            if (!feature.geometry || !feature.geometry.coordinates) {
+              return false;
+            }
+            const coords = feature.geometry.coordinates;
+            return isPointInPolygon(coords, polygon);
+          });
+
+          console.log(`Method 1 (queryRenderedFeatures): Found ${features.length} features for hour ${hour} in tileset ${tileset.id}`);
+        } catch (err) {
+          console.warn(`Error with queryRenderedFeatures for ${layerId}:`, err);
+        }
+
+        // Method 2: If no features found, try querySourceFeatures
+        if (features.length === 0) {
+          try {
+            const sourceFeatures = map.querySourceFeatures(sourceId, {
+              sourceLayer: tileset.layer,
+              filter: ['==', ['get', 'time'], formattedTime]
+            });
+
+            features = sourceFeatures.filter(feature => {
+              if (!feature.geometry || !feature.geometry.coordinates) {
+                return false;
+              }
+              const coords = feature.geometry.coordinates;
+              return isPointInPolygon(coords, polygon);
+            });
+
+            console.log(`Method 2 (querySourceFeatures): Found ${features.length} features for hour ${hour} in tileset ${tileset.id}`);
+          } catch (err) {
+            console.warn(`Error with querySourceFeatures for ${sourceId}:`, err);
+          }
+        }
 
         if (features.length === 0) {
+          console.log(`No features found for hour ${hour} in tileset ${tileset.id}`);
           continue;
         }
 
@@ -86,6 +118,7 @@ const calculateAreaStats = async (map, polygon) => {
           .filter(value => value !== null);
 
         if (pm25Values.length === 0) {
+          console.log(`No valid PM2.5 values found for hour ${hour} in tileset ${tileset.id}`);
           continue;
         }
 
@@ -111,6 +144,8 @@ const calculateAreaStats = async (map, polygon) => {
     if (tilesetStats.hourlyData.length > 0) {
       stats.push(tilesetStats);
       console.log(`Added tileset stats for ${tileset.id} with ${tilesetStats.hourlyData.length} hours of data`);
+    } else {
+      console.warn(`No data found for tileset ${tileset.id}`);
     }
   }
 
