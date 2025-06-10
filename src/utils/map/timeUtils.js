@@ -22,4 +22,133 @@ export const formatDateTime = (timestamp) => {
   console.log(`Formatting date: ${timestamp.date}, hour: ${timestamp.hour} -> ${formattedDate}`);
   
   return formattedDate;
+};
+
+/**
+ * Converts UTC time to user's local time and formats it
+ * @param {Object} timestamp - Object containing date and hour properties
+ * @returns {Object} Object with formatted date, time, and timezone info
+ */
+export const formatLocalDateTime = (timestamp) => {
+  if (!timestamp || !timestamp.date) return { date: '', time: '', timezone: '' };
+  
+  // Convert to Date object, handling both date string and Date objects
+  const dateStr = typeof timestamp.date === 'string' 
+    ? timestamp.date 
+    : timestamp.date.toISOString().split('T')[0];
+    
+  // Parse the date string and hour as UTC
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const utcDate = new Date(Date.UTC(year, month - 1, day, timestamp.hour, 0, 0, 0));
+  
+  // Format in user's local timezone
+  const localDate = utcDate.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  });
+  
+  const localTime = utcDate.toLocaleTimeString('en-US', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: false 
+  });
+  
+  // Get timezone abbreviation
+  const timezone = utcDate.toLocaleTimeString('en-US', { 
+    timeZoneName: 'short' 
+  }).split(' ').pop();
+  
+  console.log(`Converting UTC ${timestamp.date} ${timestamp.hour}:00 -> Local ${localDate} ${localTime} ${timezone}`);
+  
+  return {
+    date: localDate,
+    time: localTime,
+    timezone: timezone,
+    fullDateTime: utcDate
+  };
+};
+
+/**
+ * Gets the user's timezone information
+ * @returns {Object} Timezone information
+ */
+export const getUserTimezone = () => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const now = new Date();
+  const utcOffset = -now.getTimezoneOffset() / 60; // Convert minutes to hours
+  const offsetString = utcOffset >= 0 ? `+${utcOffset}` : `${utcOffset}`;
+  
+  return {
+    timezone,
+    utcOffset,
+    offsetString,
+    isUTC: utcOffset === 0
+  };
+};
+
+/**
+ * Checks if the user's local time differs from UTC for a given timestamp
+ * @param {Object} timestamp - Object containing date and hour properties
+ * @returns {boolean} True if local time differs from UTC
+ */
+export const isLocalTimeDifferentFromUTC = (timestamp) => {
+  if (!timestamp || !timestamp.date) return false;
+  
+  const dateStr = typeof timestamp.date === 'string' 
+    ? timestamp.date 
+    : timestamp.date.toISOString().split('T')[0];
+    
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const utcDate = new Date(Date.UTC(year, month - 1, day, timestamp.hour, 0, 0, 0));
+  
+  // Compare UTC hour with local hour
+  const utcHour = utcDate.getUTCHours();
+  const localHour = utcDate.getHours();
+  const utcDay = utcDate.getUTCDate();
+  const localDay = utcDate.getDate();
+  
+  return utcHour !== localHour || utcDay !== localDay;
+};
+
+/**
+ * Calculates the current timeline hour based on user's current time
+ * @param {Date} startDate - The start date of the timeline (from constants)
+ * @param {number} totalHours - Total hours in the timeline (from constants)
+ * @returns {number} The current hour index in the timeline (0-based)
+ */
+export const getCurrentTimelineHour = (startDate, totalHours) => {
+  const now = new Date();
+  const currentUTC = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    now.getUTCHours(),
+    0, 0, 0
+  ));
+  
+  // Calculate hours since timeline start
+  const hoursSinceStart = Math.floor((currentUTC - startDate) / (1000 * 60 * 60));
+  
+  console.log('Timeline calculation:', {
+    now: now.toISOString(),
+    currentUTC: currentUTC.toISOString(),
+    startDate: startDate.toISOString(),
+    hoursSinceStart,
+    totalHours
+  });
+  
+  // Clamp to valid range
+  if (hoursSinceStart < 0) {
+    console.log('Current time is before timeline start, using hour 0');
+    return 0;
+  }
+  
+  if (hoursSinceStart >= totalHours) {
+    console.log('Current time is after timeline end, using last hour');
+    return totalHours - 1;
+  }
+  
+  console.log(`Setting initial timeline hour to: ${hoursSinceStart}`);
+  return hoursSinceStart;
 }; 

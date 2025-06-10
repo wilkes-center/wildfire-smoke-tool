@@ -103,8 +103,7 @@ const StatsTable = ({ data, isDarkMode }) => {
 };
 
 const AreaStatsChart = ({ data, isDarkMode }) => {
-  // Generate complete 48-hour timeline using actual dates from TILESET_INFO
-  const generateComplete48HourTimeline = () => {
+    const generateComplete48HourTimeline = () => {
     const timeline = [];
     
     // Get unique dates from TILESET_INFO and sort them
@@ -121,7 +120,6 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
     return timeline;
   };
 
-  // Create complete dataset with all 48 hours and original values
   const createCompleteDataset = () => {
     const completeTimeline = generateComplete48HourTimeline();
     const dataMap = new Map(data.map(item => [item.time, item]));
@@ -141,7 +139,6 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
 
   const completeData = createCompleteDataset();
   
-  // Find date change points for the complete dataset (every 24 hours)
   const dateChangePoints = completeData.reduce((acc, item, index) => {
     if (index === 0) return acc;
     const [prevDate] = completeData[index - 1].time.split(' ');
@@ -152,7 +149,6 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
     return acc;
   }, []);
   
-  // Find max value for better domain calculation using original values
   const findMaxValue = () => {
     const values = completeData.flatMap(item => [
       item.minPM25,
@@ -160,7 +156,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
       item.maxPM25
     ]).filter(val => val !== undefined && val !== null && !isNaN(val));
     
-    if (values.length === 0) return 100; // Default fallback
+    if (values.length === 0) return 100; 
     
     const max = Math.max(...values);
     
@@ -173,15 +169,12 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
   
   const max = findMaxValue();
 
-  // Custom tick component that shows key time points across 48 hours
   const CustomXAxisTick = ({ x, y, payload, isDarkMode }) => {
     const [date, time] = payload.value.split(' ');
     const hour = parseInt(time);
     
-    // Show date at the start of each day (hour 0) and time every 6 hours
     const showDate = hour === 0;
-    const showHour = hour % 6 === 0 && hour !== 0; // Don't show hour when we're showing date
-    
+    const showHour = hour % 6 === 0 && hour !== 0;    
     if (!showDate && !showHour) return null;
 
     const content = showDate ? (
@@ -193,9 +186,8 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
         style={{ fontSize: '12px', fontWeight: 'bold' }}
       >
         {(() => {
-          // Parse date string properly to avoid timezone issues
           const [year, month, day] = date.split('-').map(Number);
-          const dateObj = new Date(year, month - 1, day); // month is 0-indexed
+          const dateObj = new Date(year, month - 1, day); 
           return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         })()}
       </text>
@@ -214,7 +206,6 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
     return content;
   };
 
-  // Custom tooltip showing original values
   const CustomTooltip = ({ active, payload, label, isDarkMode }) => {
     if (active && payload && payload.length) {
       const dataPoint = completeData.find(item => item.time === label);
@@ -351,16 +342,15 @@ const AreaAnalysis = ({
   isPlaying, 
   polygon, 
   isDarkMode,
-  onExpandChange 
+  onExpandChange,
+  forceExpanded = false
 }) => {
-  // Existing state declarations
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState('chart');
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Add the clearAreaStatistics function here
   const clearAreaStatistics = useCallback(() => {
     setData([]);
     setError(null);
@@ -370,7 +360,6 @@ const AreaAnalysis = ({
     onExpandChange?.(false);
   }, [onExpandChange]);
 
-  // Add the effect here
   useEffect(() => {
     if (!polygon) {
       clearAreaStatistics();
@@ -499,6 +488,92 @@ const AreaAnalysis = ({
     </div>
   );
 
+  const panelContent = (
+    <div className="px-1">
+      {error && (
+        <div className={`mb-4 p-4 rounded-lg border ${
+          isDarkMode 
+            ? 'bg-rust/50 text-gold-light border-mahogany/50' 
+            : 'bg-rust-light/20 text-rust-dark border-mahogany/30'
+        }`}>
+          {error}
+        </div>
+      )}
+
+      {isLoading && (
+        <div className={`h-[320px] flex items-center justify-center ${
+          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+        }`}>
+          <p>Loading statistics...</p>
+        </div>
+      )}
+
+      {!isLoading && !error && data.length > 0 && (
+        <>
+          {activeTab === 'chart' && (
+            <AreaStatsChart data={data} isDarkMode={isDarkMode} />
+          )}
+          
+          {activeTab === 'table' && (
+            <StatsTable data={data} isDarkMode={isDarkMode} />
+          )}
+        </>
+      )}
+
+      {!isLoading && !error && data.length === 0 && (
+        <div className={`h-[320px] flex items-center justify-center ${
+          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+        }`}>
+          <p>No data available for the selected area</p>
+        </div>
+      )}
+    </div>
+  );
+
+  // If forceExpanded, render content directly without ThemedPanel wrapper
+  if (forceExpanded) {
+    return (
+      <div className={`w-full rounded-xl shadow-xl overflow-hidden border-2 ${
+        isDarkMode 
+          ? 'bg-gray-900/95 border-white' 
+          : 'bg-white/95 border-mahogany'
+      } backdrop-blur-md`}>
+        <div className="w-full h-full flex flex-col">
+          <div className={`px-4 py-3 border-b-2 ${
+            isDarkMode 
+              ? 'bg-gradient-to-r from-forest-dark/30 to-sage-dark/30 border-white' 
+              : 'bg-gradient-to-r from-cream to-sage-light/30 border-mahogany'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className={`text-lg font-semibold leading-none ${
+                  isDarkMode ? 'text-white' : 'text-forest'
+                }`}>
+                  Area Statistics
+                </h2>
+                <div className={`text-sm mt-1 ${
+                  isDarkMode ? 'text-white/80' : 'text-forest-light'
+                }`}>
+                  {currentDateTime.date} {currentDateTime.hour.toString().padStart(2, '0')}:00
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {headerActions}
+              </div>
+            </div>
+          </div>
+          
+          <div className={`flex-1 overflow-hidden ${
+            isDarkMode ? 'bg-gray-900/50' : 'bg-white/50'
+          }`}>
+            {panelContent}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Original ThemedPanel implementation for backward compatibility
   return (
     <div style={{ 
       position: 'fixed',
@@ -518,45 +593,7 @@ const AreaAnalysis = ({
         isDarkMode={isDarkMode}
         order={1} 
       >
-        <div className="px-1">
-          {error && (
-            <div className={`mb-4 p-4 rounded-lg border ${
-              isDarkMode 
-                ? 'bg-rust/50 text-gold-light border-mahogany/50' 
-                : 'bg-rust-light/20 text-rust-dark border-mahogany/30'
-            }`}>
-              {error}
-            </div>
-          )}
-
-          {isLoading && (
-            <div className={`h-[320px] flex items-center justify-center ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-500'
-            }`}>
-              <p>Loading statistics...</p>
-            </div>
-          )}
-
-          {!isLoading && !error && data.length > 0 && (
-            <>
-              {activeTab === 'chart' && (
-                <AreaStatsChart data={data} isDarkMode={isDarkMode} />
-              )}
-              
-              {activeTab === 'table' && (
-                <StatsTable data={data} isDarkMode={isDarkMode} />
-              )}
-            </>
-          )}
-
-          {!isLoading && !error && data.length === 0 && (
-            <div className={`h-[320px] flex items-center justify-center ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-500'
-            }`}>
-              <p>No data available for the selected area</p>
-            </div>
-          )}
-        </div>
+        {panelContent}
       </ThemedPanel>
     </div>
   );

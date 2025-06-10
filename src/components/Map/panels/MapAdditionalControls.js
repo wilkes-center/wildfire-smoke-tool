@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Map from 'react-map-gl';
+import { Map } from 'react-map-gl';
 import { Map as MapIcon } from 'lucide-react';
 import { TILESET_INFO } from '../../../utils/map/constants.js';
 import { getPM25ColorInterpolation } from '../../../utils/map/colors';
@@ -13,7 +13,9 @@ const MapAdditionalControls = ({
   currentDateTime,
   isDarkMode,
   pm25Threshold,
-  onExpandChange
+  onExpandChange,
+  isPlaying,
+  forceExpanded = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [minimapViewport, setMinimapViewport] = useState(null);
@@ -241,8 +243,42 @@ const MapAdditionalControls = ({
         nextHour <= tileset.endHour
       );
 
-      // Set all layer opacities to 0 first
+      // Only keep current tileset and next tileset if we're at the very end of current tileset
+      const relevantTilesetIds = new Set([currentTileset.id]);
+      
+      // Only add next tileset if we're at the exact transition point (last hour of current tileset)
+      if (nextTileset && hour === currentTileset.endHour) {
+        relevantTilesetIds.add(nextTileset.id);
+      }
+
+      // Clean up old layers that are no longer relevant
+      const layersToRemove = [];
       loadedLayersRef.current.forEach(layerId => {
+        const tilesetId = layerId.replace('minimap-layer-', '');
+        if (!relevantTilesetIds.has(tilesetId)) {
+          layersToRemove.push(layerId);
+        }
+      });
+
+      // Remove old layers and sources
+      layersToRemove.forEach(layerId => {
+        const tilesetId = layerId.replace('minimap-layer-', '');
+        const sourceId = `minimap-source-${tilesetId}`;
+        
+        if (map.getLayer(layerId)) {
+          map.removeLayer(layerId);
+        }
+        if (map.getSource(sourceId)) {
+          map.removeSource(sourceId);
+        }
+        
+        loadedLayersRef.current.delete(layerId);
+        loadedSourcesRef.current.delete(sourceId);
+      });
+
+      // Hide ALL layers first - be very aggressive about this
+      TILESET_INFO.forEach((tileset) => {
+        const layerId = `minimap-layer-${tileset.id}`;
         if (map.getLayer(layerId)) {
           map.setPaintProperty(layerId, 'circle-opacity', 0);
           map.setLayoutProperty(layerId, 'visibility', 'none');
@@ -253,6 +289,51 @@ const MapAdditionalControls = ({
       const currentLayerId = `minimap-layer-${currentTileset.id}`;
       const timeString = `${date}T${String(hour).padStart(2, '0')}:00:00`;
 
+      // Ensure current layer exists
+      if (!map.getLayer(currentLayerId)) {
+        const currentSourceId = `minimap-source-${currentTileset.id}`;
+        
+        // Add source if it doesn't exist
+        if (!map.getSource(currentSourceId)) {
+          map.addSource(currentSourceId, {
+            type: 'vector',
+            url: `mapbox://${currentTileset.id}`,
+            maxzoom: 9
+          });
+          loadedSourcesRef.current.add(currentSourceId);
+        }
+
+        // Add layer
+        map.addLayer({
+          id: currentLayerId,
+          type: 'circle',
+          source: currentSourceId,
+          'source-layer': currentTileset.layer,
+          maxzoom: 9,
+          paint: {
+            'circle-radius': [
+              'interpolate',
+              ['exponential', 2],
+              ['zoom'],
+              4, 2,
+              5, 5,
+              6, 10,
+              7, 55,
+              8, 70,
+              9, 90
+            ],
+            'circle-color': getPM25ColorInterpolation(isDarkMode),
+            'circle-blur': 0.6,
+            'circle-opacity': 0
+          },
+          layout: {
+            visibility: 'none'
+          }
+        });
+        loadedLayersRef.current.add(currentLayerId);
+      }
+
+      // Now show only the current layer
       if (map.getLayer(currentLayerId)) {
         map.setFilter(currentLayerId, [
           'all',
@@ -268,7 +349,7 @@ const MapAdditionalControls = ({
         map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
       }
 
-      // Prepare next chunk if we're near the end of current chunk
+      // Only prepare next chunk if we're at the exact end of current chunk
       if (nextTileset && hour === currentTileset.endHour) {
         const nextSourceId = `minimap-source-${nextTileset.id}`;
         const nextLayerId = `minimap-layer-${nextTileset.id}`;
@@ -308,24 +389,23 @@ const MapAdditionalControls = ({
               'circle-opacity': 0
             },
             layout: {
-              'visibility': 'visible'
+              'visibility': 'none'
             }
           });
           loadedLayersRef.current.add(nextLayerId);
         }
 
-        // Prepare next chunk's data
+        // Prepare next chunk's data but keep it hidden
         const nextTimeString = `${nextDate}T${String(nextHour).padStart(2, '0')}:00:00`;
         map.setFilter(nextLayerId, [
           'all',
           ['==', ['get', 'time'], nextTimeString],
           ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
         ]);
-
-        // If very close to transition, start fading in next layer
-        if (hour === currentTileset.endHour) {
-          map.setPaintProperty(nextLayerId, 'circle-opacity', 0.5);
-        }
+        
+        // Keep next layer hidden - don't show it until we actually transition
+        map.setPaintProperty(nextLayerId, 'circle-opacity', 0);
+        map.setLayoutProperty(nextLayerId, 'visibility', 'none');
       }
 
       previousChunkRef.current = currentTileset.id;
@@ -402,44 +482,84 @@ const MapAdditionalControls = ({
     }
   }, [updateLayers, isDarkMode, currentDateTime, pm25Threshold]);
 
+  const panelContent = (
+    <div className="px-1">
+      <div className="w-full h-[360px] overflow-hidden rounded-lg relative">
+        {minimapViewport && (
+          <Map
+            ref={minimapRef}
+            initialViewState={minimapViewport}
+            style={{ width: '100%', height: '100%' }}
+            mapStyle={mapStyle}
+            mapboxAccessToken={mapboxAccessToken}
+            interactive={false}
+            onLoad={handleMinimapLoad}
+          />
+        )}
+      </div>
+    </div>
+  );
+
+  // If forceExpanded, render content directly without ThemedPanel wrapper
+  if (forceExpanded) {
+    return (
+      <div className={`w-full rounded-xl shadow-xl overflow-hidden border-2 ${
+        isDarkMode 
+          ? 'bg-gray-900/95 border-white' 
+          : 'bg-white/95 border-mahogany'
+      } backdrop-blur-md`}>
+        <div className="w-full h-full flex flex-col">
+          <div className={`px-4 py-3 border-b-2 ${
+            isDarkMode 
+              ? 'bg-gradient-to-r from-forest-dark/30 to-sage-dark/30 border-white' 
+              : 'bg-gradient-to-r from-cream to-sage-light/30 border-mahogany'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className={`text-lg font-semibold leading-none ${
+                  isDarkMode ? 'text-white' : 'text-forest'
+                }`}>
+                  Area Overview
+                </h2>
+                <div className={`text-sm mt-1 ${
+                  isDarkMode ? 'text-white/80' : 'text-forest-light'
+                }`}>
+                  {currentDateTime.date} {currentDateTime.hour.toString().padStart(2, '0')}:00
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className={`flex-1 overflow-hidden ${
+            isDarkMode ? 'bg-gray-900/50' : 'bg-white/50'
+          }`}>
+            {panelContent}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Original ThemedPanel implementation for backward compatibility
   return (
     <div style={{ 
       position: 'fixed',
-      top: isExpanded ? '10px' : '80px',
+      top: isExpanded ? '450px' : '20px',
       right: '20px',
+      width: isExpanded ? '480px' : '48px',
       zIndex: 1000,
       transition: 'all 0.3s ease-in-out'
     }}>
       <ThemedPanel
         title="Area Overview"
-        icon={MapIcon}
+        subtitle={`${currentDateTime.date} ${currentDateTime.hour.toString().padStart(2, '0')}:00`}
+        icon={Map}
         isExpanded={isExpanded}
-        onClose={() => {
-          setIsExpanded(!isExpanded);
-          onExpandChange?.(!isExpanded);
-        }}
+        onClose={handleToggleExpand}
         isDarkMode={isDarkMode}
         order={2}
       >
-        <div className="w-full h-[360px] overflow-hidden rounded-lg relative">
-          {minimapViewport && (
-            <Map
-              ref={minimapRef}
-              initialViewState={minimapViewport}
-              style={{ width: '100%', height: '100%' }}
-              mapStyle={mapStyle}
-              mapboxAccessToken={mapboxAccessToken}
-              interactive={false}
-              onLoad={() => {
-                const minimap = minimapRef.current?.getMap();
-                if (minimap) {
-                  layersInitializedRef.current = true;
-                  updateLayers(minimap);
-                }
-              }}
-            />
-          )}
-        </div>
+        {panelContent}
       </ThemedPanel>
     </div>
   );

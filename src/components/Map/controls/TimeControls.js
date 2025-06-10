@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Pause, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { TOTAL_HOURS, START_DATE, TILESET_INFO } from '../../../utils/map/constants.js';
+import { formatLocalDateTime, getCurrentTimelineHour } from '../../../utils/map/timeUtils.js';
 
 export const TimeControls = ({
   currentHour,
@@ -32,7 +33,33 @@ export const TimeControls = ({
     if (onTimeChange) onTimeChange(newHour);
   };
 
-  // Generate labels for each day looking at the actual tileset data
+  // Jump to current time
+  const handleGoToCurrentTime = () => {
+    const currentTimelineHour = getCurrentTimelineHour(START_DATE, TOTAL_HOURS);
+    setCurrentHour(currentTimelineHour);
+    if (onTimeChange) onTimeChange(currentTimelineHour);
+  };
+
+  // Check if we're at current time (within 1 hour tolerance)
+  const isAtCurrentTime = () => {
+    const currentTimelineHour = getCurrentTimelineHour(START_DATE, TOTAL_HOURS);
+    return Math.abs(currentHour - currentTimelineHour) <= 1;
+  };
+
+  // Get local time for current hour tooltip
+  const getCurrentLocalTime = () => {
+    const dayOffset = Math.floor(currentHour / 24);
+    const hourOfDay = currentHour % 24;
+    
+    // Create a date for the current timeline position
+    const date = new Date(START_DATE);
+    date.setUTCDate(date.getUTCDate() + dayOffset);
+    const dateStr = date.toISOString().split('T')[0];
+    
+    const localTime = formatLocalDateTime({ date: dateStr, hour: hourOfDay });
+    return localTime;
+  };
+
   const generateDateLabel = (dayOffset) => {
     // Important: tilesets are ordered by date, with 2 per day (0-11 hours and 12-23 hours)
     const tilesetIndex = dayOffset * 2; // First chunk of the day (0-11 hours)
@@ -41,14 +68,20 @@ export const TimeControls = ({
       // Get the date directly from TILESET_INFO to ensure alignment
       console.log(`Day ${dayOffset} date from tileset: ${TILESET_INFO[tilesetIndex].date}`);
       
-      // Parse the date string in UTC to avoid timezone shifts
+      // Parse the date string and convert to local date for display
       const dateStr = TILESET_INFO[tilesetIndex].date;
       const [year, month, day] = dateStr.split('-').map(Number);
       
-      // Create a date using UTC values to prevent timezone conversion issues
-      const dateOptions = { month: 'short', day: 'numeric', timeZone: 'UTC' };
-      const utcDate = new Date(Date.UTC(year, month - 1, day));
-      return utcDate.toLocaleDateString('en-US', dateOptions);
+      // Create UTC date first
+      const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+      
+      // Format in user's local timezone to match the time display
+      const localDateStr = utcDate.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric'
+      });
+      
+      return `${localDateStr} (UTC)`;
     }
     
     // Fallback calculation if tileset not found
@@ -56,8 +89,13 @@ export const TimeControls = ({
     const date = new Date(START_DATE);
     date.setUTCDate(date.getUTCDate() + dayOffset);
     
-    // Apply the same UTC formatting for consistency
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    // Apply local formatting with UTC indicator
+    const localDateStr = date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric'
+    });
+    
+    return `${localDateStr} (UTC)`;
   };
 
   // Position day markers at the start of each day (0, 24 hours)
@@ -70,7 +108,8 @@ export const TimeControls = ({
   }));
 
   // Color based on theme
-  const primaryColor = isDarkMode ? '#f9f6ef' : '#751d0c'; // Snowbird White in dark mode, Moab Mahogany in light mode
+  const primaryColor = isDarkMode ? '#f9f6ef' : '#751d0c';
+  const currentLocalTime = getCurrentLocalTime();
 
   return (
     <div className={`backdrop-blur-md rounded-xl border ${isDarkMode ? 'border-white' : 'border-mahogany'} shadow-lg px-6 py-4 ${
@@ -100,6 +139,20 @@ export const TimeControls = ({
             }`}
           >
             {playbackSpeed}x
+          </button>
+
+          {/* Go to Current Time Button - Always visible */}
+          <button
+            onClick={handleGoToCurrentTime}
+            className={`h-10 px-3 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors backdrop-blur-sm shadow-lg border ${
+              isDarkMode
+                ? 'bg-blue-900/20 text-blue-300 border-blue-700/30 hover:bg-blue-900/30'
+                : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+            }`}
+            title="Jump to current time"
+          >
+            <Clock className="w-4 h-4" />
+            <span>Now</span>
           </button>
 
           {showSpeedOptions && (
@@ -151,7 +204,7 @@ export const TimeControls = ({
                 zIndex: 10
               }}
             >
-              {String(currentHour % 24).padStart(2, '0')}:00 UTC
+              {currentLocalTime.time} {currentLocalTime.timezone}
             </div>
 
             <div 

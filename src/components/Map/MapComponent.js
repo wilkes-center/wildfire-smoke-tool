@@ -16,6 +16,9 @@ import PopulationExposureCounter from './controls/PopulationExposureCounter';
 import ZoomControls from './controls/ZoomControls';
 import IntroTour from './IntroTour';
 import DrawingHelperOverlay from './DrawingHelperOverlay';
+import PM25ThresholdSlider from './controls/PM25ThresholdSlider';
+import PM25Legend from './controls/PM25LegendVertical';
+import RightPanelControls from './panels/RightPanelControls';
 
 // Custom hooks
 import {
@@ -218,53 +221,55 @@ const MapComponent = ({ onShowIntro }) => {
         <>
           <ZoomControls map={mapInstance} isDarkMode={isDarkMode} />
   
-          {/* Left side overlays container */}
-          <div className="fixed top-24 left-4 z-50">
+          {/* Left side panels container - PM2.5 controls and population counter */}
+          <div className="fixed top-4 left-4 z-50 flex flex-col gap-2 pointer-events-auto">
+            {/* PM2.5 Controls - always visible */}
             <div className="flex flex-col gap-2">
-              {polygon && (
-                <div className="w-80">
-                  <div className={`backdrop-blur-sm rounded-lg shadow-lg px-4 py-3 ${
-                    isDarkMode ? 'bg-gray-800/95 text-gray-200' : 'bg-white/95 text-gray-800'
-                  }`}>
-                    <PopulationExposureCounter
-                      map={mapInstance}
-                      polygon={polygon}
-                      isDarkMode={isDarkMode}
-                      currentDateTime={getCurrentDateTime()}
-                      isPlaying={isPlaying}
-                    />
-                  </div>
-                </div>
-              )}
+              <PM25ThresholdSlider 
+                pm25Threshold={pm25Threshold}
+                setPM25Threshold={setPM25Threshold}
+                isDarkMode={isDarkMode}
+              />
+              <PM25Legend 
+                isDarkMode={isDarkMode}
+              />
             </div>
+
+            {/* Population Exposure Panel - only when polygon exists */}
+            {polygon && (
+              <div className="w-80">
+                <PopulationExposureCounter
+                  map={mapInstance}
+                  polygon={polygon}
+                  isDarkMode={isDarkMode}
+                  currentDateTime={getCurrentDateTime()}
+                  isPlaying={isPlaying}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Right-side panels with text buttons */}
+          <div className="fixed top-4 right-4 z-50">
+            <RightPanelControls
+              map={mapInstance}
+              mapStyle={mapStyle}
+              mapboxAccessToken={MAPBOX_TOKEN}
+              currentDateTime={getCurrentDateTime()}
+              isPlaying={isPlaying}
+              polygon={polygon}
+              isDarkMode={isDarkMode}
+              pm25Threshold={pm25Threshold}
+            />
           </div>
   
-          {/* Right side panels */}
-          <AreaAnalysis
-            map={mapInstance}
-            currentDateTime={getCurrentDateTime()}
-            isPlaying={isPlaying}
-            polygon={polygon}
-            isDarkMode={isDarkMode}
-            onExpandChange={() => {}}
-          />
-  
-          <MapAdditionalControls
-            map={mapInstance}
-            mapStyle={mapStyle}
-            mapboxAccessToken={MAPBOX_TOKEN}
-            polygon={polygon}
-            currentDateTime={getCurrentDateTime()}
-            isDarkMode={isDarkMode}
-            pm25Threshold={pm25Threshold}
-            onExpandChange={() => {}}
-          />
-  
+          {/* Drawing Tooltip */}
           <DrawingTooltip 
             drawingMode={drawingMode} 
             tempPolygon={tempPolygon}
           />
           
+          {/* Drawing Helper Overlay */}
           <DrawingHelperOverlay
             drawingMode={drawingMode}
             tempPolygon={tempPolygon}
@@ -295,6 +300,7 @@ const MapComponent = ({ onShowIntro }) => {
             setTempPolygon={setTempPolygon}
           />
           
+          {/* Intro Tour */}
           {showTour && (
             <IntroTour 
               onComplete={handleTourComplete}
@@ -302,6 +308,7 @@ const MapComponent = ({ onShowIntro }) => {
             />
           )}
           
+          {/* Help Button */}
           {!showTour && (
             <div className="fixed z-50 right-4 bottom-4">
               <button

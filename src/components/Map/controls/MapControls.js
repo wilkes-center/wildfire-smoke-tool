@@ -2,7 +2,7 @@ import React from 'react';
 import { TimeControls } from './TimeControls';
 import { ThemeControls } from './ThemeControls';
 import { DateTime } from './DateTime';
-import PM25ThresholdSlider from './PM25ThresholdSlider';
+import { CurrentTimeIndicator } from './CurrentTimeIndicator';
 import { Pen, X } from 'lucide-react';
 import { TILESET_INFO } from '../../../utils/map/constants.js';
 
@@ -36,87 +36,89 @@ const MapControls = ({
     <div className="relative w-full h-full pointer-events-none">
       {/* Top Controls Container */}
       <div className="fixed top-4 inset-x-4 z-50">
-        {/* Left Controls - PM25 Threshold */}
-        <div className="absolute left-4 pointer-events-auto">
-          <PM25ThresholdSlider 
-            pm25Threshold={pm25Threshold}
-            setPM25Threshold={setPM25Threshold}
-            isDarkMode={isDarkMode}
-          />
-        </div>
+        {/* No left controls here anymore - moved to MapComponent */}
       </div>
 
       {/* Top Center Controls Row */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 pointer-events-auto">
-        {/* Dark Mode Control (Left of DateTime) */}
-        <ThemeControls
-          isDarkMode={isDarkMode}
-          setIsDarkMode={setIsDarkMode}
-          currentBasemap={currentBasemap}
-          setCurrentBasemap={setCurrentBasemap}
-          basemapOptions={basemapOptions}
-        />
-        
-        {/* Centered DateTime */}
-        <DateTime
-          currentDateTime={getCurrentDateTime()}
-          isDarkMode={isDarkMode}
-        />
-        
-        {/* Draw Button (Right of DateTime) */}
-        {!polygon && !drawingMode && (
-          <button
-            onClick={startDrawing}
-            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors backdrop-blur-sm shadow-lg border-2 border-mahogany ${
-              isDarkMode
-                ? 'bg-white/90 text-mahogany hover:bg-white/80'
-                : 'bg-white/90 text-mahogany hover:bg-white/80'
-            }`}
-            title="Draw Area"
-          >
-            <Pen className="w-5 h-5" />
-            <span className="font-medium">Draw Area</span>
-          </button>
-        )}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-auto">
+        {/* Main Controls Row */}
+        <div className="flex items-center gap-4">
+          {/* Dark Mode Control (Left of DateTime) */}
+          <ThemeControls
+            isDarkMode={isDarkMode}
+            setIsDarkMode={setIsDarkMode}
+            currentBasemap={currentBasemap}
+            setCurrentBasemap={setCurrentBasemap}
+            basemapOptions={basemapOptions}
+          />
+          
+          {/* Centered DateTime */}
+          <DateTime
+            currentDateTime={getCurrentDateTime()}
+            isDarkMode={isDarkMode}
+          />
+          
+          {/* Draw Button (Right of DateTime) */}
+          {!polygon && !drawingMode && (
+            <button
+              onClick={startDrawing}
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors backdrop-blur-sm shadow-lg border-2 border-mahogany ${
+                isDarkMode
+                  ? 'bg-white/90 text-mahogany hover:bg-white/80'
+                  : 'bg-white/90 text-mahogany hover:bg-white/80'
+              }`}
+              title="Draw Area"
+            >
+              <Pen className="w-5 h-5" />
+              <span className="font-medium">Draw Area</span>
+            </button>
+          )}
 
-        {/* Clear Selection Button (Right of DateTime) */}
-        {polygon && !drawingMode && (
-          <button
-            onClick={clearPolygon}
-            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors backdrop-blur-sm shadow-lg border-2 ${
-              isDarkMode
-                ? 'bg-red-900/90 hover:bg-red-900/80 text-red-400 border-red-400'
-                : 'bg-red-50/90 hover:bg-red-100/90 text-red-600 border-red-600'
-            }`}
-            title="Clear Area Selection"
-          >
-            <X className="w-5 h-5" />
-            <span className="font-medium">Clear Area</span>
-          </button>
-        )}
+          {/* Clear Selection Button (Right of DateTime) */}
+          {polygon && !drawingMode && (
+            <button
+              onClick={clearPolygon}
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors backdrop-blur-sm shadow-lg border-2 ${
+                isDarkMode
+                  ? 'bg-red-900/90 hover:bg-red-900/80 text-red-400 border-red-400'
+                  : 'bg-red-50/90 hover:bg-red-100/90 text-red-600 border-red-600'
+              }`}
+              title="Clear Area Selection"
+            >
+              <X className="w-5 h-5" />
+              <span className="font-medium">Clear Area</span>
+            </button>
+          )}
 
-        {/* Cancel Drawing Button (Right of DateTime) */}
-        {drawingMode && (
-          <button
-            onClick={() => {
-              // Cancel drawing and clear temporary polygon
-              setDrawingMode(false);
-              setTempPolygon([]);
-              if (mapInstance) {
-                mapInstance.getCanvas().style.cursor = '';
-              }
-            }}
-            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors backdrop-blur-sm shadow-lg border-2 ${
-              isDarkMode
-                ? 'bg-gray-700/90 hover:bg-gray-600/90 text-gray-300 border-gray-400'
-                : 'bg-gray-100/90 hover:bg-gray-200/90 text-gray-700 border-gray-500'
-            }`}
-            title="Cancel Drawing"
-          >
-            <X className="w-5 h-5" />
-            <span className="font-medium">Cancel</span>
-          </button>
-        )}
+          {/* Cancel Drawing Button (Right of DateTime) */}
+          {drawingMode && (
+            <button
+              onClick={() => {
+                // Cancel drawing and clear temporary polygon
+                setDrawingMode(false);
+                setTempPolygon([]);
+                if (mapInstance) {
+                  mapInstance.getCanvas().style.cursor = '';
+                }
+              }}
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors backdrop-blur-sm shadow-lg border-2 ${
+                isDarkMode
+                  ? 'bg-gray-700/90 hover:bg-gray-600/90 text-gray-300 border-gray-400'
+                  : 'bg-gray-100/90 hover:bg-gray-200/90 text-gray-700 border-gray-500'
+              }`}
+              title="Cancel Drawing"
+            >
+              <X className="w-5 h-5" />
+              <span className="font-medium">Cancel</span>
+            </button>
+          )}
+        </div>
+        
+        {/* Current Time Indicator - Under DateTime */}
+        <CurrentTimeIndicator 
+          currentHour={currentHour}
+          isDarkMode={isDarkMode}
+        />
       </div>
 
       {/* Bottom Time Controls */}

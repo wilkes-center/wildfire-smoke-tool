@@ -1,8 +1,8 @@
 import React from 'react';
 import { Calendar, Clock } from 'lucide-react';
-import { formatDateTime } from '../../../utils/map/timeUtils';
+import { formatDateTime, formatLocalDateTime, isLocalTimeDifferentFromUTC } from '../../../utils/map/timeUtils';
 
-export const DateTime = ({ timestamp, currentDateTime, isDarkMode }) => {
+export const DateTime = ({ timestamp, currentDateTime, isDarkMode, showUTC = false }) => {
   // Support both prop naming conventions for backward compatibility
   const dateTimeObj = timestamp || currentDateTime;
   if (!dateTimeObj || !dateTimeObj.date) return null;
@@ -11,6 +11,8 @@ export const DateTime = ({ timestamp, currentDateTime, isDarkMode }) => {
   console.log('DateTime component received:', dateTimeObj);
   
   const formattedDateTime = formatDateTime(dateTimeObj);
+  const localDateTime = formatLocalDateTime(dateTimeObj);
+  const shouldShowUTC = showUTC || isLocalTimeDifferentFromUTC(dateTimeObj);
 
   return (
     <div className={`backdrop-blur-md rounded-lg border-2 shadow-lg px-6 py-3 ${
@@ -30,7 +32,7 @@ export const DateTime = ({ timestamp, currentDateTime, isDarkMode }) => {
           <span className={`text-lg font-medium ${
             isDarkMode ? 'text-white' : 'text-forest'
           }`}>
-            {formattedDateTime}
+            {localDateTime.date}
           </span>
         </div>
 
@@ -49,12 +51,19 @@ export const DateTime = ({ timestamp, currentDateTime, isDarkMode }) => {
           <div className={`text-lg font-medium ${
             isDarkMode ? 'text-white' : 'text-forest'
           }`}>
-            {String(dateTimeObj.hour).padStart(2, '0')}:00
+            {localDateTime.time}
             <span className={`ml-2 text-sm ${
               isDarkMode ? 'text-white/80' : 'text-forest-light'
             }`}>
-              UTC
+              {localDateTime.timezone}
             </span>
+            {shouldShowUTC && (
+              <div className={`text-sm mt-1 ${
+                isDarkMode ? 'text-white/60' : 'text-forest/60'
+              }`}>
+                UTC: {String(dateTimeObj.hour).padStart(2, '0')}:00
+              </div>
+            )}
           </div>
         </div>
       </div>
