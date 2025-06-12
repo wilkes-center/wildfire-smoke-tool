@@ -1,8 +1,9 @@
 import _ from 'lodash';
 import { Users2 } from 'lucide-react';
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLogger } from '../../../hooks/useLogger';
 
-import { PM25_LEVELS, getPM25Level } from '../../../constants/pm25Levels';
+import { PM25_LEVELS } from '../../../constants/pm25Levels';
 import getSelectedCensusTracts from '../../../utils/map/censusAnalysis';
 import { TILESET_INFO } from '../../../utils/map/constants';
 
@@ -47,6 +48,15 @@ const findActiveLayer = (map, date, hour) => {
 };
 
 const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, isPlaying }) => {
+  const {
+    debug,
+    warn,
+    error,
+    logAsync,
+    startTimer,
+    logUserInteraction
+  } = useLogger('PopulationExposureCounter');
+
   const [stats, setStats] = useState({
     censusStats: {
       value: null,

@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Clock, Pause, Play } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useLogger } from '../../../hooks/useLogger';
 
 import { START_DATE, TILESET_INFO, TOTAL_HOURS } from '../../../utils/map/constants.js';
 import { formatLocalDateTime, getCurrentTimelineHour } from '../../../utils/map/timeUtils.js';
@@ -14,22 +15,36 @@ export const TimeControls = ({
   isDarkMode,
   onTimeChange
 }) => {
+  const { debug, warn, logUserInteraction, startTimer } = useLogger('TimeControls');
   const [showSpeedOptions, setShowSpeedOptions] = useState(false);
 
   const handlePrevHour = () => {
     const newHour = Math.max(0, currentHour - 1);
+    logUserInteraction('timeline_prev', 'prev_button', {
+      previousHour: currentHour,
+      newHour
+    });
     setCurrentHour(newHour);
     if (onTimeChange) onTimeChange(newHour);
   };
 
   const handleNextHour = () => {
     const newHour = Math.min(TOTAL_HOURS - 1, currentHour + 1);
+    logUserInteraction('timeline_next', 'next_button', {
+      previousHour: currentHour,
+      newHour
+    });
     setCurrentHour(newHour);
     if (onTimeChange) onTimeChange(newHour);
   };
 
   const handleSliderChange = e => {
     const newHour = parseInt(e.target.value);
+    logUserInteraction('timeline_scrub', 'timeline_slider', {
+      previousHour: currentHour,
+      newHour,
+      hourDifference: newHour - currentHour
+    });
     setCurrentHour(newHour);
     if (onTimeChange) onTimeChange(newHour);
   };
@@ -37,6 +52,10 @@ export const TimeControls = ({
   // Jump to current time
   const handleGoToCurrentTime = () => {
     const currentTimelineHour = getCurrentTimelineHour(START_DATE, TOTAL_HOURS);
+    logUserInteraction('jump_to_current_time', 'now_button', {
+      previousHour: currentHour,
+      currentTimelineHour
+    });
     setCurrentHour(currentTimelineHour);
     if (onTimeChange) onTimeChange(currentTimelineHour);
   };
@@ -70,19 +89,66 @@ export const TimeControls = ({
     return localTime;
   };
 
+  const getDateForDayOffset = useCallback((dayOffset) => {
+    const timer = startTimer('getDateForDayOffset');
+
+    debug('Getting date for day offset', { dayOffset });
+
+    // First try to get from tileset info
+    const tilesetIndex = Math.floor(dayOffset * 24);
+    if (tilesetIndex >= 0 && tilesetIndex < TILESET_INFO.length) {
+      const tileset = TILESET_INFO[tilesetIndex];
+      const tilesetDate = tileset.date || tileset.id.split('_')[0];
+      debug('Found date from tileset', {
+        dayOffset,
+        tilesetIndex,
+        tilesetDate,
+        tilesetId: tileset.id
+      });
+      timer.end();
+      return tilesetDate;
+    } else {
+      warn('No tileset found for day offset', {
+        dayOffset,
+        tilesetIndex,
+        availableTilesets: TILESET_INFO.length
+      });
+    }
+
+    // Fallback to calculating from START_DATE
+    const startDate = new Date(START_DATE);
+    const targetDate = new Date(startDate);
+    targetDate.setDate(startDate.getDate() + dayOffset);
+    const localDateStr = targetDate.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+
+    debug('TimeControls fallback date calculation', {
+      dayOffset,
+      startDate: START_DATE,
+      calculatedDate: localDateStr
+    });
+
+    timer.end();
+    return localDateStr;
+  }, [debug, warn, startTimer]);
+
   const generateDateLabel = dayOffset => {
     // Important: tilesets are ordered by date, with 2 per day (0-11 hours and 12-23 hours)
     const tilesetIndex = dayOffset * 2; // First chunk of the day (0-11 hours)
 
-    console.log(
-      `TimeControls generateDateLabel: dayOffset=${dayOffset}, tilesetIndex=${tilesetIndex}`
-    );
-    console.log('TILESET_INFO:', TILESET_INFO);
+    debug('Generating date label', {
+      dayOffset,
+      tilesetIndex,
+      availableTilesets: TILESET_INFO.length
+    });
 
     if (tilesetIndex < TILESET_INFO.length) {
       // Get the date directly from TILESET_INFO to ensure alignment
       const tilesetDate = TILESET_INFO[tilesetIndex].date;
-      console.log(`Day ${dayOffset} date from tileset: ${tilesetDate}`);
+      debug('Found date from tileset', {
+        dayOffset,
+        tilesetDate,
+        tilesetId: TILESET_INFO[tilesetIndex].id
+      });
 
       // Parse the date string and convert to local date for display
       const dateStr = tilesetDate;
@@ -97,14 +163,21 @@ export const TimeControls = ({
         day: 'numeric'
       });
 
-      console.log(
-        `TimeControls: Day ${dayOffset} -> ${localDateStr} (from tileset ${tilesetDate})`
-      );
+      debug('Generated date label from tileset', {
+        dayOffset,
+        localDateStr,
+        tilesetDate
+      });
       return `${localDateStr} (UTC)`;
     }
 
     // Fallback calculation if tileset not found
-    console.warn(`No tileset found for day offset ${dayOffset} (index ${tilesetIndex})`);
+    warn('No tileset found for day offset, using fallback', {
+      dayOffset,
+      tilesetIndex,
+      availableTilesets: TILESET_INFO.length
+    });
+
     const date = new Date(START_DATE);
     date.setUTCDate(date.getUTCDate() + dayOffset);
 
@@ -114,7 +187,11 @@ export const TimeControls = ({
       day: 'numeric'
     });
 
-    console.log(`TimeControls fallback: Day ${dayOffset} -> ${localDateStr} (from START_DATE)`);
+    debug('Generated fallback date label', {
+      dayOffset,
+      localDateStr,
+      startDate: START_DATE
+    });
     return `${localDateStr} (UTC)`;
   };
 
@@ -131,6 +208,35 @@ export const TimeControls = ({
   const primaryColor = isDarkMode ? '#f9f6ef' : '#751d0c';
   const currentLocalTime = getCurrentLocalTime();
 
+  const handlePlayPause = useCallback(() => {
+    logUserInteraction('playback_toggle', 'play_pause_button', {
+      previousState: isPlaying ? 'playing' : 'paused',
+      newState: !isPlaying ? 'playing' : 'paused',
+      currentHour,
+      playbackSpeed
+    });
+    setIsPlaying(!isPlaying);
+  }, [isPlaying, currentHour, playbackSpeed, setIsPlaying, logUserInteraction]);
+
+  const handleSpeedChange = useCallback((newSpeed) => {
+    logUserInteraction('playback_speed_change', 'speed_selector', {
+      previousSpeed: playbackSpeed,
+      newSpeed,
+      currentHour
+    });
+    setPlaybackSpeed(newSpeed);
+  }, [playbackSpeed, currentHour, setPlaybackSpeed, logUserInteraction]);
+
+  const handleHourChange = useCallback((newHour) => {
+    logUserInteraction('timeline_scrub', 'timeline_slider', {
+      previousHour: currentHour,
+      newHour,
+      hourDifference: newHour - currentHour
+    });
+    setCurrentHour(newHour);
+    if (onTimeChange) onTimeChange(newHour);
+  }, [currentHour, setCurrentHour, onTimeChange, logUserInteraction]);
+
   return (
     <div
       className={`backdrop-blur-md rounded-xl border ${isDarkMode ? 'border-white' : 'border-mahogany'} shadow-lg px-6 py-4 ${
@@ -140,7 +246,7 @@ export const TimeControls = ({
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setIsPlaying(!isPlaying)}
+            onClick={handlePlayPause}
             className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all border ${
               isDarkMode
                 ? 'border-white bg-forest/20 text-white hover:bg-forest/30'
@@ -187,7 +293,7 @@ export const TimeControls = ({
                 <button
                   key={speed}
                   onClick={() => {
-                    setPlaybackSpeed(speed);
+                    handleSpeedChange(speed);
                     setShowSpeedOptions(false);
                   }}
                   className={`w-full px-4 py-2 text-sm transition-all ${
@@ -209,7 +315,7 @@ export const TimeControls = ({
 
         <div className="flex-1 flex items-center gap-2">
           <button
-            onClick={handlePrevHour}
+            onClick={handleHourChange}
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors border ${
               isDarkMode
                 ? 'border-white hover:bg-gray-800 text-white'
@@ -308,7 +414,7 @@ export const TimeControls = ({
           </div>
 
           <button
-            onClick={handleNextHour}
+            onClick={handleHourChange}
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors border ${
               isDarkMode
                 ? 'border-white hover:bg-gray-800 text-white'
