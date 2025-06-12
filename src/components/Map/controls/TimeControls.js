@@ -1,6 +1,7 @@
+import { ChevronLeft, ChevronRight, Clock, Pause, Play } from 'lucide-react';
 import React, { useState } from 'react';
-import { Play, Pause, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
-import { TOTAL_HOURS, START_DATE, TILESET_INFO } from '../../../utils/map/constants.js';
+
+import { START_DATE, TILESET_INFO, TOTAL_HOURS } from '../../../utils/map/constants.js';
 import { formatLocalDateTime, getCurrentTimelineHour } from '../../../utils/map/timeUtils.js';
 
 export const TimeControls = ({
@@ -27,7 +28,7 @@ export const TimeControls = ({
     if (onTimeChange) onTimeChange(newHour);
   };
 
-  const handleSliderChange = (e) => {
+  const handleSliderChange = e => {
     const newHour = parseInt(e.target.value);
     setCurrentHour(newHour);
     if (onTimeChange) onTimeChange(newHour);
@@ -50,51 +51,70 @@ export const TimeControls = ({
   const getCurrentLocalTime = () => {
     const dayOffset = Math.floor(currentHour / 24);
     const hourOfDay = currentHour % 24;
-    
-    // Create a date for the current timeline position
-    const date = new Date(START_DATE);
-    date.setUTCDate(date.getUTCDate() + dayOffset);
-    const dateStr = date.toISOString().split('T')[0];
-    
+
+    // Use the same logic as generateDateLabel to get the actual tileset date
+    const tilesetIndex = dayOffset * 2; // First chunk of the day (0-11 hours)
+
+    let dateStr;
+    if (tilesetIndex < TILESET_INFO.length) {
+      // Get the date directly from TILESET_INFO to ensure alignment
+      dateStr = TILESET_INFO[tilesetIndex].date;
+    } else {
+      // Fallback calculation if tileset not found
+      const date = new Date(START_DATE);
+      date.setUTCDate(date.getUTCDate() + dayOffset);
+      dateStr = date.toISOString().split('T')[0];
+    }
+
     const localTime = formatLocalDateTime({ date: dateStr, hour: hourOfDay });
     return localTime;
   };
 
-  const generateDateLabel = (dayOffset) => {
+  const generateDateLabel = dayOffset => {
     // Important: tilesets are ordered by date, with 2 per day (0-11 hours and 12-23 hours)
     const tilesetIndex = dayOffset * 2; // First chunk of the day (0-11 hours)
-    
+
+    console.log(
+      `TimeControls generateDateLabel: dayOffset=${dayOffset}, tilesetIndex=${tilesetIndex}`
+    );
+    console.log('TILESET_INFO:', TILESET_INFO);
+
     if (tilesetIndex < TILESET_INFO.length) {
       // Get the date directly from TILESET_INFO to ensure alignment
-      console.log(`Day ${dayOffset} date from tileset: ${TILESET_INFO[tilesetIndex].date}`);
-      
+      const tilesetDate = TILESET_INFO[tilesetIndex].date;
+      console.log(`Day ${dayOffset} date from tileset: ${tilesetDate}`);
+
       // Parse the date string and convert to local date for display
-      const dateStr = TILESET_INFO[tilesetIndex].date;
+      const dateStr = tilesetDate;
       const [year, month, day] = dateStr.split('-').map(Number);
-      
+
       // Create UTC date first
       const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-      
+
       // Format in user's local timezone to match the time display
-      const localDateStr = utcDate.toLocaleDateString('en-US', { 
-        month: 'short', 
+      const localDateStr = utcDate.toLocaleDateString('en-US', {
+        month: 'short',
         day: 'numeric'
       });
-      
+
+      console.log(
+        `TimeControls: Day ${dayOffset} -> ${localDateStr} (from tileset ${tilesetDate})`
+      );
       return `${localDateStr} (UTC)`;
     }
-    
+
     // Fallback calculation if tileset not found
     console.warn(`No tileset found for day offset ${dayOffset} (index ${tilesetIndex})`);
     const date = new Date(START_DATE);
     date.setUTCDate(date.getUTCDate() + dayOffset);
-    
+
     // Apply local formatting with UTC indicator
-    const localDateStr = date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    const localDateStr = date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric'
     });
-    
+
+    console.log(`TimeControls fallback: Day ${dayOffset} -> ${localDateStr} (from START_DATE)`);
     return `${localDateStr} (UTC)`;
   };
 
@@ -112,11 +132,11 @@ export const TimeControls = ({
   const currentLocalTime = getCurrentLocalTime();
 
   return (
-    <div className={`backdrop-blur-md rounded-xl border ${isDarkMode ? 'border-white' : 'border-mahogany'} shadow-lg px-6 py-4 ${
-      isDarkMode 
-        ? 'bg-gray-900/95' 
-        : 'bg-white/95'
-    }`}>
+    <div
+      className={`backdrop-blur-md rounded-xl border ${isDarkMode ? 'border-white' : 'border-mahogany'} shadow-lg px-6 py-4 ${
+        isDarkMode ? 'bg-gray-900/95' : 'bg-white/95'
+      }`}
+    >
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <button
@@ -156,10 +176,14 @@ export const TimeControls = ({
           </button>
 
           {showSpeedOptions && (
-            <div className={`absolute bottom-full mb-2 rounded-lg shadow-lg backdrop-blur-sm ${
-              isDarkMode ? 'bg-white/90 border border-gray-200' : 'bg-white/90 border border-mahogany/20'
-            }`}>
-              {[1, 2, 3].map((speed) => (
+            <div
+              className={`absolute bottom-full mb-2 rounded-lg shadow-lg backdrop-blur-sm ${
+                isDarkMode
+                  ? 'bg-white/90 border border-gray-200'
+                  : 'bg-white/90 border border-mahogany/20'
+              }`}
+            >
+              {[1, 2, 3].map(speed => (
                 <button
                   key={speed}
                   onClick={() => {
@@ -196,9 +220,9 @@ export const TimeControls = ({
           </button>
 
           <div className="relative flex-1 pb-8">
-            <div 
+            <div
               className={`absolute -top-8 py-1 px-2 rounded-lg text-sm font-medium transform -translate-x-1/2 border ${isDarkMode ? 'border-white' : 'border-mahogany'} ${isDarkMode ? 'text-black' : 'text-white'}`}
-              style={{ 
+              style={{
                 left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
                 backgroundColor: primaryColor,
                 zIndex: 10
@@ -207,9 +231,9 @@ export const TimeControls = ({
               {currentLocalTime.time} {currentLocalTime.timezone}
             </div>
 
-            <div 
+            <div
               className="absolute h-8 w-0.5 -translate-x-1/2"
-              style={{ 
+              style={{
                 left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
                 top: '-8px',
                 backgroundColor: primaryColor
@@ -223,7 +247,7 @@ export const TimeControls = ({
                   {/* Small vertical line */}
                   <div
                     className="w-0.5 -translate-x-1/2 absolute"
-                    style={{ 
+                    style={{
                       backgroundColor: primaryColor,
                       height: '12px',
                       top: '-12px'
@@ -235,16 +259,19 @@ export const TimeControls = ({
                     style={{ backgroundColor: primaryColor }}
                   />
                   {/* Date label */}
-                  <div 
-                    className="text-xs font-medium mt-1" 
-                    style={{ 
+                  <div
+                    className="text-xs font-medium mt-1"
+                    style={{
                       position: 'absolute',
                       whiteSpace: 'nowrap',
                       color: primaryColor,
-                      transform: index === 0 ? 'translateX(0)' : 
-                               index === 1 ? 'translateX(-100%)' : 'translateX(-50%)',
-                      left: index === 0 ? 0 : 
-                            index === 1 ? '100%' : '50%'
+                      transform:
+                        index === 0
+                          ? 'translateX(0)'
+                          : index === 1
+                            ? 'translateX(-100%)'
+                            : 'translateX(-50%)',
+                      left: index === 0 ? 0 : index === 1 ? '100%' : '50%'
                     }}
                   >
                     {marker.label}
@@ -254,17 +281,17 @@ export const TimeControls = ({
             </div>
 
             {/* Timeline track */}
-            <div 
+            <div
               className={`absolute h-0.5 w-full top-1/2 -translate-y-1/2 border-t border-b ${isDarkMode ? 'border-white' : 'border-mahogany'}`}
-              style={{ 
-                backgroundColor: isDarkMode ? '#4B5563' : '#D1D5DB',
+              style={{
+                backgroundColor: isDarkMode ? '#4B5563' : '#D1D5DB'
               }}
             />
 
             {/* Timeline progress */}
-            <div 
+            <div
               className="absolute h-0.5 left-0 top-1/2 -translate-y-1/2 transition-all"
-              style={{ 
+              style={{
                 width: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
                 backgroundColor: primaryColor
               }}

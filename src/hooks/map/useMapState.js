@@ -5,7 +5,7 @@ const INITIAL_VIEWPORT = {
   longitude: -98.5795,
   zoom: 4,
   minZoom: 4.5,
-  maxZoom: 9,
+  maxZoom: 9
 };
 
 export const useMapState = () => {
@@ -18,7 +18,7 @@ export const useMapState = () => {
     mapRef,
     mapInstance,
     setMapInstance,
-    isMapLoaded, 
+    isMapLoaded,
     setIsMapLoaded,
     viewport,
     setViewport

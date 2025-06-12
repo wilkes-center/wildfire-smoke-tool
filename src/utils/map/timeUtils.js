@@ -3,24 +3,25 @@
  * @param {Object} timestamp - Object containing date and hour properties
  * @returns {string} Formatted date string
  */
-export const formatDateTime = (timestamp) => {
+export const formatDateTime = timestamp => {
   if (!timestamp || !timestamp.date) return '';
-  
+
   // Convert to Date object, handling both date string and Date objects
-  const dateStr = typeof timestamp.date === 'string' 
-    ? timestamp.date 
-    : timestamp.date.toISOString().split('T')[0];
-    
+  const dateStr =
+    typeof timestamp.date === 'string'
+      ? timestamp.date
+      : timestamp.date.toISOString().split('T')[0];
+
   // Parse the date string in UTC to avoid timezone shifts
   const [year, month, day] = dateStr.split('-').map(Number);
-  
+
   // Create a date using UTC values to prevent timezone conversion issues
   const dateOptions = { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' };
   const utcDate = new Date(Date.UTC(year, month - 1, day));
   const formattedDate = utcDate.toLocaleDateString('en-US', dateOptions);
-  
+
   console.log(`Formatting date: ${timestamp.date}, hour: ${timestamp.hour} -> ${formattedDate}`);
-  
+
   return formattedDate;
 };
 
@@ -29,42 +30,48 @@ export const formatDateTime = (timestamp) => {
  * @param {Object} timestamp - Object containing date and hour properties
  * @returns {Object} Object with formatted date, time, and timezone info
  */
-export const formatLocalDateTime = (timestamp) => {
+export const formatLocalDateTime = timestamp => {
   if (!timestamp || !timestamp.date) return { date: '', time: '', timezone: '' };
-  
+
   // Convert to Date object, handling both date string and Date objects
-  const dateStr = typeof timestamp.date === 'string' 
-    ? timestamp.date 
-    : timestamp.date.toISOString().split('T')[0];
-    
+  const dateStr =
+    typeof timestamp.date === 'string'
+      ? timestamp.date
+      : timestamp.date.toISOString().split('T')[0];
+
   // Parse the date string and hour as UTC
   const [year, month, day] = dateStr.split('-').map(Number);
   const utcDate = new Date(Date.UTC(year, month - 1, day, timestamp.hour, 0, 0, 0));
-  
+
   // Format in user's local timezone
-  const localDate = utcDate.toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
+  const localDate = utcDate.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
   });
-  
-  const localTime = utcDate.toLocaleTimeString('en-US', { 
-    hour: '2-digit', 
+
+  const localTime = utcDate.toLocaleTimeString('en-US', {
+    hour: '2-digit',
     minute: '2-digit',
-    hour12: false 
+    hour12: false
   });
-  
+
   // Get timezone abbreviation
-  const timezone = utcDate.toLocaleTimeString('en-US', { 
-    timeZoneName: 'short' 
-  }).split(' ').pop();
-  
-  console.log(`Converting UTC ${timestamp.date} ${timestamp.hour}:00 -> Local ${localDate} ${localTime} ${timezone}`);
-  
+  const timezone = utcDate
+    .toLocaleTimeString('en-US', {
+      timeZoneName: 'short'
+    })
+    .split(' ')
+    .pop();
+
+  console.log(
+    `Converting UTC ${timestamp.date} ${timestamp.hour}:00 -> Local ${localDate} ${localTime} ${timezone}`
+  );
+
   return {
     date: localDate,
     time: localTime,
-    timezone: timezone,
+    timezone,
     fullDateTime: utcDate
   };
 };
@@ -78,7 +85,7 @@ export const getUserTimezone = () => {
   const now = new Date();
   const utcOffset = -now.getTimezoneOffset() / 60; // Convert minutes to hours
   const offsetString = utcOffset >= 0 ? `+${utcOffset}` : `${utcOffset}`;
-  
+
   return {
     timezone,
     utcOffset,
@@ -92,22 +99,23 @@ export const getUserTimezone = () => {
  * @param {Object} timestamp - Object containing date and hour properties
  * @returns {boolean} True if local time differs from UTC
  */
-export const isLocalTimeDifferentFromUTC = (timestamp) => {
+export const isLocalTimeDifferentFromUTC = timestamp => {
   if (!timestamp || !timestamp.date) return false;
-  
-  const dateStr = typeof timestamp.date === 'string' 
-    ? timestamp.date 
-    : timestamp.date.toISOString().split('T')[0];
-    
+
+  const dateStr =
+    typeof timestamp.date === 'string'
+      ? timestamp.date
+      : timestamp.date.toISOString().split('T')[0];
+
   const [year, month, day] = dateStr.split('-').map(Number);
   const utcDate = new Date(Date.UTC(year, month - 1, day, timestamp.hour, 0, 0, 0));
-  
+
   // Compare UTC hour with local hour
   const utcHour = utcDate.getUTCHours();
   const localHour = utcDate.getHours();
   const utcDay = utcDate.getUTCDate();
   const localDay = utcDate.getDate();
-  
+
   return utcHour !== localHour || utcDay !== localDay;
 };
 
@@ -119,17 +127,13 @@ export const isLocalTimeDifferentFromUTC = (timestamp) => {
  */
 export const getCurrentTimelineHour = (startDate, totalHours) => {
   const now = new Date();
-  const currentUTC = new Date(Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-    now.getUTCHours(),
-    0, 0, 0
-  ));
-  
+  const currentUTC = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0, 0)
+  );
+
   // Calculate hours since timeline start
   const hoursSinceStart = Math.floor((currentUTC - startDate) / (1000 * 60 * 60));
-  
+
   console.log('Timeline calculation:', {
     now: now.toISOString(),
     currentUTC: currentUTC.toISOString(),
@@ -137,18 +141,18 @@ export const getCurrentTimelineHour = (startDate, totalHours) => {
     hoursSinceStart,
     totalHours
   });
-  
+
   // Clamp to valid range
   if (hoursSinceStart < 0) {
     console.log('Current time is before timeline start, using hour 0');
     return 0;
   }
-  
+
   if (hoursSinceStart >= totalHours) {
     console.log('Current time is after timeline end, using last hour');
     return totalHours - 1;
   }
-  
+
   console.log(`Setting initial timeline hour to: ${hoursSinceStart}`);
   return hoursSinceStart;
-}; 
+};

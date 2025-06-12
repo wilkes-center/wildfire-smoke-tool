@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { PM25_LEVELS } from '../../../constants/pm25Levels';
 
 /**
@@ -8,10 +9,10 @@ const PM25LegendVertical = ({ isDarkMode }) => {
   const displayLevels = PM25_LEVELS.slice(0, -1); // Remove duplicate hazardous level
 
   return (
-    <div 
+    <div
       className={`backdrop-blur-sm rounded-xl shadow-lg px-4 py-3 transition-all duration-300 border-2 ${
-        isDarkMode 
-          ? 'bg-gray-800/95 text-gray-200 border-white' 
+        isDarkMode
+          ? 'bg-gray-800/95 text-gray-200 border-white'
           : 'bg-white/95 text-gray-800 border-mahogany'
       }`}
     >
@@ -23,15 +24,15 @@ const PM25LegendVertical = ({ isDarkMode }) => {
             (μg/m³)
           </div>
         </div>
-        
+
         {/* Vertical color bars */}
         <div className="space-y-1">
           {displayLevels.map((level, index) => (
             <div key={level.value} className="flex items-center gap-2">
-              <div 
+              <div
                 className="w-4 h-3 rounded-sm shadow-sm"
-                style={{ 
-                  backgroundColor: isDarkMode ? level.darkColor : level.color 
+                style={{
+                  backgroundColor: isDarkMode ? level.darkColor : level.color
                 }}
               />
               <div className="flex-1 text-xs">
@@ -48,4 +49,4 @@ const PM25LegendVertical = ({ isDarkMode }) => {
   );
 };
 
-export default PM25LegendVertical; 
+export default PM25LegendVertical;

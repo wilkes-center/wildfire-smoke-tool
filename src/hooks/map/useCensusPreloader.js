@@ -1,5 +1,6 @@
 // src/hooks/map/useCensusPreloader.js
 import { useState, useEffect } from 'react';
+
 import { censusLayerManager } from '../../utils/map/CensusLayerManager';
 
 export const useCensusPreloader = (map, isDarkMode) => {
@@ -31,7 +32,7 @@ export const useCensusPreloader = (map, isDarkMode) => {
       .then(() => {
         setStatus('complete');
       })
-      .catch((err) => {
+      .catch(err => {
         console.error('Preload error:', err);
         setError(err.message);
         setStatus('error');

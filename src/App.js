@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import MapComponent from './components/Map/MapComponent';
+
 import IntroPage from './components/IntroPage/IntroPage';
+import MapComponent from './components/Map/MapComponent';
 import './App.css';
 
 const App = () => {
@@ -20,8 +21,7 @@ const App = () => {
         <IntroPage onComplete={handleIntroComplete} />
       ) : (
         <>
-          <header className="App-header bg-obsidian text-white">
-          </header>
+          <header className="App-header bg-obsidian text-white"></header>
           <main>
             <MapComponent onShowIntro={handleShowIntro} />
           </main>

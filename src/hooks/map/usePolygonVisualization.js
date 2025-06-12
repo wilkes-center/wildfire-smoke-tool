@@ -10,14 +10,14 @@ export const usePolygonVisualization = ({
 }) => {
   useEffect(() => {
     if (!mapInstance || mapInstance._removed) return;
-  
+
     const sourceId = 'polygon-source';
     const layerId = 'polygon-layer';
     const outlineLayerId = `${layerId}-outline`;
     const previewLayerId = `${layerId}-preview`;
     const vertexSourceId = `${sourceId}-vertices`;
     const vertexLayerId = `${layerId}-vertices`;
-  
+
     const initializePolygonResources = () => {
       if (!mapInstance.getSource(sourceId)) {
         mapInstance.addSource(sourceId, {
@@ -31,7 +31,7 @@ export const usePolygonVisualization = ({
           }
         });
       }
-      
+
       if (!mapInstance.getSource(vertexSourceId)) {
         mapInstance.addSource(vertexSourceId, {
           type: 'geojson',
@@ -41,7 +41,7 @@ export const usePolygonVisualization = ({
           }
         });
       }
-      
+
       if (!mapInstance.getLayer(layerId)) {
         mapInstance.addLayer({
           id: layerId,
@@ -53,7 +53,7 @@ export const usePolygonVisualization = ({
           }
         });
       }
-  
+
       if (!mapInstance.getLayer(outlineLayerId)) {
         mapInstance.addLayer({
           id: outlineLayerId,
@@ -65,7 +65,7 @@ export const usePolygonVisualization = ({
           }
         });
       }
-  
+
       if (!mapInstance.getLayer(previewLayerId)) {
         mapInstance.addLayer({
           id: previewLayerId,
@@ -77,11 +77,11 @@ export const usePolygonVisualization = ({
             'line-dasharray': [2, 2]
           },
           layout: {
-            'visibility': 'none'
+            visibility: 'none'
           }
         });
       }
-  
+
       if (!mapInstance.getLayer(vertexLayerId)) {
         mapInstance.addLayer({
           id: vertexLayerId,
@@ -101,7 +101,7 @@ export const usePolygonVisualization = ({
         try {
           // Check if census tract highlight layers exist
           const censusHighlightLayer = 'selected-tracts-highlight';
-          
+
           // If census highlight layers exist, position polygon layers before them
           if (mapInstance.getLayer(censusHighlightLayer)) {
             // Move polygon layers before census highlight layers
@@ -145,13 +145,17 @@ export const usePolygonVisualization = ({
         positionPolygonLayers();
       }, 100);
     };
-    
+
     const updatePolygonData = () => {
       if (mapInstance.getSource(sourceId)) {
-        const coordinates = polygon ? [polygon] : 
-          tempPolygon.length > 0 && mousePosition ? [[...tempPolygon, mousePosition, tempPolygon[0]]] : 
-          tempPolygon.length > 0 ? [tempPolygon] : [[]];
-            
+        const coordinates = polygon
+          ? [polygon]
+          : tempPolygon.length > 0 && mousePosition
+            ? [[...tempPolygon, mousePosition, tempPolygon[0]]]
+            : tempPolygon.length > 0
+              ? [tempPolygon]
+              : [[]];
+
         mapInstance.getSource(sourceId).setData({
           type: 'Feature',
           geometry: {
@@ -160,7 +164,7 @@ export const usePolygonVisualization = ({
           }
         });
       }
-  
+
       if (mapInstance.getSource(vertexSourceId)) {
         mapInstance.getSource(vertexSourceId).setData({
           type: 'FeatureCollection',
@@ -173,7 +177,7 @@ export const usePolygonVisualization = ({
           }))
         });
       }
-  
+
       if (mapInstance.getLayer(previewLayerId)) {
         const showPreview = drawingMode && mousePosition && tempPolygon.length > 0;
         mapInstance.setLayoutProperty(
@@ -182,28 +186,21 @@ export const usePolygonVisualization = ({
           showPreview ? 'visible' : 'none'
         );
       }
-  
+
       if (mapInstance.getLayer(vertexLayerId)) {
         mapInstance.setLayoutProperty(
-          vertexLayerId, 
-          'visibility', 
+          vertexLayerId,
+          'visibility',
           tempPolygon.length > 0 ? 'visible' : 'none'
         );
       }
     };
-  
+
     try {
       initializePolygonResources();
       updatePolygonData();
     } catch (error) {
       console.error('Error managing polygon visualization:', error);
     }
-  }, [
-    mapInstance,
-    polygon,
-    tempPolygon,
-    mousePosition,
-    drawingMode,
-    isDarkMode
-  ]);
+  }, [mapInstance, polygon, tempPolygon, mousePosition, drawingMode, isDarkMode]);
 };

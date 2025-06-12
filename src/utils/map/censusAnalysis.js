@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
 import _ from 'lodash';
+import { useState, useCallback, useEffect } from 'react';
+
 import { fetchCensusPopulation, isValidGEOID } from './census-api';
 import { isPointInPolygon, getBoundingBox } from './geometryUtils';
 import { removeLayerAndSource } from './layerUtils';
@@ -42,7 +43,7 @@ const initializeCache = () => {
 const queryFeaturesEfficiently = (map, bounds, layerId) => {
   const sw = map.project([bounds.minLng, bounds.minLat]);
   const ne = map.project([bounds.maxLng, bounds.maxLat]);
-  
+
   return map.queryRenderedFeatures([sw, ne], {
     layers: [layerId]
   });
@@ -61,9 +62,7 @@ const highlightIntersectingTracts = async (map, polygon, isDarkMode) => {
     // Filter intersecting features
     const intersectingFeatures = features.filter(feature => {
       if (!feature.geometry || !feature.properties) return false;
-      return feature.geometry.coordinates[0].some(coord => 
-        isPointInPolygon(coord, polygon)
-      );
+      return feature.geometry.coordinates[0].some(coord => isPointInPolygon(coord, polygon));
     });
 
     if (intersectingFeatures.length === 0) return null;
@@ -84,8 +83,8 @@ const highlightIntersectingTracts = async (map, polygon, isDarkMode) => {
 // Modified main selection function
 export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
   if (!map || !polygon) {
-    return { 
-      tracts: {}, 
+    return {
+      tracts: {},
       summary: { totalPopulation: 0, tractCount: 0 },
       status: 'error'
     };
@@ -94,10 +93,10 @@ export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
   try {
     // First, immediately highlight tracts and return initial count
     const highlightResult = await highlightIntersectingTracts(map, polygon, isDarkMode);
-    
+
     if (!highlightResult) {
-      return { 
-        tracts: {}, 
+      return {
+        tracts: {},
         summary: { totalPopulation: 0, tractCount: 0 },
         status: 'noTracts'
       };
@@ -106,9 +105,9 @@ export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
     // Return initial result with tract count but no population yet
     const initialResult = {
       tracts: {},
-      summary: { 
-        totalPopulation: null, 
-        tractCount: highlightResult.tractCount 
+      summary: {
+        totalPopulation: null,
+        tractCount: highlightResult.tractCount
       },
       status: 'calculating'
     };
@@ -118,7 +117,7 @@ export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
       try {
         // Fetch census population data
         const censusPopulationData = await fetchCensusPopulation();
-        
+
         // Process features with population data
         const selectedTracts = {};
         let totalPopulation = 0;
@@ -170,11 +169,10 @@ export const getSelectedCensusTracts = async (map, polygon, isDarkMode) => {
       ...initialResult,
       populationPromise: calculatePopulation()
     };
-
   } catch (error) {
     console.error('Error in getSelectedCensusTracts:', error);
-    return { 
-      tracts: {}, 
+    return {
+      tracts: {},
       summary: { totalPopulation: 0, tractCount: 0 },
       status: 'error'
     };
@@ -256,7 +254,12 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
         }
 
         // Then, position polygon layers just below census layers but above PM2.5
-        const polygonLayers = ['polygon-layer', 'polygon-layer-outline', 'polygon-layer-preview', 'polygon-layer-vertices'];
+        const polygonLayers = [
+          'polygon-layer',
+          'polygon-layer-outline',
+          'polygon-layer-preview',
+          'polygon-layer-vertices'
+        ];
         polygonLayers.forEach(layerId => {
           if (map.getLayer(layerId)) {
             // Position polygon layers before the census highlight layer
@@ -274,7 +277,6 @@ const updateHighlightLayers = async (map, features, isDarkMode) => {
     // Add event listeners to maintain proper layer order
     map.on('sourcedata', layerPositionHandler);
     map.on('styledata', layerPositionHandler);
-
   } catch (error) {
     console.error('Error updating highlight layers:', error);
   }
@@ -284,7 +286,7 @@ const HIGHLIGHT_SOURCE = 'selected-tracts';
 const HIGHLIGHT_LAYER = 'selected-tracts-highlight';
 const OUTLINE_LAYER = 'selected-tracts-outline';
 
-export const cleanupHighlightLayers = (map) => {
+export const cleanupHighlightLayers = map => {
   if (!map) return;
 
   try {
@@ -299,7 +301,7 @@ export const cleanupHighlightLayers = (map) => {
     if (map.getLayer(OUTLINE_LAYER)) {
       map.removeLayer(OUTLINE_LAYER);
     }
-    
+
     // Clean up the highlight layer and its source
     removeLayerAndSource(map, HIGHLIGHT_LAYER, HIGHLIGHT_SOURCE);
   } catch (error) {
@@ -355,11 +357,11 @@ export const usePopulationExposure = (map, polygon, isDarkMode, currentDateTime)
 export const clearCaches = () => {
   censusCache.data = null;
   censusCache.timestamp = null;
-  
+
   tractCalculationCache.key = null;
   tractCalculationCache.data = null;
   tractCalculationCache.timestamp = null;
-  
+
   selectedTractCache = {
     polygon: null,
     tracts: null,

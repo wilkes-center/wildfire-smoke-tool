@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+
 import { censusLayerManager } from '../../utils/map/CensusLayerManager';
 
 export const useMapInteraction = ({
@@ -15,34 +16,37 @@ export const useMapInteraction = ({
   layerSetupComplete
 }) => {
   // Handle map interaction (viewport changes)
-  const handleMapInteraction = useCallback((evt) => {
-    if (isMapLoaded) {
-      setViewport(evt.viewState);
-    }
-  }, [isMapLoaded, setViewport]);
+  const handleMapInteraction = useCallback(
+    evt => {
+      if (isMapLoaded) {
+        setViewport(evt.viewState);
+      }
+    },
+    [isMapLoaded, setViewport]
+  );
 
   // Handle map load
   const handleMapLoad = useCallback(() => {
     if (layerSetupComplete.current) return;
-    
+
     setIsMapLoaded(true);
-    
+
     if (mapRef.current) {
       const map = mapRef.current.getMap();
       setMapInstance(map);
-      
-      console.log("Map loaded, initializing layers");
-      
+
+      console.log('Map loaded, initializing layers');
+
       if (!map.isStyleLoaded()) {
-        console.log("Style not loaded yet, waiting for style.load event");
+        console.log('Style not loaded yet, waiting for style.load event');
         map.once('style.load', () => {
-          console.log("Style loaded, initializing census layer");
+          console.log('Style loaded, initializing census layer');
           censusLayerManager.initializeLayer(map, isDarkMode);
           // Mark as initialized to prevent re-initialization
           layerSetupComplete.current = true;
         });
       } else {
-        console.log("Style already loaded, initializing census layer immediately");
+        console.log('Style already loaded, initializing census layer immediately');
         censusLayerManager.initializeLayer(map, isDarkMode);
         layerSetupComplete.current = true;
       }
@@ -52,26 +56,26 @@ export const useMapInteraction = ({
   // Handle map style changes
   useEffect(() => {
     if (!mapInstance || !isMapLoaded) return;
-  
+
     const handleStyleData = () => {
       if (!mapInstance.isStyleLoaded()) {
         return;
       }
-  
+
       if (needsLayerReinitRef.current) {
         censusLayerManager.initializeLayer(mapInstance, isDarkMode);
         updateLayers(mapInstance);
         needsLayerReinitRef.current = false;
       }
     };
-  
+
     if (!initialSetupDone.current) {
       handleStyleData();
       initialSetupDone.current = true;
     }
-  
+
     mapInstance.on('styledata', handleStyleData);
-  
+
     return () => {
       mapInstance.off('styledata', handleStyleData);
     };

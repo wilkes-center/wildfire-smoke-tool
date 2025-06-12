@@ -1,5 +1,5 @@
-import React from 'react';
 import { Plus, Minus, Compass } from 'lucide-react';
+import React from 'react';
 
 const ZoomControls = ({ map, isDarkMode }) => {
   const handleZoomIn = () => {
@@ -28,37 +28,35 @@ const ZoomControls = ({ map, isDarkMode }) => {
 
   return (
     <div className="fixed right-4 bottom-16 z-50">
-      <div className={`flex flex-col items-center gap-1 p-1 rounded-lg backdrop-blur-md ${
-        isDarkMode 
-          ? 'bg-gray-900/90 border border-white/30' 
-          : 'bg-white/90 border border-mahogany/20'
-      }`}>
+      <div
+        className={`flex flex-col items-center gap-1 p-1 rounded-lg backdrop-blur-md ${
+          isDarkMode
+            ? 'bg-gray-900/90 border border-white/30'
+            : 'bg-white/90 border border-mahogany/20'
+        }`}
+      >
         <button
           onClick={handleZoomIn}
           className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
-            isDarkMode 
-              ? 'hover:bg-forest/20 text-white' 
-              : 'hover:bg-sage-light text-forest'
+            isDarkMode ? 'hover:bg-forest/20 text-white' : 'hover:bg-sage-light text-forest'
           }`}
           aria-label="Zoom in"
         >
           <Plus className="w-4 h-4" />
         </button>
-        
-        <div className={`text-sm font-medium px-2 py-1 rounded-md ${
-          isDarkMode 
-            ? 'bg-forest/10 text-white' 
-            : 'bg-sage-light text-forest'
-        }`}>
+
+        <div
+          className={`text-sm font-medium px-2 py-1 rounded-md ${
+            isDarkMode ? 'bg-forest/10 text-white' : 'bg-sage-light text-forest'
+          }`}
+        >
           {map ? Math.round(map.getZoom() * 10) / 10 : '0.0'}
         </div>
-        
+
         <button
           onClick={handleZoomOut}
           className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
-            isDarkMode 
-              ? 'hover:bg-forest/20 text-white' 
-              : 'hover:bg-sage-light text-forest'
+            isDarkMode ? 'hover:bg-forest/20 text-white' : 'hover:bg-sage-light text-forest'
           }`}
           aria-label="Zoom out"
         >
@@ -70,9 +68,7 @@ const ZoomControls = ({ map, isDarkMode }) => {
         <button
           onClick={handleReset}
           className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
-            isDarkMode 
-              ? 'hover:bg-forest/20 text-white' 
-              : 'hover:bg-sage-light text-forest'
+            isDarkMode ? 'hover:bg-forest/20 text-white' : 'hover:bg-sage-light text-forest'
           }`}
           aria-label="Reset map view"
         >

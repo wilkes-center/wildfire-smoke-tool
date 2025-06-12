@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { getCurrentTimelineHour } from '../../utils/map/timeUtils';
+
 import { START_DATE, TOTAL_HOURS } from '../../utils/map/constants';
+import { getCurrentTimelineHour } from '../../utils/map/timeUtils';
 
 /**
  * Hook for managing time state in the application
@@ -12,7 +13,7 @@ export const useTimeState = () => {
   // This ensures the app starts showing data for the current time
   // rather than always starting at hour 0
   const initialHour = getCurrentTimelineHour(START_DATE, TOTAL_HOURS);
-  
+
   const [currentHour, setCurrentHour] = useState(initialHour);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(3);

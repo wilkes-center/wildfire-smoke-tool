@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
+
 import AreaAnalysis from './AreaAnalysis';
 import MapAdditionalControls from './MapAdditionalControls';
 
 /**
  * Right panel controls with text buttons and panels that open below
  */
-const RightPanelControls = ({ 
-  map, 
-  mapStyle, 
-  mapboxAccessToken, 
+const RightPanelControls = ({
+  map,
+  mapStyle,
+  mapboxAccessToken,
   polygon,
   currentDateTime,
   isDarkMode,
@@ -47,7 +48,7 @@ const RightPanelControls = ({
         >
           Area Statistics
         </button>
-        
+
         <button
           onClick={() => setShowAreaOverview(!showAreaOverview)}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 backdrop-blur-sm shadow-lg border-2 ${
@@ -79,7 +80,7 @@ const RightPanelControls = ({
             />
           </div>
         )}
-        
+
         {showAreaOverview && (
           <div className="w-[480px]">
             <MapAdditionalControls
@@ -101,4 +102,4 @@ const RightPanelControls = ({
   );
 };
 
-export default RightPanelControls; 
+export default RightPanelControls;

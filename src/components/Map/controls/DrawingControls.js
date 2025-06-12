@@ -1,5 +1,5 @@
-import React from 'react';
 import { Pen, X } from 'lucide-react';
+import React from 'react';
 
 export const DrawingControls = ({
   polygon,
@@ -7,7 +7,7 @@ export const DrawingControls = ({
   startDrawing,
   finishDrawing,
   clearPolygon,
-  isDarkMode,
+  isDarkMode
 }) => {
   if (drawingMode) {
     return (

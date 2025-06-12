@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Map from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { 
-  Play, 
-  Pause, 
-  Users, 
-  AlertTriangle, 
-  Eye, 
-  Target, 
+import {
+  Play,
+  Pause,
+  Users,
+  AlertTriangle,
+  Eye,
+  Target,
   ChevronRight,
   MapPin,
   Clock,
@@ -18,15 +18,15 @@ import {
 } from 'lucide-react';
 
 // Import images
-import wildfireSmokeIntro from '../../assets/storymaps/images/wildfire-smoke-intro.jpg';
-import populationExposure from '../../assets/storymaps/images/population-exposure.jpg';
 import healthCategories from '../../assets/storymaps/images/health-categories.jpg';
+import populationExposure from '../../assets/storymaps/images/population-exposure.jpg';
+import wildfireSmokeIntro from '../../assets/storymaps/images/wildfire-smoke-intro.jpg';
 
 // Import map utilities and constants
-import { MAPBOX_TOKEN, TILESET_INFO } from '../../utils/map/constants.js';
 import { DEFAULT_DARK_BASEMAP, DEFAULT_LIGHT_BASEMAP } from '../../constants/map/basemaps.js';
-import { getPM25ColorInterpolation } from '../../utils/map/colors';
 import { PM25_LEVELS } from '../../constants/pm25Levels';
+import { getPM25ColorInterpolation } from '../../utils/map/colors';
+import { MAPBOX_TOKEN, TILESET_INFO } from '../../utils/map/constants.js';
 
 // Separate memoized components for each media type
 const ImageComponent = React.memo(({ mediaSrc, mediaAlt, currentSection, sectionsLength }) => {
@@ -36,11 +36,11 @@ const ImageComponent = React.memo(({ mediaSrc, mediaAlt, currentSection, section
         src={mediaSrc}
         alt={mediaAlt}
         className="w-full h-full object-cover"
-        onError={(e) => {
+        onError={e => {
           e.target.src = '/api/placeholder/800/600';
         }}
       />
-      
+
       {/* Image overlay with section info */}
       <div className="absolute bottom-6 left-6 right-6">
         <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 border border-obsidian/20 shadow-lg">
@@ -56,7 +56,9 @@ const ImageComponent = React.memo(({ mediaSrc, mediaAlt, currentSection, section
         <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 border border-obsidian/20 shadow-lg">
           <div className="flex items-center gap-2 text-obsidian text-sm font-redhat">
             <div className="w-2 h-2 bg-mahogany rounded-full animate-pulse"></div>
-            <span>Section {currentSection + 1} of {sectionsLength}</span>
+            <span>
+              Section {currentSection + 1} of {sectionsLength}
+            </span>
           </div>
         </div>
       </div>
@@ -74,12 +76,12 @@ const VideoComponent = React.memo(({ mediaSrc, mediaAlt, currentSection, section
         loop
         muted
         playsInline
-        onError={(e) => {
+        onError={e => {
           console.warn('Video failed to load:', mediaSrc);
           e.target.style.display = 'none';
         }}
       />
-      
+
       {/* Video overlay with controls */}
       <div className="absolute bottom-6 left-6 right-6">
         <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 border border-obsidian/20 shadow-lg">
@@ -101,7 +103,9 @@ const VideoComponent = React.memo(({ mediaSrc, mediaAlt, currentSection, section
         <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 border border-obsidian/20 shadow-lg">
           <div className="flex items-center gap-2 text-obsidian text-sm font-redhat">
             <div className="w-2 h-2 bg-mahogany rounded-full animate-pulse"></div>
-            <span>Section {currentSection + 1} of {sectionsLength}</span>
+            <span>
+              Section {currentSection + 1} of {sectionsLength}
+            </span>
           </div>
         </div>
       </div>
@@ -109,292 +113,306 @@ const VideoComponent = React.memo(({ mediaSrc, mediaAlt, currentSection, section
   );
 });
 
-const MapComponent = React.memo(({ 
-  viewport, 
-  mapRef, 
-  handleMapMove, 
-  handleMapLoad, 
-  currentSection, 
-  sectionsLength, 
-  timeStep, 
-  isPlaying, 
-  setIsPlaying, 
-  mapConfig 
-}) => {
-  return (
-    <div className="relative w-full h-full overflow-hidden">
-      <Map
-        {...viewport}
-        style={{ width: '100%', height: '100%' }}
-        mapStyle={DEFAULT_LIGHT_BASEMAP}
-        mapboxAccessToken={MAPBOX_TOKEN}
-        onMove={handleMapMove}
-        ref={mapRef}
-        onLoad={handleMapLoad}
-        projection="globe"
-        interactive={false}
-      />
+const MapComponent = React.memo(
+  ({
+    viewport,
+    mapRef,
+    handleMapMove,
+    handleMapLoad,
+    currentSection,
+    sectionsLength,
+    timeStep,
+    isPlaying,
+    setIsPlaying,
+    mapConfig
+  }) => {
+    return (
+      <div className="relative w-full h-full overflow-hidden">
+        <Map
+          {...viewport}
+          style={{ width: '100%', height: '100%' }}
+          mapStyle={DEFAULT_LIGHT_BASEMAP}
+          mapboxAccessToken={MAPBOX_TOKEN}
+          onMove={handleMapMove}
+          ref={mapRef}
+          onLoad={handleMapLoad}
+          projection="globe"
+          interactive={false}
+        />
 
-      {/* Animation controls for map sections */}
-      {(currentSection === 2 || currentSection === 5 || currentSection === 6) && (
-        <div className="absolute bottom-6 left-6 right-6">
-          <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 border border-obsidian/20 shadow-lg">
-            {(currentSection === 5 || currentSection === 6) && mapConfig?.baseDate ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="flex items-center gap-2 px-4 py-2 bg-mahogany text-white rounded-lg hover:bg-mahogany/80 transition-colors font-redhat"
-                  >
-                    {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    {isPlaying ? 'Pause' : 'Play'}
-                  </button>
-                  <div className="text-sm text-obsidian font-redhat">
-                    <div className="font-medium">
-                      {mapConfig.baseDate} - Hour {timeStep}
+        {/* Animation controls for map sections */}
+        {(currentSection === 2 || currentSection === 5 || currentSection === 6) && (
+          <div className="absolute bottom-6 left-6 right-6">
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 border border-obsidian/20 shadow-lg">
+              {(currentSection === 5 || currentSection === 6) && mapConfig?.baseDate ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setIsPlaying(!isPlaying)}
+                      className="flex items-center gap-2 px-4 py-2 bg-mahogany text-white rounded-lg hover:bg-mahogany/80 transition-colors font-redhat"
+                    >
+                      {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                      {isPlaying ? 'Pause' : 'Play'}
+                    </button>
+                    <div className="text-sm text-obsidian font-redhat">
+                      <div className="font-medium">
+                        {mapConfig.baseDate} - Hour {timeStep}
+                      </div>
                     </div>
                   </div>
+                  {currentSection === 6 && (
+                    <div className="text-right text-sm text-obsidian font-redhat">
+                      <div className="font-medium">Population Analysis</div>
+                      <div className="text-xs text-obsidian/70">
+                        Drawn area shows exposure zones
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {currentSection === 6 && (
-                  <div className="text-right text-sm text-obsidian font-redhat">
-                    <div className="font-medium">Population Analysis</div>
-                    <div className="text-xs text-obsidian/70">
-                      Drawn area shows exposure zones
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center text-obsidian font-redhat">
-                <div className="font-medium mb-2">4-Day Forecast Timeline</div>
-              </div>
-            )}
+              ) : (
+                <div className="text-center text-obsidian font-redhat">
+                  <div className="font-medium mb-2">4-Day Forecast Timeline</div>
+                </div>
+              )}
 
-            {(currentSection === 5 || currentSection === 6) ? (
-              <div className="w-full bg-obsidian/20 rounded-full h-2">
-                <div 
-                  className="bg-mahogany h-2 rounded-full transition-all duration-200"
-                  style={{ 
-                    width: `${(timeStep / 11) * 100}%` // 12 hours (0-11), so divide by 11
-                  }}
-                ></div>
-              </div>
-            ) : currentSection === 2 && (
-              <div className="w-full bg-obsidian/20 rounded-full h-2">
-                <div 
-                  className="bg-mahogany h-2 rounded-full transition-all duration-200"
-                  style={{ 
-                    width: `${(timeStep / 96) * 100}%` // 96 hours for forecast section
-                  }}
-                ></div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Health legend for specific map sections */}
-      {mapConfig?.showHealthLegend && (
-        <div className="absolute top-6 right-6">
-          <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 border border-obsidian/20 shadow-lg">
-            <h4 className="font-semibold mb-3 font-sora text-obsidian">PM2.5 Levels</h4>
-            <div className="space-y-2 text-sm font-redhat text-obsidian">
-              {PM25_LEVELS.slice(0, 6).map((level, index) => (
-                <div key={level.label} className="flex items-center gap-2">
-                  <div 
-                    className="w-4 h-4 rounded border border-obsidian/20"
-                    style={{ backgroundColor: level.color }}
+              {currentSection === 5 || currentSection === 6 ? (
+                <div className="w-full bg-obsidian/20 rounded-full h-2">
+                  <div
+                    className="bg-mahogany h-2 rounded-full transition-all duration-200"
+                    style={{
+                      width: `${(timeStep / 11) * 100}%` // 12 hours (0-11), so divide by 11
+                    }}
                   ></div>
-                  <span>
-                    {level.label === 'Unhealthy for Sensitive Groups' ? 'USG' : level.label} 
-                    ({level.value}-{level.maxValue === Infinity ? '500+' : level.maxValue})
-                  </span>
                 </div>
-              ))}
+              ) : (
+                currentSection === 2 && (
+                  <div className="w-full bg-obsidian/20 rounded-full h-2">
+                    <div
+                      className="bg-mahogany h-2 rounded-full transition-all duration-200"
+                      style={{
+                        width: `${(timeStep / 96) * 100}%` // 96 hours for forecast section
+                      }}
+                    ></div>
+                  </div>
+                )
+              )}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Progress indicator */}
-      <div className="absolute top-6 left-6">
-        <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 border border-obsidian/20 shadow-lg">
-          <div className="flex items-center gap-2 text-obsidian text-sm font-redhat">
-            <div className="w-2 h-2 bg-mahogany rounded-full animate-pulse"></div>
-            <span>Section {currentSection + 1} of {sectionsLength}</span>
+        {/* Health legend for specific map sections */}
+        {mapConfig?.showHealthLegend && (
+          <div className="absolute top-6 right-6">
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 border border-obsidian/20 shadow-lg">
+              <h4 className="font-semibold mb-3 font-sora text-obsidian">PM2.5 Levels</h4>
+              <div className="space-y-2 text-sm font-redhat text-obsidian">
+                {PM25_LEVELS.slice(0, 6).map((level, index) => (
+                  <div key={level.label} className="flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 rounded border border-obsidian/20"
+                      style={{ backgroundColor: level.color }}
+                    ></div>
+                    <span>
+                      {level.label === 'Unhealthy for Sensitive Groups' ? 'USG' : level.label}(
+                      {level.value}-{level.maxValue === Infinity ? '500+' : level.maxValue})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* PM2.5 Threshold indicator */}
-      {mapConfig?.pm25Threshold && (
-        <div className="absolute top-20 left-6">
+        {/* Progress indicator */}
+        <div className="absolute top-6 left-6">
           <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 border border-obsidian/20 shadow-lg">
             <div className="flex items-center gap-2 text-obsidian text-sm font-redhat">
-              <div className="w-2 h-2 bg-blue rounded-full"></div>
-              <span>PM2.5 ≥ {mapConfig.pm25Threshold} μg/m³</span>
+              <div className="w-2 h-2 bg-mahogany rounded-full animate-pulse"></div>
+              <span>
+                Section {currentSection + 1} of {sectionsLength}
+              </span>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Population analysis drawn area overlay */}
-      {mapConfig?.drawnArea && (
-        <div className="absolute inset-0 pointer-events-none">
-          <svg className="w-full h-full">
-            {/* Example drawn area polygon - representing the analysis zone */}
-            <polygon
-              points="45%,35% 65%,30% 70%,45% 68%,60% 55%,65% 40%,55% 35%,40%"
-              fill="rgba(220, 38, 127, 0.15)"
-              stroke="#dc267f"
-              strokeWidth="2"
-              strokeDasharray="8,4"
-              className="animate-pulse"
-            />
-            {/* Area label */}
-            <text
-              x="52%"
-              y="48%"
-              textAnchor="middle"
-              className="fill-obsidian text-sm font-redhat font-medium"
-              style={{ fontSize: '14px' }}
-            >
-              Analysis Area
-            </text>
-          </svg>
-        </div>
-      )}
-    </div>
-  );
-});
+        {/* PM2.5 Threshold indicator */}
+        {mapConfig?.pm25Threshold && (
+          <div className="absolute top-20 left-6">
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 border border-obsidian/20 shadow-lg">
+              <div className="flex items-center gap-2 text-obsidian text-sm font-redhat">
+                <div className="w-2 h-2 bg-blue rounded-full"></div>
+                <span>PM2.5 ≥ {mapConfig.pm25Threshold} μg/m³</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Population analysis drawn area overlay */}
+        {mapConfig?.drawnArea && (
+          <div className="absolute inset-0 pointer-events-none">
+            <svg className="w-full h-full">
+              {/* Example drawn area polygon - representing the analysis zone */}
+              <polygon
+                points="45%,35% 65%,30% 70%,45% 68%,60% 55%,65% 40%,55% 35%,40%"
+                fill="rgba(220, 38, 127, 0.15)"
+                stroke="#dc267f"
+                strokeWidth="2"
+                strokeDasharray="8,4"
+                className="animate-pulse"
+              />
+              {/* Area label */}
+              <text
+                x="52%"
+                y="48%"
+                textAnchor="middle"
+                className="fill-obsidian text-sm font-redhat font-medium"
+                style={{ fontSize: '14px' }}
+              >
+                Analysis Area
+              </text>
+            </svg>
+          </div>
+        )}
+      </div>
+    );
+  }
+);
 
 // Media Panel component that handles images, videos, and maps
-const MediaPanel = React.memo(({ 
-  currentSection, 
-  sections, 
-  viewport, 
-  mapRef, 
-  handleMapMove, 
-  handleMapLoad, 
-  timeStep, 
-  isPlaying, 
-  setIsPlaying 
-}) => {
-  const currentSectionData = sections[currentSection];
-  const { mediaType, mediaSrc, mediaAlt, mapConfig } = currentSectionData;
+const MediaPanel = React.memo(
+  ({
+    currentSection,
+    sections,
+    viewport,
+    mapRef,
+    handleMapMove,
+    handleMapLoad,
+    timeStep,
+    isPlaying,
+    setIsPlaying
+  }) => {
+    const currentSectionData = sections[currentSection];
+    const { mediaType, mediaSrc, mediaAlt, mapConfig } = currentSectionData;
 
-  // Simple switch without useMemo to prevent over-optimization
-  switch (mediaType) {
-    case 'image':
-      return (
-        <ImageComponent
-          mediaSrc={mediaSrc}
-          mediaAlt={mediaAlt}
-          currentSection={currentSection}
-          sectionsLength={sections.length}
-        />
-      );
+    // Simple switch without useMemo to prevent over-optimization
+    switch (mediaType) {
+      case 'image':
+        return (
+          <ImageComponent
+            mediaSrc={mediaSrc}
+            mediaAlt={mediaAlt}
+            currentSection={currentSection}
+            sectionsLength={sections.length}
+          />
+        );
 
-    case 'video':
-      return (
-        <VideoComponent
-          mediaSrc={mediaSrc}
-          mediaAlt={mediaAlt}
-          currentSection={currentSection}
-          sectionsLength={sections.length}
-        />
-      );
+      case 'video':
+        return (
+          <VideoComponent
+            mediaSrc={mediaSrc}
+            mediaAlt={mediaAlt}
+            currentSection={currentSection}
+            sectionsLength={sections.length}
+          />
+        );
 
-    case 'map':
-      return (
-        <MapComponent
-          viewport={viewport}
-          mapRef={mapRef}
-          handleMapMove={handleMapMove}
-          handleMapLoad={handleMapLoad}
-          currentSection={currentSection}
-          sectionsLength={sections.length}
-          timeStep={timeStep}
-          isPlaying={isPlaying}
-          setIsPlaying={setIsPlaying}
-          mapConfig={mapConfig}
-        />
-      );
+      case 'map':
+        return (
+          <MapComponent
+            viewport={viewport}
+            mapRef={mapRef}
+            handleMapMove={handleMapMove}
+            handleMapLoad={handleMapLoad}
+            currentSection={currentSection}
+            sectionsLength={sections.length}
+            timeStep={timeStep}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+            mapConfig={mapConfig}
+          />
+        );
 
-    default:
-      return (
-        <div className="w-full h-full flex items-center justify-center bg-obsidian/5">
-          <div className="text-center text-obsidian/60 font-redhat">
-            <div className="text-lg mb-2">Media not available</div>
-            <div className="text-sm">Section {currentSection + 1}</div>
+      default:
+        return (
+          <div className="w-full h-full flex items-center justify-center bg-obsidian/5">
+            <div className="text-center text-obsidian/60 font-redhat">
+              <div className="text-lg mb-2">Media not available</div>
+              <div className="text-sm">Section {currentSection + 1}</div>
+            </div>
           </div>
-        </div>
-      );
+        );
+    }
   }
-});
+);
 
 // Story sections configuration with media types - moved outside component to prevent re-creation
-  const sections = [
-    {
-      id: 'intro',
-      title: 'Wildfire Smoke: A Growing Threat',
-      content: 'Wildfires are becoming more frequent and intense, creating dangerous air quality conditions across the Western United States. Our tool provides critical 4-day smoke forecasts to help communities prepare and protect public health.',
+const sections = [
+  {
+    id: 'intro',
+    title: 'Wildfire Smoke: A Growing Threat',
+    content:
+      'Wildfires are becoming more frequent and intense, creating dangerous air quality conditions across the Western United States. Our tool provides critical 4-day smoke forecasts to help communities prepare and protect public health.',
     mediaType: 'image',
     mediaSrc: wildfireSmokeIntro,
     mediaAlt: 'Wildfire smoke billowing over mountainous terrain',
-      stats: { fires: '2,847', affected: '12.3M', area: '8.9M acres' }
-    },
-    {
-      id: 'pm25',
-      title: 'Understanding PM2.5 Health Impacts',
-      content: 'Fine particulate matter (PM2.5) from wildfire smoke penetrates deep into lungs and can enter the bloodstream. Even short-term exposure can cause serious health problems, especially for sensitive groups.',
+    stats: { fires: '2,847', affected: '12.3M', area: '8.9M acres' }
+  },
+  {
+    id: 'pm25',
+    title: 'Understanding PM2.5 Health Impacts',
+    content:
+      'Fine particulate matter (PM2.5) from wildfire smoke penetrates deep into lungs and can enter the bloodstream. Even short-term exposure can cause serious health problems, especially for sensitive groups.',
     mediaType: 'video',
     mediaSrc: 'src/assets/storymaps/videos/pm25-health-impacts.mp4',
     mediaAlt: 'Animation showing PM2.5 particles entering respiratory system',
-      stats: { particles: '2.5μm', penetration: '100%', risk: 'High' }
-    },
-    {
-      id: 'forecast',
-      title: '4-Day Smoke Forecasting',
-      content: 'Our advanced CMAQ chemical transport model provides accurate smoke forecasts up to 4 days ahead, helping communities plan evacuations, outdoor activities, and health precautions.',
+    stats: { particles: '2.5μm', penetration: '100%', risk: 'High' }
+  },
+  {
+    id: 'forecast',
+    title: '4-Day Smoke Forecasting',
+    content:
+      'Our advanced CMAQ chemical transport model provides accurate smoke forecasts up to 4 days ahead, helping communities plan evacuations, outdoor activities, and health precautions.',
     mediaType: 'map',
-      mapConfig: { 
-        zoom: 5, 
-        center: [-118, 42], 
-        showSmoke: true, 
-        intensity: 'variable', 
-        showAnimation: true,
-        pm25Threshold: 12
-      },
-      stats: { accuracy: '89%', resolution: '12km', updates: '4x daily' }
+    mapConfig: {
+      zoom: 5,
+      center: [-118, 42],
+      showSmoke: true,
+      intensity: 'variable',
+      showAnimation: true,
+      pm25Threshold: 12
     },
-    {
-      id: 'population',
-      title: 'Population Exposure Analysis',
-      content: 'Identify how many people are exposed to dangerous air quality levels. Our tool overlays population density with smoke forecasts to prioritize public health responses.',
+    stats: { accuracy: '89%', resolution: '12km', updates: '4x daily' }
+  },
+  {
+    id: 'population',
+    title: 'Population Exposure Analysis',
+    content:
+      'Identify how many people are exposed to dangerous air quality levels. Our tool overlays population density with smoke forecasts to prioritize public health responses.',
     mediaType: 'image',
     mediaSrc: populationExposure,
     mediaAlt: 'Population density overlay with smoke forecast visualization',
-      stats: { exposed: '2.1M', children: '340K', elderly: '180K' }
-    },
-    {
-      id: 'health-categories',
-      title: 'Color-Coded Health Impact Levels',
-      content: 'Six distinct health categories from Good to Hazardous help users quickly understand air quality risks. Each level provides specific guidance for outdoor activities and health precautions.',
+    stats: { exposed: '2.1M', children: '340K', elderly: '180K' }
+  },
+  {
+    id: 'health-categories',
+    title: 'Color-Coded Health Impact Levels',
+    content:
+      'Six distinct health categories from Good to Hazardous help users quickly understand air quality risks. Each level provides specific guidance for outdoor activities and health precautions.',
     mediaType: 'image',
     mediaSrc: healthCategories,
     mediaAlt: 'Color-coded air quality health categories visualization',
-      stats: { categories: '6', guidance: 'Real-time', coverage: '100%' }
-    },
-    {
-      id: 'tools',
+    stats: { categories: '6', guidance: 'Real-time', coverage: '100%' }
+  },
+  {
+    id: 'tools',
     title: 'New Mexico Wildfire: Real-Time Smoke Spread',
-    content: 'Watch how smoke from intense wildfires in the New Mexico region spreads across the southwestern United States over a 12-hour period. Recent fires near Fort Stanton have forced evacuations and damaged historic sites, with crews battling flames that have scorched over 3 square kilometers. This animation shows actual PM2.5 concentrations as fire conditions intensify and wind patterns carry dangerous smoke plumes hundreds of miles from the source. Source: [Guardian News](https://www.theguardian.com/world/2025/may/27/new-mexico-wildfire)',
+    content:
+      'Watch how smoke from intense wildfires in the New Mexico region spreads across the southwestern United States over a 12-hour period. Recent fires near Fort Stanton have forced evacuations and damaged historic sites, with crews battling flames that have scorched over 3 square kilometers. This animation shows actual PM2.5 concentrations as fire conditions intensify and wind patterns carry dangerous smoke plumes hundreds of miles from the source. Source: [Guardian News](https://www.theguardian.com/world/2025/may/27/new-mexico-wildfire)',
     mediaType: 'map',
-      mapConfig: { 
-      zoom: 5, 
-      center: [-110, 32], 
-        showSmoke: true, 
+    mapConfig: {
+      zoom: 5,
+      center: [-110, 32],
+      showSmoke: true,
       intensity: 'overview',
       pm25Threshold: 5,
       customTileset: 'pkulandh.pm25_202505260',
@@ -408,12 +426,13 @@ const MediaPanel = React.memo(({
   {
     id: 'population-exposure',
     title: 'Population Impact Assessment',
-    content: 'Analyze the human impact of the New Mexico wildfire by examining population exposure within the affected smoke plume area. This interactive analysis shows how many people are breathing hazardous air quality levels, with detailed breakdowns by health risk categories and vulnerable populations including children and elderly residents.',
+    content:
+      'Analyze the human impact of the New Mexico wildfire by examining population exposure within the affected smoke plume area. This interactive analysis shows how many people are breathing hazardous air quality levels, with detailed breakdowns by health risk categories and vulnerable populations including children and elderly residents.',
     mediaType: 'map',
-      mapConfig: { 
-      zoom: 6, 
-      center: [-105.5, 33.5], 
-        showSmoke: true, 
+    mapConfig: {
+      zoom: 6,
+      center: [-105.5, 33.5],
+      showSmoke: true,
       intensity: 'detailed',
       pm25Threshold: 5,
       customTileset: 'pkulandh.pm25_202505260',
@@ -425,17 +444,18 @@ const MediaPanel = React.memo(({
       drawnArea: true
     },
     stats: { exposed: '45K+', children: '8.2K', elderly: '4.1K' }
-    },
-    {
-      id: 'action',
-      title: 'Start Protecting Your Community',
-      content: 'Ready to explore the full wildfire smoke forecast tool? Access real-time data, create custom analyses, and get the information you need to keep your community safe.',
+  },
+  {
+    id: 'action',
+    title: 'Start Protecting Your Community',
+    content:
+      'Ready to explore the full wildfire smoke forecast tool? Access real-time data, create custom analyses, and get the information you need to keep your community safe.',
     mediaType: 'video',
     mediaSrc: 'src/assets/storymaps/videos/interactive-tools-demo.mp4',
     mediaAlt: 'Demonstration of interactive analysis tools',
-      stats: { users: '10K+', agencies: '150+', uptime: '99.9%' }
-    }
-  ];
+    stats: { users: '10K+', agencies: '150+', uptime: '99.9%' }
+  }
+];
 
 const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
   const [currentSection, setCurrentSection] = useState(0);
@@ -467,11 +487,11 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
   // Get current date/time for real map data - stabilized version
   const getCurrentDateTime = () => {
     const currentHour = getCurrentHour();
-    
+
     // Use a fixed base date to prevent constant recalculation
     const baseDate = new Date('2024-01-01'); // Fixed reference date
     baseDate.setHours(baseDate.getHours() + currentHour);
-    
+
     return {
       date: baseDate.toISOString().split('T')[0],
       hour: baseDate.getHours(),
@@ -480,23 +500,23 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
   };
 
   // Initialize map layers with real PM2.5 data
-  const initializeMapLayers = (map) => {
+  const initializeMapLayers = map => {
     if (!map || !map.isStyleLoaded() || layersInitialized) return;
 
     try {
       // Add PM2.5 data sources and layers - but handle errors gracefully
-      TILESET_INFO.forEach((tileset) => {
+      TILESET_INFO.forEach(tileset => {
         const sourceId = `demo-source-${tileset.id}`;
         const layerId = `demo-layer-${tileset.id}`;
 
         // Add source with error handling
         if (!map.getSource(sourceId)) {
           try {
-          map.addSource(sourceId, {
-            type: 'vector',
-            url: `mapbox://${tileset.id}`,
-            maxzoom: 9
-          });
+            map.addSource(sourceId, {
+              type: 'vector',
+              url: `mapbox://${tileset.id}`,
+              maxzoom: 9
+            });
           } catch (error) {
             console.warn(`Failed to add source ${sourceId}:`, error);
             return; // Skip this tileset if source fails
@@ -506,32 +526,38 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
         // Add layer with error handling
         if (!map.getLayer(layerId)) {
           try {
-          map.addLayer({
-            id: layerId,
-            type: 'circle',
-            source: sourceId,
-            'source-layer': tileset.layer,
-            maxzoom: 9,
-            paint: {
-              'circle-radius': [
-                'interpolate',
-                ['exponential', 2],
-                ['zoom'],
-                4, 2,
-                5, 5,
-                6, 10,
-                7, 25,
-                8, 40,
-                9, 60
-              ],
-              'circle-color': getPM25ColorInterpolation(false), // Light theme
-              'circle-blur': 0.6,
-              'circle-opacity': 0
-            },
-            layout: {
-              'visibility': 'none'
-            }
-          });
+            map.addLayer({
+              id: layerId,
+              type: 'circle',
+              source: sourceId,
+              'source-layer': tileset.layer,
+              maxzoom: 9,
+              paint: {
+                'circle-radius': [
+                  'interpolate',
+                  ['exponential', 2],
+                  ['zoom'],
+                  4,
+                  2,
+                  5,
+                  5,
+                  6,
+                  10,
+                  7,
+                  25,
+                  8,
+                  40,
+                  9,
+                  60
+                ],
+                'circle-color': getPM25ColorInterpolation(false), // Light theme
+                'circle-blur': 0.6,
+                'circle-opacity': 0
+              },
+              layout: {
+                visibility: 'none'
+              }
+            });
           } catch (error) {
             console.warn(`Failed to add layer ${layerId}:`, error);
           }
@@ -550,7 +576,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
             url: `mapbox://${customTilesetId}`,
             maxzoom: 9
           });
-          
+
           // Only add layer if source was successful
           if (!map.getLayer(customLayerId)) {
             map.addLayer({
@@ -564,19 +590,25 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
                   'interpolate',
                   ['exponential', 2],
                   ['zoom'],
-                  4, 2,
-                  5, 5,
-                  6, 10,
-                  7, 25,
-                  8, 40,
-                  9, 60
+                  4,
+                  2,
+                  5,
+                  5,
+                  6,
+                  10,
+                  7,
+                  25,
+                  8,
+                  40,
+                  9,
+                  60
                 ],
                 'circle-color': getPM25ColorInterpolation(false), // Light theme
                 'circle-blur': 0.6,
                 'circle-opacity': 0
               },
               layout: {
-                'visibility': 'none'
+                visibility: 'none'
               }
             });
             console.log(`Successfully added custom tileset: ${customTilesetId}`);
@@ -611,7 +643,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
                 'fill-outline-color': 'rgba(150, 150, 150, 0.3)'
               },
               layout: {
-                'visibility': 'none'
+                visibility: 'none'
               }
             });
           }
@@ -634,10 +666,10 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
                 '48141950200', // El Paso County census tract
                 '48141950300', // El Paso County census tract
                 '48141950400', // El Paso County census tract
-                '48141950500'  // El Paso County census tract
+                '48141950500' // El Paso County census tract
               ],
               layout: {
-                'visibility': 'none'
+                visibility: 'none'
               }
             });
           }
@@ -656,16 +688,17 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
   };
 
   // Update map layers based on current section and time
-  const updateMapLayers = (map) => {
+  const updateMapLayers = map => {
     if (!map || !map.isStyleLoaded() || !layersInitialized) return;
 
     try {
       const config = sections[currentSection]?.mapConfig || {};
       const pm25Threshold = config.pm25Threshold || 12;
-      
+
       // Check if this is section 6 or 7 with custom tileset
-      const isCustomTilesetSection = (currentSection === 5 || currentSection === 6) && config.customTileset; // Sections 6 and 7 are indices 5 and 6
-      
+      const isCustomTilesetSection =
+        (currentSection === 5 || currentSection === 6) && config.customTileset; // Sections 6 and 7 are indices 5 and 6
+
       let currentTileset;
       let currentLayerId;
 
@@ -676,40 +709,40 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
           layer: config.customLayer
         };
         currentLayerId = `demo-layer-${config.customTileset}`;
-        
+
         // Check if the custom layer actually exists
         if (!map.getLayer(currentLayerId)) {
           console.warn(`Custom layer ${currentLayerId} not found, skipping layer update`);
           return;
         }
       } else {
-      // Use timeStep directly instead of calculating from date
-      const hour = timeStep % 24;
-      const dayOffset = Math.floor(timeStep / 24);
-      
-      // Create a stable date string based on timeStep
-      const baseDate = new Date('2024-01-01');
-      baseDate.setDate(baseDate.getDate() + dayOffset);
-      const dateString = baseDate.toISOString().split('T')[0];
-      const timeString = `${dateString}T${String(hour).padStart(2, '0')}:00:00`;
+        // Use timeStep directly instead of calculating from date
+        const hour = timeStep % 24;
+        const dayOffset = Math.floor(timeStep / 24);
 
-      // Find the appropriate tileset - use a more flexible approach
+        // Create a stable date string based on timeStep
+        const baseDate = new Date('2024-01-01');
+        baseDate.setDate(baseDate.getDate() + dayOffset);
+        const dateString = baseDate.toISOString().split('T')[0];
+        const timeString = `${dateString}T${String(hour).padStart(2, '0')}:00:00`;
+
+        // Find the appropriate tileset - use a more flexible approach
         currentTileset = TILESET_INFO.find(tileset => {
-        // For demo purposes, use the first available tileset
-        return tileset;
-      });
+          // For demo purposes, use the first available tileset
+          return tileset;
+        });
 
-      if (!currentTileset) {
-        console.warn('No tileset found for demo');
-        return;
-      }
+        if (!currentTileset) {
+          console.warn('No tileset found for demo');
+          return;
+        }
 
         currentLayerId = `demo-layer-${currentTileset.id}`;
-        
+
         // Check if the layer actually exists
         if (!map.getLayer(currentLayerId)) {
           console.warn(`Layer ${currentLayerId} not found, trying to find any available layer`);
-          
+
           // Try to find any working layer from TILESET_INFO
           let foundLayer = null;
           for (const tileset of TILESET_INFO) {
@@ -720,7 +753,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
               break;
             }
           }
-          
+
           if (!foundLayer) {
             console.warn('No working layers found, skipping layer update');
             return;
@@ -729,7 +762,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
       }
 
       // Hide all layers first (including custom tileset) - but only if they exist
-      TILESET_INFO.forEach((tileset) => {
+      TILESET_INFO.forEach(tileset => {
         const layerId = `demo-layer-${tileset.id}`;
         try {
           if (map.getLayer(layerId)) {
@@ -770,36 +803,36 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
       try {
         if (map.getLayer(currentLayerId)) {
           let layerFilter;
-          
+
           if (isCustomTilesetSection) {
             // For custom tileset, use time-based filtering
             const config = sections[currentSection].mapConfig;
             const baseDate = config.baseDate || '2025-05-26';
             const currentHour = timeStep % 24;
             const currentTimeString = `${baseDate}T${String(currentHour).padStart(2, '0')}:00:00`;
-            
+
             // Create filter for both PM2.5 threshold and time
             layerFilter = [
               'all',
               ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold],
               ['==', ['get', 'time'], currentTimeString]
             ];
-            
-            console.log(`Filtering custom tileset for time: ${currentTimeString}, threshold: ${pm25Threshold}`);
+
+            console.log(
+              `Filtering custom tileset for time: ${currentTimeString}, threshold: ${pm25Threshold}`
+            );
           } else {
             // For regular tilesets, use simple PM2.5 filter
-            layerFilter = [
-            '>=', 
-            ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], 
-            pm25Threshold
-            ];
+            layerFilter = ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold];
           }
-          
+
           map.setFilter(currentLayerId, layerFilter);
           map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
           map.setPaintProperty(currentLayerId, 'circle-opacity', 0.75);
-          
-          console.log(`Successfully showing layer: ${currentLayerId} for section ${currentSection + 1}`);
+
+          console.log(
+            `Successfully showing layer: ${currentLayerId} for section ${currentSection + 1}`
+          );
         } else {
           console.warn(`Layer ${currentLayerId} not found when trying to show it`);
         }
@@ -808,18 +841,19 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
       }
 
       // Show census tracts layers for section 7 (population analysis)
-      if (currentSection === 6) { // Section 7 is index 6
+      if (currentSection === 6) {
+        // Section 7 is index 6
         try {
           const censusLayerId = 'census-tracts-layer';
           const highlightedCensusLayerId = 'highlighted-census-tracts-layer';
-          
+
           if (map.getLayer(censusLayerId)) {
             map.setLayoutProperty(censusLayerId, 'visibility', 'visible');
           }
           if (map.getLayer(highlightedCensusLayerId)) {
             map.setLayoutProperty(highlightedCensusLayerId, 'visibility', 'visible');
           }
-          
+
           console.log('Census tracts layers shown for population analysis section');
         } catch (error) {
           console.warn('Error showing census tracts layers:', error);
@@ -834,32 +868,32 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
   useEffect(() => {
     const handleScroll = () => {
       if (!scrollContainerRef.current) return;
-      
+
       const container = scrollContainerRef.current;
       const scrollTop = container.scrollTop;
       const containerHeight = container.clientHeight;
-      
+
       // Find which section is most visible
       let newCurrentSection = 0;
       let maxVisibility = 0;
-      
+
       sectionRefs.current.forEach((ref, index) => {
         if (!ref) return;
-        
+
         const rect = ref.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
-        
+
         const visibleTop = Math.max(rect.top - containerRect.top, 0);
         const visibleBottom = Math.min(rect.bottom - containerRect.top, containerHeight);
         const visibleHeight = Math.max(visibleBottom - visibleTop, 0);
         const visibility = visibleHeight / rect.height;
-        
+
         if (visibility > maxVisibility) {
           maxVisibility = visibility;
           newCurrentSection = index;
         }
       });
-      
+
       if (newCurrentSection !== currentSection) {
         setCurrentSection(newCurrentSection);
       }
@@ -881,17 +915,17 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
   // Update map when section changes
   useEffect(() => {
     const currentSectionData = sections[currentSection];
-    
+
     // Only update map if current section is a map type
     if (currentSectionData?.mediaType !== 'map') return;
-    
+
     if (mapInstance && isMapLoaded && layersInitialized && mapInstance.isStyleLoaded()) {
       const config = currentSectionData.mapConfig || {};
       const updateKey = `${currentSection}-${timeStep}-${config.pm25Threshold}`;
-      
+
       // Only update if something actually changed
       if (updateKey === lastUpdateKey) return;
-      
+
       try {
         // Update map viewport if specified
         if (config.center && config.zoom) {
@@ -922,14 +956,18 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
   useEffect(() => {
     let interval;
     const currentSectionData = sections[currentSection];
-    
-    console.log('Animation effect triggered:', { isPlaying, currentSection, mediaType: currentSectionData?.mediaType });
-    
+
+    console.log('Animation effect triggered:', {
+      isPlaying,
+      currentSection,
+      mediaType: currentSectionData?.mediaType
+    });
+
     if (isPlaying && currentSectionData?.mediaType === 'map') {
       if (currentSection === 2) {
         // Regular forecast section - 4 days cycle
         console.log('Starting regular forecast animation');
-      interval = setInterval(() => {
+        interval = setInterval(() => {
           if (!isPlayingRef.current) {
             console.log('Animation stopped by ref');
             return;
@@ -942,7 +980,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
       } else if (currentSection === 5 || currentSection === 6) {
         // Custom tileset sections (6 and 7) - only 12 hours, loop back to start
         console.log('Starting custom tileset animation for section', currentSection + 1);
-      interval = setInterval(() => {
+        interval = setInterval(() => {
           if (!isPlayingRef.current) {
             console.log('Custom animation stopped by ref');
             return;
@@ -955,7 +993,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
         }, 1000);
       }
     }
-    
+
     return () => {
       if (interval) {
         console.log('Clearing interval');
@@ -970,7 +1008,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
       const map = mapRef.current.getMap();
       setMapInstance(map);
       setIsMapLoaded(true);
-      
+
       // Wait for style to be fully loaded before initializing layers
       const initializeLayers = () => {
         if (map.isStyleLoaded()) {
@@ -992,7 +1030,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
   }, []);
 
   // Handle viewport changes
-  const handleMapMove = useCallback((evt) => {
+  const handleMapMove = useCallback(evt => {
     setViewport(evt.viewState);
   }, []);
 
@@ -1014,7 +1052,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
             {sections.map((section, index) => (
               <div
                 key={section.id}
-                ref={el => sectionRefs.current[index] = el}
+                ref={el => (sectionRefs.current[index] = el)}
                 className="min-h-screen flex flex-col justify-center p-12 relative"
               >
                 <div className="max-w-lg">
@@ -1061,7 +1099,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
                         Launch Full Tool
                         <ChevronRight className="w-5 h-5" />
                       </button>
-                      
+
                       <div className="grid grid-cols-2 gap-3">
                         <button className="flex items-center justify-center gap-2 bg-green hover:bg-green/80 text-white py-3 px-4 rounded-lg transition-colors font-redhat">
                           <Eye className="w-4 h-4" />
@@ -1083,11 +1121,11 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
                       <div
                         key={i}
                         className={`w-2 h-2 rounded-full transition-all ${
-                          i === currentSection 
-                            ? 'bg-mahogany scale-150' 
-                            : i < currentSection 
-                            ? 'bg-tan/60' 
-                            : 'bg-obsidian/30'
+                          i === currentSection
+                            ? 'bg-mahogany scale-150'
+                            : i < currentSection
+                              ? 'bg-tan/60'
+                              : 'bg-obsidian/30'
                         }`}
                       />
                     ))}
@@ -1116,7 +1154,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
 
       {/* Progress bar at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-obsidian/20">
-        <div 
+        <div
           className="h-full bg-gradient-to-r from-mahogany to-tan transition-all duration-300"
           style={{ width: `${((currentSection + 1) / sections.length) * 100}%` }}
         ></div>
@@ -1125,4 +1163,4 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
   );
 };
 
-export default StoryMapsDemo; 
+export default StoryMapsDemo;

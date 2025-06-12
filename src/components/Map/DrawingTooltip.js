@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
 import { CornerUpLeft } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+
 import { getDrawingInstructions } from './drawing/DrawingInstructions';
 
 /**
@@ -15,7 +16,7 @@ const DrawingTooltip = ({ drawingMode, tempPolygon }) => {
       return;
     }
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = e => {
       setPosition({ x: e.clientX, y: e.clientY });
       setIsVisible(true);
     };
@@ -30,7 +31,7 @@ const DrawingTooltip = ({ drawingMode, tempPolygon }) => {
   const showIcon = tempPolygon.length >= 2;
 
   return (
-    <div 
+    <div
       className="fixed pointer-events-none z-50 flex items-center bg-cream/90 backdrop-blur-sm shadow-lg rounded-lg px-3 py-2 text-sm text-forest font-medium"
       style={{
         left: position.x + 16,
@@ -38,9 +39,7 @@ const DrawingTooltip = ({ drawingMode, tempPolygon }) => {
         transform: 'translate(0, -50%)'
       }}
     >
-      {showIcon && (
-        <CornerUpLeft className="w-4 h-4 mr-2 text-sage" />
-      )}
+      {showIcon && <CornerUpLeft className="w-4 h-4 mr-2 text-sage" />}
       {message}
     </div>
   );

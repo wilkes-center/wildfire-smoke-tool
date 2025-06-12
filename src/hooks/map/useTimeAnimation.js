@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+
 import { TOTAL_HOURS } from '../../utils/map/constants.js';
 
 export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
@@ -20,7 +21,7 @@ export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
       }
       return hour;
     });
-    
+
     initializedRef.current = true;
   }, [setCurrentHour]);
 
@@ -36,21 +37,21 @@ export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
 
     const animationDuration = 1000 / playbackSpeed;
 
-    const animate = (timestamp) => {
+    const animate = timestamp => {
       if (!lastTimestampRef.current) {
         lastTimestampRef.current = timestamp;
       }
-      
+
       const elapsed = timestamp - lastTimestampRef.current;
 
       if (elapsed >= animationDuration && !isAnimatingRef.current) {
         isAnimatingRef.current = true;
-        
+
         setCurrentHour(prevHour => {
           const nextHour = prevHour + 1;
           return nextHour >= TOTAL_HOURS ? 0 : nextHour;
         });
-        
+
         lastTimestampRef.current = timestamp;
         isAnimatingRef.current = false;
       }

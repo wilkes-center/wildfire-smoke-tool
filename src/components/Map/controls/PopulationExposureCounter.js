@@ -1,23 +1,26 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Users2 } from 'lucide-react';
 import _ from 'lodash';
-import { TILESET_INFO } from '../../../utils/map/constants';
-import getSelectedCensusTracts from '../../../utils/map/censusAnalysis';
+import { Users2 } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+
 import { PM25_LEVELS, getPM25Level } from '../../../constants/pm25Levels';
+import getSelectedCensusTracts from '../../../utils/map/censusAnalysis';
+import { TILESET_INFO } from '../../../utils/map/constants';
 
 // Helper for point-in-polygon check
 const isPointInPolygon = (point, polygon) => {
   if (!Array.isArray(point) || point.length < 2) return false;
-  
-  const x = point[0], y = point[1];
+
+  const x = point[0],
+    y = point[1];
   let inside = false;
 
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i][0], yi = polygon[i][1];
-    const xj = polygon[j][0], yj = polygon[j][1];
+    const xi = polygon[i][0],
+      yi = polygon[i][1];
+    const xj = polygon[j][0],
+      yj = polygon[j][1];
 
-    const intersect = ((yi > y) !== (yj > y)) &&
-      (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
 
     if (intersect) inside = !inside;
   }
@@ -30,10 +33,8 @@ const findActiveLayer = (map, date, hour) => {
   if (!map || !map.getStyle()) return null;
 
   // Find matching tileset for current date and hour
-  const tileset = TILESET_INFO.find(t => 
-    t.date === date && 
-    hour >= t.startHour && 
-    hour <= t.endHour
+  const tileset = TILESET_INFO.find(
+    t => t.date === date && hour >= t.startHour && hour <= t.endHour
   );
 
   if (!tileset) {
@@ -69,7 +70,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
   const lastValidPM25DataRef = useRef(null);
   // Track the current polygon to know when it changes
   const currentPolygonRef = useRef(null);
-  
+
   // Reset the cache when polygon changes
   useEffect(() => {
     if (polygon) {
@@ -104,7 +105,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
 
       const initialResult = await getSelectedCensusTracts(map, polygon, isDarkMode);
       censusDataRef.current = initialResult;
-      
+
       // First update with tract count
       setStats(prev => ({
         ...prev,
@@ -123,7 +124,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
       // Wait for population data
       if (initialResult.populationPromise) {
         const populationResult = await initialResult.populationPromise;
-        
+
         setStats(prev => ({
           ...prev,
           censusStats: {
@@ -138,7 +139,6 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
           }
         }));
       }
-
     } catch (error) {
       console.error('Error fetching census data:', error);
       setStats(prev => ({
@@ -177,10 +177,10 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
 
       // Find active layer
       const activeLayer = findActiveLayer(map, currentDateTime.date, currentDateTime.hour);
-      
+
       if (!activeLayer) {
         console.warn('No active layer found for the current time period');
-        
+
         // Use cached data if available instead of showing error
         if (lastValidPM25DataRef.current) {
           console.log('Using cached PM2.5 data for this time period');
@@ -195,7 +195,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
           }));
           return;
         }
-        
+
         setStats(prev => ({
           ...prev,
           exposureByPM25: {
@@ -217,7 +217,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
       };
 
       let features = [];
-      
+
       // Method 1: Try queryRenderedFeatures with bounds first
       try {
         const lngPad = (bounds.maxLng - bounds.minLng) * 0.2;
@@ -230,15 +230,19 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
         const sw = map.project(paddedBounds[0]);
         const ne = map.project(paddedBounds[1]);
 
-        features = map.queryRenderedFeatures([sw, ne], {
-          layers: [activeLayer],
-          filter: ['==', ['get', 'time'], timeString]
-        }).filter(feature => {
-          if (!feature.geometry || !feature.geometry.coordinates) return false;
-          return isPointInPolygon(feature.geometry.coordinates, polygon);
-        });
+        features = map
+          .queryRenderedFeatures([sw, ne], {
+            layers: [activeLayer],
+            filter: ['==', ['get', 'time'], timeString]
+          })
+          .filter(feature => {
+            if (!feature.geometry || !feature.geometry.coordinates) return false;
+            return isPointInPolygon(feature.geometry.coordinates, polygon);
+          });
 
-        console.log(`Method 1: Found ${features.length} PM2.5 data points within the selected area`);
+        console.log(
+          `Method 1: Found ${features.length} PM2.5 data points within the selected area`
+        );
       } catch (err) {
         console.warn('Error using queryRenderedFeatures with bounds:', err);
       }
@@ -296,36 +300,33 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
           const gridSize = 20; // 20x20 grid
           const lngStep = (bounds.maxLng - bounds.minLng) / gridSize;
           const latStep = (bounds.maxLat - bounds.minLat) / gridSize;
-          
+
           const gridPoints = [];
           for (let i = 0; i <= gridSize; i++) {
             for (let j = 0; j <= gridSize; j++) {
-              const lng = bounds.minLng + (i * lngStep);
-              const lat = bounds.minLat + (j * latStep);
+              const lng = bounds.minLng + i * lngStep;
+              const lat = bounds.minLat + j * latStep;
               gridPoints.push([lng, lat]);
             }
           }
-          
+
           console.log(`Method 4: Created ${gridPoints.length} grid points to sample`);
-          
+
           // Query each point
           let gridFeatures = [];
           gridPoints.forEach(point => {
             if (isPointInPolygon(point, polygon)) {
-              const pointFeatures = map.queryRenderedFeatures(
-                map.project(point), 
-                { layers: [activeLayer] }
-              );
-              
+              const pointFeatures = map.queryRenderedFeatures(map.project(point), {
+                layers: [activeLayer]
+              });
+
               // Filter for correct time
-              const validFeatures = pointFeatures.filter(f => 
-                f.properties.time === timeString
-              );
-              
+              const validFeatures = pointFeatures.filter(f => f.properties.time === timeString);
+
               gridFeatures = [...gridFeatures, ...validFeatures];
             }
           });
-          
+
           // De-duplicate features
           const uniqueIds = new Set();
           features = gridFeatures.filter(feature => {
@@ -335,7 +336,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
             uniqueIds.add(id);
             return true;
           });
-          
+
           console.log(`Method 4: Found ${features.length} features using grid sampling`);
         } catch (err) {
           console.warn('Error using grid sampling method:', err);
@@ -388,7 +389,8 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
 
         // Calculate average PM2.5 and distribute population
         if (pm25Grid.length > 0) {
-          calculatedAvgPM25 = pm25Grid.reduce((sum, point) => sum + point.pm25, 0) / pm25Grid.length;
+          calculatedAvgPM25 =
+            pm25Grid.reduce((sum, point) => sum + point.pm25, 0) / pm25Grid.length;
           console.log(`Average PM2.5 for the area: ${calculatedAvgPM25.toFixed(1)}`);
 
           // First, count points in each category for distribution calculation
@@ -396,32 +398,33 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
           PM25_LEVELS.forEach(level => {
             pointsPerCategory[level.label] = 0;
           });
-          
+
           // Count points in each category
           pm25Grid.forEach(gridPoint => {
             const category = PM25_LEVELS.find((level, index) => {
               const nextLevel = PM25_LEVELS[index + 1];
-              return gridPoint.pm25 >= level.value && (!nextLevel || gridPoint.pm25 < nextLevel.value);
+              return (
+                gridPoint.pm25 >= level.value && (!nextLevel || gridPoint.pm25 < nextLevel.value)
+              );
             });
-            
+
             if (category) {
               pointsPerCategory[category.label]++;
               hasData = true;
             }
           });
-          
+
           // Calculate distribution percentages based on point count
           const totalPoints = pm25Grid.length;
           PM25_LEVELS.forEach(level => {
             const count = pointsPerCategory[level.label] || 0;
-            distributionByPM25[level.label] = totalPoints > 0 
-              ? parseFloat((count / totalPoints * 100).toFixed(1))
-              : 0;
+            distributionByPM25[level.label] =
+              totalPoints > 0 ? parseFloat(((count / totalPoints) * 100).toFixed(1)) : 0;
           });
 
           // Get census data for population distribution
           const totalPopulation = censusDataRef.current?.summary?.totalPopulation;
-          
+
           if (totalPopulation) {
             console.log(`Total population: ${totalPopulation.toLocaleString()}`);
 
@@ -432,7 +435,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
               exposureByPM25[level.label] = Math.round(proportion * totalPopulation);
             });
           } else {
-            console.log("No population data available, using point counts");
+            console.log('No population data available, using point counts');
             // Just use the point counts
             PM25_LEVELS.forEach(level => {
               exposureByPM25[level.label] = pointsPerCategory[level.label] || 0;
@@ -455,7 +458,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
         }));
         return;
       }
-      
+
       // If we have no data and no cache, show error
       if (!hasData && !lastValidPM25DataRef.current) {
         console.warn('Could not find any PM2.5 data for this area and time period');
@@ -498,10 +501,9 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
 
       console.log('PM2.5 Exposure calculated:', exposureByPM25);
       console.log('PM2.5 Distribution calculated:', distributionByPM25);
-
     } catch (error) {
       console.error('Error calculating exposure:', error);
-      
+
       // Try to use cached data if available
       if (lastValidPM25DataRef.current) {
         console.log('Using cached data due to error');
@@ -545,7 +547,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
     calculateExposure();
     return () => debouncedCalculateExposure.cancel();
   }, [calculateExposure, currentDateTime]);
-  
+
   // Additional effect to force update during animation
   useEffect(() => {
     if (isPlaying) {
@@ -554,7 +556,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
           calculateExposure();
         }
       }, 100); // Update frequently during animation
-      
+
       return () => clearInterval(animationTimer);
     }
   }, [isPlaying, calculateExposure, currentDateTime]);
@@ -568,19 +570,19 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
   };
 
   return (
-    <div className={`backdrop-blur-md rounded-xl border-2 ${isDarkMode ? 'border-white' : 'border-mahogany'} shadow-lg px-6 py-4 ${
-      isDarkMode ? 'bg-gray-900/95' : 'bg-white/95'
-    }`}>
+    <div
+      className={`backdrop-blur-md rounded-xl border-2 ${isDarkMode ? 'border-white' : 'border-mahogany'} shadow-lg px-6 py-4 ${
+        isDarkMode ? 'bg-gray-900/95' : 'bg-white/95'
+      }`}
+    >
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Users2 className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gold'}`} />
           <div>
-            <div className={`text-sm font-bold ${
-              isDarkMode ? 'text-white' : 'text-forest'
-            }`}>Population</div>
-            <div className={`text-xl font-semibold ${
-              isDarkMode ? 'text-white' : 'text-forest'
-            }`}>
+            <div className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-forest'}`}>
+              Population
+            </div>
+            <div className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}>
               {stats.censusStats.isLoading ? (
                 'Calculating...'
               ) : stats.censusStats.error ? (
@@ -598,22 +600,26 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
         </div>
 
         <div className="mt-4">
-          <div className={`text-sm font-bold mb-2 ${
-            isDarkMode ? 'text-white' : 'text-forest'
-          }`}>Population by PM2.5 Level</div>
-          
+          <div className={`text-sm font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-forest'}`}>
+            Population by PM2.5 Level
+          </div>
+
           {stats.exposureByPM25.error || !stats.exposureByPM25.value ? (
             // When there's no data, show 100% Good instead of error
-            <div className={`mt-2 rounded-lg ${
-                isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50/50'
-              } p-3`}>
+            <div
+              className={`mt-2 rounded-lg ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50/50'} p-3`}
+            >
               <table className="w-full text-sm">
                 <thead>
                   <tr className={`border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <th className={`text-left pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
+                    <th
+                      className={`text-left pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
+                    >
                       PM2.5 Level
                     </th>
-                    <th className={`text-right pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
+                    <th
+                      className={`text-right pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
+                    >
                       Percentage
                     </th>
                   </tr>
@@ -621,33 +627,41 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
                 <tbody>
                   <tr className="align-middle h-8 border-b border-gray-200/20">
                     <td className="py-1">
-                      <div className={`flex items-center ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
-                        <span 
+                      <div
+                        className={`flex items-center ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
+                      >
+                        <span
                           className="inline-block w-3 h-3 rounded-sm flex-shrink-0 mr-2"
                           style={{ backgroundColor: getPM25Color('Good', isDarkMode) }}
                         />
                         <div>
                           <span className="font-medium text-left">Good</span>
-                          <div className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-gray-500'}`}>
+                          <div
+                            className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-gray-500'}`}
+                          >
                             0+ µg/m³
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="text-right py-1">
-                      <span className={`font-medium ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                      <span
+                        className={`font-medium ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}
+                      >
                         100.0%
                       </span>
                     </td>
                   </tr>
                 </tbody>
               </table>
-              
+
               <div className="mt-3 space-y-1">
                 <div className="w-full">
-                  <div className={`h-2 w-full rounded-lg overflow-hidden ${
-                    isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
-                  }`}>
+                  <div
+                    className={`h-2 w-full rounded-lg overflow-hidden ${
+                      isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+                    }`}
+                  >
                     <div
                       className="h-full"
                       style={{
@@ -660,22 +674,24 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
               </div>
             </div>
           ) : stats.exposureByPM25.isLoading ? (
-            <div className={`text-sm ${
-              isDarkMode ? 'text-white/70' : 'text-gray-600'
-            }`}>
+            <div className={`text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
               Loading PM2.5 data...
             </div>
           ) : (
-            <div className={`mt-2 rounded-lg ${
-                isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50/50'
-              } p-3`}>
+            <div
+              className={`mt-2 rounded-lg ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50/50'} p-3`}
+            >
               <table className="w-full text-sm">
                 <thead>
                   <tr className={`border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <th className={`text-left pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
+                    <th
+                      className={`text-left pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
+                    >
                       PM2.5 Level
                     </th>
-                    <th className={`text-right pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
+                    <th
+                      className={`text-right pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
+                    >
                       Percentage
                     </th>
                   </tr>
@@ -684,43 +700,53 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
                   {PM25_LEVELS.map(category => {
                     // Get population for this category
                     const population = stats.exposureByPM25.value[category.label] || 0;
-                    
+
                     // Skip rendering if there's no population in this category
                     if (population <= 0) return null;
-                    
+
                     // Use distribution percentage instead of calculating from population
-                    const percentage = stats.exposureByPM25.distribution ? 
-                      stats.exposureByPM25.distribution[category.label] || 0 : 0;
+                    const percentage = stats.exposureByPM25.distribution
+                      ? stats.exposureByPM25.distribution[category.label] || 0
+                      : 0;
 
                     // Use the direct color method
                     const barColor = getPM25Color(category.label, isDarkMode);
-                    
+
                     // Simplify AQI category name display
                     let displayName;
-                    if (category.label === "Unhealthy for Sensitive Groups") {
-                      displayName = "Unhealthy (Sensitive)";
+                    if (category.label === 'Unhealthy for Sensitive Groups') {
+                      displayName = 'Unhealthy (Sensitive)';
                     } else {
                       displayName = category.label;
                     }
 
                     return (
-                      <tr key={category.label} className="align-middle h-8 border-b border-gray-200/20">
+                      <tr
+                        key={category.label}
+                        className="align-middle h-8 border-b border-gray-200/20"
+                      >
                         <td className="py-1">
-                          <div className={`flex items-center ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
-                            <span 
+                          <div
+                            className={`flex items-center ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
+                          >
+                            <span
                               className="inline-block w-3 h-3 rounded-sm flex-shrink-0 mr-2"
                               style={{ backgroundColor: barColor }}
                             />
                             <div>
                               <span className="font-medium text-left">{displayName}</span>
-                              <div className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-gray-500'}`}>
+                              <div
+                                className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-gray-500'}`}
+                              >
                                 {category.value}+ µg/m³
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="text-right py-1">
-                          <span className={`font-medium ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                          <span
+                            className={`font-medium ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}
+                          >
                             {percentage.toFixed(1)}%
                           </span>
                         </td>
@@ -729,18 +755,19 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
                   }).filter(Boolean)}
                 </tbody>
               </table>
-              
+
               <div className="mt-3 space-y-1">
                 {PM25_LEVELS.map(category => {
                   // Get population for this category
                   const population = stats.exposureByPM25.value[category.label] || 0;
-                  
+
                   // Skip rendering if there's no population in this category
                   if (population <= 0) return null;
-                  
+
                   // Use distribution percentage instead of calculating from population
-                  const percentage = stats.exposureByPM25.distribution ? 
-                    stats.exposureByPM25.distribution[category.label] || 0 : 0;
+                  const percentage = stats.exposureByPM25.distribution
+                    ? stats.exposureByPM25.distribution[category.label] || 0
+                    : 0;
 
                   // Set a minimum visible width for non-zero categories
                   const barWidth = Math.max(5, percentage);
@@ -750,9 +777,11 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
 
                   return (
                     <div key={`bar-${category.label}`} className="w-full">
-                      <div className={`h-2 w-full rounded-lg overflow-hidden ${
-                        isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
-                      }`}>
+                      <div
+                        className={`h-2 w-full rounded-lg overflow-hidden ${
+                          isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+                        }`}
+                      >
                         <div
                           className="h-full"
                           style={{

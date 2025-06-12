@@ -14,7 +14,7 @@ export const fetchCensusPopulation = async () => {
     // Census API endpoint for 2020 ACS 5-year estimates
     const baseUrl = 'https://api.census.gov/data/2020/acs/acs5';
     const apiKey = process.env.REACT_APP_CENSUS_API_KEY;
-    
+
     // Variables we want to fetch:
     // B01003_001E: Total Population
     const variables = ['B01003_001E'];
@@ -29,15 +29,17 @@ export const fetchCensusPopulation = async () => {
     const states = statesData.slice(1).map(row => row[1]); // Get state FIPs codes
 
     // Fetch tract data for each state
-    const allTracts = await Promise.all(states.map(async (state) => {
-      const tractUrl = `${baseUrl}?get=${variables.join(',')},NAME&for=tract:*&in=state:${state}&in=county:*&key=${apiKey}`;
-      const response = await fetch(tractUrl);
-      if (!response.ok) {
-        console.warn(`Skipping state ${state} due to error:`, response.statusText);
-        return [];
-      }
-      return response.json();
-    }));
+    const allTracts = await Promise.all(
+      states.map(async state => {
+        const tractUrl = `${baseUrl}?get=${variables.join(',')},NAME&for=tract:*&in=state:${state}&in=county:*&key=${apiKey}`;
+        const response = await fetch(tractUrl);
+        if (!response.ok) {
+          console.warn(`Skipping state ${state} due to error:`, response.statusText);
+          return [];
+        }
+        return response.json();
+      })
+    );
 
     // Process all tract data
     const populationByTract = {};
@@ -64,7 +66,7 @@ export const fetchCensusPopulation = async () => {
 
           // Create GEOID (11-digit identifier: 2-digit state + 3-digit county + 6-digit tract)
           const geoid = `${state}${county.padStart(3, '0')}${tract.padStart(6, '0')}`;
-          
+
           populationByTract[geoid] = {
             population,
             metadata: {
@@ -88,7 +90,6 @@ export const fetchCensusPopulation = async () => {
     }
 
     return populationByTract;
-
   } catch (error) {
     console.error('Error fetching census data:', {
       message: error.message,
@@ -103,12 +104,12 @@ export const fetchCensusPopulation = async () => {
  * @param {string} geoid - The GEOID to validate
  * @returns {boolean} Whether the GEOID is valid
  */
-export const isValidGEOID = (geoid) => {
+export const isValidGEOID = geoid => {
   // GEOIDs should be 11 digits: 2 (state) + 3 (county) + 6 (tract)
   if (typeof geoid !== 'string' || geoid.length !== 11) {
     return false;
   }
-  
+
   // Should only contain numbers
   return /^\d{11}$/.test(geoid);
 };
@@ -118,7 +119,7 @@ export const isValidGEOID = (geoid) => {
  * @param {string} geoid - The GEOID to parse
  * @returns {Object} Object containing state, county, and tract codes
  */
-export const parseGEOID = (geoid) => {
+export const parseGEOID = geoid => {
   if (!isValidGEOID(geoid)) {
     throw new Error('Invalid GEOID format');
   }

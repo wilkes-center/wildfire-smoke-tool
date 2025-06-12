@@ -5,10 +5,7 @@ import TooltipBase from '../common/TooltipBase';
  */
 const Tooltip = ({ children, content, position = 'top' }) => {
   return (
-    <TooltipBase
-      content={content}
-      position={position}
-    >
+    <TooltipBase content={content} position={position}>
       {children}
     </TooltipBase>
   );

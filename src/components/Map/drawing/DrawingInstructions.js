@@ -4,11 +4,11 @@ import React from 'react';
  * Shared utility for getting drawing instructions based on polygon state
  * Used by both tooltip and helper overlay components
  */
-export const getDrawingInstructions = (tempPolygonLength) => {
+export const getDrawingInstructions = tempPolygonLength => {
   if (tempPolygonLength === 0) {
     return 'Click to start drawing';
   }
-  
+
   if (tempPolygonLength === 1) {
     return 'Click to add points';
   }
@@ -16,7 +16,7 @@ export const getDrawingInstructions = (tempPolygonLength) => {
   if (tempPolygonLength === 2) {
     return 'Add 1 more point to form a shape';
   }
-  
+
   return 'Double-click to finish';
 };
 
@@ -25,6 +25,6 @@ export const getDrawingInstructions = (tempPolygonLength) => {
  * @param {Array} polygon - Current polygon points
  * @returns {boolean} - Whether the polygon can be completed
  */
-export const canCompletePolygon = (polygon) => {
+export const canCompletePolygon = polygon => {
   return Array.isArray(polygon) && polygon.length >= 3;
 };

@@ -1,9 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BarChart2, X } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts';
+
 import calculateAreaStats from '../../../utils/map/calculateAreaStats';
-import ThemedPanel from './ThemedPanel';
+
 import { START_DATE, TOTAL_HOURS, TILESET_INFO } from '../../../utils/map/constants';
+
+import ThemedPanel from './ThemedPanel';
 
 const DateSeparator = ({ x, isDarkMode }) => (
   <line
@@ -33,7 +44,7 @@ const StatsTable = ({ data, isDarkMode }) => {
               Date & Time
             </th>
             {Object.entries(headerStyles).map(([key, style]) => (
-              <th 
+              <th
                 key={key}
                 className="py-2 px-4 text-left font-medium"
                 style={{
@@ -48,49 +59,53 @@ const StatsTable = ({ data, isDarkMode }) => {
         </thead>
         <tbody>
           {data.map((row, index) => (
-            <tr 
-              key={index} 
-              className="border-b border-mahogany/20"
-            >
-              <td className="py-2 px-4 text-gray-600 bg-transparent">
-                {row.time}
-              </td>
-              <td 
+            <tr key={index} className="border-b border-mahogany/20">
+              <td className="py-2 px-4 text-gray-600 bg-transparent">{row.time}</td>
+              <td
                 className="py-2 px-4"
                 style={{
                   backgroundColor: `${headerStyles.min.color}08`
                 }}
               >
-                <span className="px-2 py-0.5 rounded font-medium" style={{
-                  color: isDarkMode ? headerStyles.min.color : headerStyles.min.textColor,
-                  backgroundColor: `${headerStyles.min.color}15`
-                }}>
+                <span
+                  className="px-2 py-0.5 rounded font-medium"
+                  style={{
+                    color: isDarkMode ? headerStyles.min.color : headerStyles.min.textColor,
+                    backgroundColor: `${headerStyles.min.color}15`
+                  }}
+                >
                   {row.minPM25.toFixed(1)}
                 </span>
               </td>
-              <td 
+              <td
                 className="py-2 px-4"
                 style={{
                   backgroundColor: `${headerStyles.avg.color}08`
                 }}
               >
-                <span className="px-2 py-0.5 rounded font-medium" style={{
-                  color: isDarkMode ? headerStyles.avg.color : headerStyles.avg.textColor,
-                  backgroundColor: `${headerStyles.avg.color}15`
-                }}>
+                <span
+                  className="px-2 py-0.5 rounded font-medium"
+                  style={{
+                    color: isDarkMode ? headerStyles.avg.color : headerStyles.avg.textColor,
+                    backgroundColor: `${headerStyles.avg.color}15`
+                  }}
+                >
                   {row.averagePM25.toFixed(1)}
                 </span>
               </td>
-              <td 
+              <td
                 className="py-2 px-4"
                 style={{
                   backgroundColor: `${headerStyles.max.color}08`
                 }}
               >
-                <span className="px-2 py-0.5 rounded font-medium" style={{
-                  color: isDarkMode ? headerStyles.max.color : headerStyles.max.textColor,
-                  backgroundColor: `${headerStyles.max.color}15`
-                }}>
+                <span
+                  className="px-2 py-0.5 rounded font-medium"
+                  style={{
+                    color: isDarkMode ? headerStyles.max.color : headerStyles.max.textColor,
+                    backgroundColor: `${headerStyles.max.color}15`
+                  }}
+                >
                   {row.maxPM25.toFixed(1)}
                 </span>
               </td>
@@ -103,12 +118,12 @@ const StatsTable = ({ data, isDarkMode }) => {
 };
 
 const AreaStatsChart = ({ data, isDarkMode }) => {
-    const generateComplete48HourTimeline = () => {
+  const generateComplete48HourTimeline = () => {
     const timeline = [];
-    
+
     // Get unique dates from TILESET_INFO and sort them
     const uniqueDates = [...new Set(TILESET_INFO.map(tileset => tileset.date))].sort();
-    
+
     // Generate 24 hours for each date
     uniqueDates.forEach(dateStr => {
       for (let hour = 0; hour < 24; hour++) {
@@ -116,17 +131,17 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
         timeline.push(timeString);
       }
     });
-    
+
     return timeline;
   };
 
   const createCompleteDataset = () => {
     const completeTimeline = generateComplete48HourTimeline();
     const dataMap = new Map(data.map(item => [item.time, item]));
-    
+
     return completeTimeline.map(timePoint => {
       const existingData = dataMap.get(timePoint);
-      
+
       return {
         time: timePoint,
         minPM25: existingData?.minPM25 ?? 0,
@@ -138,7 +153,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
   };
 
   const completeData = createCompleteDataset();
-  
+
   const dateChangePoints = completeData.reduce((acc, item, index) => {
     if (index === 0) return acc;
     const [prevDate] = completeData[index - 1].time.split(' ');
@@ -148,33 +163,31 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
     }
     return acc;
   }, []);
-  
+
   const findMaxValue = () => {
-    const values = completeData.flatMap(item => [
-      item.minPM25,
-      item.averagePM25,
-      item.maxPM25
-    ]).filter(val => val !== undefined && val !== null && !isNaN(val));
-    
-    if (values.length === 0) return 100; 
-    
+    const values = completeData
+      .flatMap(item => [item.minPM25, item.averagePM25, item.maxPM25])
+      .filter(val => val !== undefined && val !== null && !isNaN(val));
+
+    if (values.length === 0) return 100;
+
     const max = Math.max(...values);
-    
+
     if (max < 2) {
       return Math.ceil(max * 1.05);
     } else {
       return Math.ceil(max * 1.1);
     }
   };
-  
+
   const max = findMaxValue();
 
   const CustomXAxisTick = ({ x, y, payload, isDarkMode }) => {
     const [date, time] = payload.value.split(' ');
     const hour = parseInt(time);
-    
+
     const showDate = hour === 0;
-    const showHour = hour % 6 === 0 && hour !== 0;    
+    const showHour = hour % 6 === 0 && hour !== 0;
     if (!showDate && !showHour) return null;
 
     const content = showDate ? (
@@ -187,7 +200,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
       >
         {(() => {
           const [year, month, day] = date.split('-').map(Number);
-          const dateObj = new Date(year, month - 1, day); 
+          const dateObj = new Date(year, month - 1, day);
           return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         })()}
       </text>
@@ -209,13 +222,15 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
   const CustomTooltip = ({ active, payload, label, isDarkMode }) => {
     if (active && payload && payload.length) {
       const dataPoint = completeData.find(item => item.time === label);
-      
+
       return (
-        <div className={`p-4 shadow-lg rounded-lg border ${
-          isDarkMode 
-            ? 'bg-gray-800 border-mahogany/70 text-gray-100' 
-            : 'bg-white border-mahogany/50 text-gray-800'
-        }`}>
+        <div
+          className={`p-4 shadow-lg rounded-lg border ${
+            isDarkMode
+              ? 'bg-gray-800 border-mahogany/70 text-gray-100'
+              : 'bg-white border-mahogany/50 text-gray-800'
+          }`}
+        >
           <p className="font-semibold">{label}</p>
           {payload.map((entry, index) => (
             <div key={index} className="flex items-center gap-2 mt-1">
@@ -236,27 +251,22 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
   };
 
   return (
-    <div className={`h-[320px] w-full relative ${
-      isDarkMode ? 'bg-gray-800/30' : 'bg-white/30'
-    }`}>
+    <div className={`h-[320px] w-full relative ${isDarkMode ? 'bg-gray-800/30' : 'bg-white/30'}`}>
       <ResponsiveContainer>
-        <LineChart 
-          data={completeData}
-          margin={{ top: 20, right: 10, left: 30, bottom: 30 }}
-        >
-          <CartesianGrid 
-            strokeDasharray="3 3" 
+        <LineChart data={completeData} margin={{ top: 20, right: 10, left: 30, bottom: 30 }}>
+          <CartesianGrid
+            strokeDasharray="3 3"
             stroke={isDarkMode ? '#374151' : '#E5E7EB'}
             vertical={false}
           />
-          {dateChangePoints.map((index) => (
-            <DateSeparator 
+          {dateChangePoints.map(index => (
+            <DateSeparator
               key={index}
               x={`${(index / (completeData.length - 1)) * 100}%`}
               isDarkMode={isDarkMode}
             />
           ))}
-          <XAxis 
+          <XAxis
             dataKey="time"
             height={25}
             tick={<CustomXAxisTick isDarkMode={isDarkMode} />}
@@ -264,10 +274,10 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
             tickSize={3}
             axisLine={{ stroke: isDarkMode ? '#374151' : '#E5E7EB' }}
           />
-          <YAxis 
-            tick={{ 
+          <YAxis
+            tick={{
               fill: isDarkMode ? '#9CA3AF' : '#6B7280',
-              fontSize: 12 
+              fontSize: 12
             }}
             domain={[0, max]}
             axisLine={{ stroke: isDarkMode ? '#374151' : '#E5E7EB' }}
@@ -285,7 +295,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
             }}
           />
           <Tooltip content={<CustomTooltip isDarkMode={isDarkMode} />} />
-          <Line 
+          <Line
             type="monotone"
             dataKey="maxPM25"
             name="Max PM2.5"
@@ -294,7 +304,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
             dot={false}
             connectNulls={false}
           />
-          <Line 
+          <Line
             type="monotone"
             dataKey="averagePM25"
             name="Average PM2.5"
@@ -303,7 +313,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
             dot={false}
             connectNulls={false}
           />
-          <Line 
+          <Line
             type="monotone"
             dataKey="minPM25"
             name="Min PM2.5"
@@ -314,32 +324,40 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
           />
         </LineChart>
       </ResponsiveContainer>
-      
-      <div className={`absolute top-2 right-2 flex items-center gap-3 px-2 py-1 rounded ${
-        isDarkMode ? 'bg-gray-800/80' : 'bg-white/80'
-      }`}>
+
+      <div
+        className={`absolute top-2 right-2 flex items-center gap-3 px-2 py-1 rounded ${
+          isDarkMode ? 'bg-gray-800/80' : 'bg-white/80'
+        }`}
+      >
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-[#c52222]"></div>
-          <span className={isDarkMode ? 'text-xs text-gray-400' : 'text-xs text-gray-600'}>Max</span>
+          <span className={isDarkMode ? 'text-xs text-gray-400' : 'text-xs text-gray-600'}>
+            Max
+          </span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-[#3B82F6]"></div>
-          <span className={isDarkMode ? 'text-xs text-gray-400' : 'text-xs text-gray-600'}>Avg</span>
+          <span className={isDarkMode ? 'text-xs text-gray-400' : 'text-xs text-gray-600'}>
+            Avg
+          </span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-[#76f163]"></div>
-          <span className={isDarkMode ? 'text-xs text-gray-400' : 'text-xs text-gray-600'}>Min</span>
+          <span className={isDarkMode ? 'text-xs text-gray-400' : 'text-xs text-gray-600'}>
+            Min
+          </span>
         </div>
       </div>
     </div>
   );
 };
 
-const AreaAnalysis = ({ 
-  map, 
-  currentDateTime, 
-  isPlaying, 
-  polygon, 
+const AreaAnalysis = ({
+  map,
+  currentDateTime,
+  isPlaying,
+  polygon,
   isDarkMode,
   onExpandChange,
   forceExpanded = false
@@ -375,17 +393,18 @@ const AreaAnalysis = ({
     };
   }, [polygon, clearAreaStatistics]);
 
-
-  const formatChartData = useCallback((stats) => {
-    return stats.flatMap(tilesetStats =>
-      tilesetStats.hourlyData.map(hourData => ({
-        time: `${tilesetStats.date} ${String(hourData.hour).padStart(2, '0')}:00`,
-        averagePM25: hourData.averagePM25,
-        maxPM25: hourData.maxPM25,
-        minPM25: hourData.minPM25,
-        points: hourData.numPoints
-      }))
-    ).sort((a, b) => new Date(a.time) - new Date(b.time));
+  const formatChartData = useCallback(stats => {
+    return stats
+      .flatMap(tilesetStats =>
+        tilesetStats.hourlyData.map(hourData => ({
+          time: `${tilesetStats.date} ${String(hourData.hour).padStart(2, '0')}:00`,
+          averagePM25: hourData.averagePM25,
+          maxPM25: hourData.maxPM25,
+          minPM25: hourData.minPM25,
+          points: hourData.numPoints
+        }))
+      )
+      .sort((a, b) => new Date(a.time) - new Date(b.time));
   }, []);
 
   const updateAreaStats = useCallback(async () => {
@@ -394,21 +413,21 @@ const AreaAnalysis = ({
     try {
       setIsLoading(true);
       setError(null);
-      
+
       // Add a small delay to ensure layers are loaded
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       console.log('Starting area stats calculation...');
       console.log('Map instance:', map);
       console.log('Polygon:', polygon);
       console.log('Map style loaded:', map.isStyleLoaded());
-      
+
       const stats = await calculateAreaStats(map, polygon);
       console.log('Raw stats from calculateAreaStats:', stats);
-      
+
       const formattedData = formatChartData(stats);
       console.log('Formatted chart data:', formattedData);
-      
+
       if (formattedData.length === 0) {
         console.warn('No data found for the selected area. This could be because:');
         console.warn('1. The area is outside the data coverage');
@@ -416,7 +435,7 @@ const AreaAnalysis = ({
         console.warn('3. There is no PM2.5 data for this location');
         setError('No smoke forecasted in this area.');
       }
-      
+
       setData(formattedData);
     } catch (err) {
       console.error('Error calculating area stats:', err);
@@ -454,8 +473,6 @@ const AreaAnalysis = ({
       onExpandChange?.(false);
     }
   }, [polygon, onExpandChange]);
-
-
 
   const handleToggleExpand = () => {
     const newState = !isExpanded;
@@ -499,39 +516,41 @@ const AreaAnalysis = ({
   const panelContent = (
     <div className="px-1">
       {error && (
-        <div className={`mb-4 p-4 rounded-lg border ${
-          isDarkMode 
-            ? 'bg-rust/50 text-gold-light border-mahogany/50' 
-            : 'bg-rust-light/20 text-rust-dark border-mahogany/30'
-        }`}>
+        <div
+          className={`mb-4 p-4 rounded-lg border ${
+            isDarkMode
+              ? 'bg-rust/50 text-gold-light border-mahogany/50'
+              : 'bg-rust-light/20 text-rust-dark border-mahogany/30'
+          }`}
+        >
           {error}
         </div>
       )}
 
       {isLoading && (
-        <div className={`h-[320px] flex items-center justify-center ${
-          isDarkMode ? 'text-gray-400' : 'text-gray-500'
-        }`}>
+        <div
+          className={`h-[320px] flex items-center justify-center ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-500'
+          }`}
+        >
           <p>Loading statistics...</p>
         </div>
       )}
 
       {!isLoading && !error && data.length > 0 && (
         <>
-          {activeTab === 'chart' && (
-            <AreaStatsChart data={data} isDarkMode={isDarkMode} />
-          )}
-          
-          {activeTab === 'table' && (
-            <StatsTable data={data} isDarkMode={isDarkMode} />
-          )}
+          {activeTab === 'chart' && <AreaStatsChart data={data} isDarkMode={isDarkMode} />}
+
+          {activeTab === 'table' && <StatsTable data={data} isDarkMode={isDarkMode} />}
         </>
       )}
 
       {!isLoading && !error && data.length === 0 && (
-        <div className={`h-[320px] flex items-center justify-center ${
-          isDarkMode ? 'text-gray-400' : 'text-gray-500'
-        }`}>
+        <div
+          className={`h-[320px] flex items-center justify-center ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-500'
+          }`}
+        >
           <p>No smoke forecasted in the selected area</p>
         </div>
       )}
@@ -541,39 +560,41 @@ const AreaAnalysis = ({
   // If forceExpanded, render content directly without ThemedPanel wrapper
   if (forceExpanded) {
     return (
-      <div className={`w-full rounded-xl shadow-xl overflow-hidden border-2 ${
-        isDarkMode 
-          ? 'bg-gray-900/95 border-white' 
-          : 'bg-white/95 border-mahogany'
-      } backdrop-blur-md`}>
+      <div
+        className={`w-full rounded-xl shadow-xl overflow-hidden border-2 ${
+          isDarkMode ? 'bg-gray-900/95 border-white' : 'bg-white/95 border-mahogany'
+        } backdrop-blur-md`}
+      >
         <div className="w-full h-full flex flex-col">
-          <div className={`px-4 py-3 border-b-2 ${
-            isDarkMode 
-              ? 'bg-gradient-to-r from-forest-dark/30 to-sage-dark/30 border-white' 
-              : 'bg-gradient-to-r from-cream to-sage-light/30 border-mahogany'
-          }`}>
+          <div
+            className={`px-4 py-3 border-b-2 ${
+              isDarkMode
+                ? 'bg-gradient-to-r from-forest-dark/30 to-sage-dark/30 border-white'
+                : 'bg-gradient-to-r from-cream to-sage-light/30 border-mahogany'
+            }`}
+          >
             <div className="flex items-center justify-between">
               <div>
-                <h2 className={`text-lg font-semibold leading-none ${
-                  isDarkMode ? 'text-white' : 'text-forest'
-                }`}>
+                <h2
+                  className={`text-lg font-semibold leading-none ${
+                    isDarkMode ? 'text-white' : 'text-forest'
+                  }`}
+                >
                   Area Statistics
                 </h2>
-                <div className={`text-sm mt-1 ${
-                  isDarkMode ? 'text-white/80' : 'text-forest-light'
-                }`}>
+                <div
+                  className={`text-sm mt-1 ${isDarkMode ? 'text-white/80' : 'text-forest-light'}`}
+                >
                   {currentDateTime.date} {currentDateTime.hour.toString().padStart(2, '0')}:00
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {headerActions}
-              </div>
+              <div className="flex items-center gap-2">{headerActions}</div>
             </div>
           </div>
-          
-          <div className={`flex-1 overflow-hidden ${
-            isDarkMode ? 'bg-gray-900/50' : 'bg-white/50'
-          }`}>
+
+          <div
+            className={`flex-1 overflow-hidden ${isDarkMode ? 'bg-gray-900/50' : 'bg-white/50'}`}
+          >
             {panelContent}
           </div>
         </div>
@@ -583,14 +604,16 @@ const AreaAnalysis = ({
 
   // Original ThemedPanel implementation for backward compatibility
   return (
-    <div style={{ 
-      position: 'fixed',
-      top: isExpanded ? '450px' : '20px',
-      right: '20px',
-      width: isExpanded ? '480px' : '48px',
-      zIndex: 1000,
-      transition: 'all 0.3s ease-in-out'
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        top: isExpanded ? '450px' : '20px',
+        right: '20px',
+        width: isExpanded ? '480px' : '48px',
+        zIndex: 1000,
+        transition: 'all 0.3s ease-in-out'
+      }}
+    >
       <ThemedPanel
         title="Area Statistics"
         subtitle={`${currentDateTime.date} ${currentDateTime.hour.toString().padStart(2, '0')}:00`}
@@ -599,7 +622,7 @@ const AreaAnalysis = ({
         isExpanded={isExpanded}
         onClose={handleToggleExpand}
         isDarkMode={isDarkMode}
-        order={1} 
+        order={1}
       >
         {panelContent}
       </ThemedPanel>

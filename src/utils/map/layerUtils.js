@@ -31,7 +31,7 @@ export const removeLayerAndSource = (map, layerId, sourceId) => {
  */
 export const waitForMapReady = async (map, maxAttempts = 10) => {
   if (!map) return false;
-  
+
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (map.isStyleLoaded()) return true;
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -48,14 +48,10 @@ export const waitForMapReady = async (map, maxAttempts = 10) => {
  */
 export const updateLayerColors = (map, layerId, colors, isDarkMode) => {
   if (!map || !map.getLayer(layerId)) return;
-  
+
   try {
     for (const [property, options] of Object.entries(colors)) {
-      map.setPaintProperty(
-        layerId,
-        property,
-        isDarkMode ? options.dark : options.light
-      );
+      map.setPaintProperty(layerId, property, isDarkMode ? options.dark : options.light);
     }
   } catch (error) {
     console.warn(`Error updating colors for layer ${layerId}:`, error);
