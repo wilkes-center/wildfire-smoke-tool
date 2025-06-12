@@ -1,13 +1,12 @@
 import { PM25_LEVELS } from '../../constants/pm25Levels';
-import logger from '../logger';
 
 const getCurrentUTCDate = () => {
   // Get current UTC date directly to avoid timezone issues
   const now = new Date();
 
   // Create date object for today at UTC midnight using UTC methods
-  logger.debug("Using date as 'today'", { date: now.toISOString() });
-  logger.debug('UTC date components', {
+  console.log("Using date as 'today':", now);
+  console.log('UTC date components:', {
     year: now.getUTCFullYear(),
     month: now.getUTCMonth(),
     date: now.getUTCDate()
@@ -25,7 +24,7 @@ const getDateRange = () => {
 
   const endDate = new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000 - 1);
 
-  logger.debug('Date range calculated', {
+  console.log('Date range:', {
     today: today.toISOString().split('T')[0],
     tomorrow: tomorrow.toISOString().split('T')[0],
     totalHours: Math.floor((endDate - today) / (1000 * 60 * 60))
@@ -54,10 +53,7 @@ const generateTilesetInfo = date => {
   ];
 
   // Debug log to track date conversions
-  logger.debug('Generating tileset info for date', {
-    inputDate: date.toISOString(),
-    formattedDate
-  });
+  console.log(`Generating tileset info for date: ${date} -> ${formattedDate}`);
 
   return chunks.map(({ name, start, end, index }) => ({
     id: `pkulandh.pm25_${formattedDate}${index}`,

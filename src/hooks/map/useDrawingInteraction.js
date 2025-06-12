@@ -1,7 +1,6 @@
 import { useCallback, useEffect } from 'react';
 
-import handleEnhancedMapClick from '../../components/Map/controls/handleEnhancedMapClick.js';
-import getSelectedCensusTracts, { cleanupHighlightLayers } from '../../utils/map/censusAnalysis';
+import { cleanupHighlightLayers } from '../../utils/map/censusAnalysis';
 
 export const DOUBLE_CLICK_THRESHOLD = 300;
 
@@ -109,7 +108,7 @@ export const useDrawingInteraction = ({
         }).then(selection => {
           setPolygon(selection.polygon);
           setIsPointSelected(true);
-          
+
           getSelectedCensusTracts(mapInstance, selection.polygon, isDarkMode)
             .then(censusData => {
               console.log('Selected area census data:', censusData);

@@ -10,24 +10,14 @@ import {
     X
 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useLogger } from '../../hooks/useLogger';
 
 const IntroTour = ({ onComplete, isDarkMode }) => {
-  const {
-    debug,
-    warn,
-    error,
-    logUserInteraction,
-    logAsync
-  } = useLogger('IntroTour');
-
   const [isVisible, setIsVisible] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [highlightedElement, setHighlightedElement] = useState(null);
   const [previousElement, setPreviousElement] = useState(null);
   const cleanupFunctionRef = useRef(null);
   const highlightedElementsRef = useRef(new Set());
-  const previousElementRef = useRef(null);
 
   const tourSteps = [
     {
@@ -86,240 +76,220 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
     }
   ];
 
-  const cleanupElement = useCallback((element) => {
-    return logAsync('cleanupElement', () => {
-      if (!element) return;
-
+  // Improved cleanup function that removes all styles completely
+  const cleanupElement = useCallback(element => {
+    if (element && document.body.contains(element)) {
       try {
-        debug('Cleaning element with tour styling', {
-          elementId: element.id,
-          className: element.className
-        });
-
-        element.classList.remove(
-          'tour-highlight',
-          'tour-highlight-dark',
-          'tour-highlight-light'
-        );
-        element.style.removeProperty('z-index');
-        element.style.removeProperty('position');
-        element.style.removeProperty('pointer-events');
+        // Simply remove the entire style attribute instead of trying to reset individual properties
+        element.removeAttribute('style');
+        highlightedElementsRef.current.delete(element);
       } catch (err) {
-        error('Error cleaning element', {
-          error: err.message,
-          elementId: element?.id || 'unknown'
-        });
+        console.error('Error cleaning up element:', err);
       }
-    });
-  }, [logAsync, debug, error]);
+    }
+  }, []);
 
+  // Thoroughly cleanup all elements that might have tour styling
   const performFinalCleanup = useCallback(() => {
-    return logAsync('performFinalCleanup', () => {
-      debug('Performing final cleanup of all tour highlights');
+    console.log('Performing final cleanup of all tour highlights');
 
-      const highlightedElements = document.querySelectorAll('.tour-highlight, .tour-highlight-dark, .tour-highlight-light');
-      highlightedElements.forEach(el => {
-        cleanupElement(el);
-      });
-    });
-  }, [logAsync, debug, cleanupElement]);
+    // Clean any elements we've tracked
+    highlightedElementsRef.current.forEach(cleanupElement);
+    highlightedElementsRef.current.clear();
 
-  const handleNext = useCallback(() => {
-    return logAsync('handleNext', () => {
+    // Also search for any elements with style attributes that might be tour-related
+    const styledElements = document.querySelectorAll('[style]');
+
+    styledElements.forEach(el => {
       try {
-        logUserInteraction('tour_next', 'next_button', {
-          currentStep: currentStep,
-          totalSteps: tourSteps.length,
-          stepId: tourSteps[currentStep]?.id
-        });
+        const style = el.getAttribute('style') || '';
 
-        if (currentStep < tourSteps.length - 1) {
-          setCurrentStep(currentStep + 1);
-        } else {
-          setIsVisible(false);
-          performFinalCleanup();
-          onComplete();
+        // Check if it has any tour-related styling
+        if (
+          style.includes('outline') ||
+          style.includes('purple') ||
+          style.includes('scale(1.02)') ||
+          (style.includes('box-shadow') && style.includes('rgba(168, 85, 247')) ||
+          style.includes('z-index: 1050')
+        ) {
+          console.log('Cleaning element with tour styling:', el);
+          el.removeAttribute('style');
         }
       } catch (err) {
-        error('Error in handleNext', {
-          error: err.message,
-          currentStep,
-          totalSteps: tourSteps.length
-        });
+        console.error('Error cleaning element:', err);
       }
     });
-  }, [currentStep, tourSteps.length, onComplete, performFinalCleanup, logAsync, logUserInteraction, error]);
+  }, [cleanupElement]);
 
-  const handlePrevious = useCallback(() => {
-    return logAsync('handlePrevious', () => {
+  // Handle next/previous/skip with proper cleanup
+  const handleNext = () => {
+    // Clean up any highlighting before moving to next step
+    if (cleanupFunctionRef.current) {
       try {
-        logUserInteraction('tour_previous', 'previous_button', {
-          currentStep: currentStep,
-          totalSteps: tourSteps.length,
-          stepId: tourSteps[currentStep]?.id
-        });
+        cleanupFunctionRef.current();
+      } catch (err) {
+        console.error('Error cleaning up in handleNext:', err);
+      }
+      cleanupFunctionRef.current = null;
+    }
 
-        if (currentStep > 0) {
-          setCurrentStep(currentStep - 1);
+    // Also directly clean the current highlighted element
+    cleanupElement(highlightedElement);
+
+    if (currentStep < tourSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      // If this is the last step, perform a final thorough cleanup
+      performFinalCleanup();
+      // Add a delay for a second cleanup pass to catch any transitions
+      setTimeout(performFinalCleanup, 100);
+
+      setIsVisible(false);
+      if (onComplete) onComplete();
+    }
+  };
+
+  const handlePrevious = () => {
+    // Clean up any highlighting before moving to previous step
+    if (cleanupFunctionRef.current) {
+      try {
+        cleanupFunctionRef.current();
+      } catch (err) {
+        console.error('Error cleaning up in handlePrevious:', err);
+      }
+      cleanupFunctionRef.current = null;
+    }
+
+    // Also directly clean the current highlighted element
+    cleanupElement(highlightedElement);
+
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleSkip = () => {
+    // Clean up any highlighting before skipping
+    if (cleanupFunctionRef.current) {
+      try {
+        cleanupFunctionRef.current();
+      } catch (err) {
+        console.error('Error cleaning up in handleSkip:', err);
+      }
+      cleanupFunctionRef.current = null;
+    }
+
+    // Also directly clean the current highlighted element
+    cleanupElement(highlightedElement);
+
+    // Perform a thorough cleanup of any element that might have purple outlines
+    performFinalCleanup();
+    // Add a delay for a second cleanup pass
+    setTimeout(performFinalCleanup, 100);
+
+    setIsVisible(false);
+    if (onComplete) onComplete();
+  };
+
+  const findElementByMultipleSelectors = useCallback(targetId => {
+    // Try different selector strategies in order of preference
+    const selectors = [
+      `[data-tour="${targetId}"]`, // 1. Exact data-tour attribute
+      `[id="tour-${targetId}"]`, // 2. ID with tour- prefix
+      `[class*="${targetId}"]`, // 3. Class contains target name
+      `[class*="${targetId.replace(/-/g, '')}"]`, // 4. Class with no hyphens
+      `[title*="${targetId.replace(/-/g, ' ')}"]` // 5. Title attribute contains words
+    ];
+
+    // For specific cases - more specific selectors for each component
+    if (targetId === 'time-controls') {
+      selectors.push(
+        '.TimeControls',
+        '[class*="TimeControls"]',
+        '.fixed.bottom-4.left-1\\/2.-translate-x-1\\/2',
+        '.fixed.bottom-4 [class*="rounded-lg"]'
+      );
+    } else if (targetId === 'pm25-threshold') {
+      selectors.push(
+        '[class*="PM25ThresholdSlider"]',
+        '[class*="PM25"]',
+        '.top-4.left-1\\/2.-translate-x-1\\/2 [class*="rounded-xl"]',
+        '.fixed.top-4 .flex.items-center.gap-4 > :first-child'
+      );
+    } else if (targetId === 'date-time') {
+      selectors.push(
+        '[class*="DateTime"]',
+        '.top-4.left-1\\/2.-translate-x-1\\/2 [class*="rounded-lg"]',
+        '.fixed.top-4 .flex.items-center.gap-4 > :nth-child(2)'
+      );
+    } else if (targetId === 'theme-controls') {
+      selectors.push(
+        '[title="Switch to light mode"]',
+        '[title="Switch to dark mode"]',
+        '.w-10.h-10.rounded-lg:has(svg[class*="Sun"], svg[class*="Moon"])',
+        '.flex.items-center.gap-2 > button:first-child',
+        '.fixed.top-4 .flex.items-center.gap-4 > :nth-child(3) > .flex.items-center.gap-2 > button:first-child'
+      );
+    } else if (targetId === 'draw-button') {
+      selectors.push(
+        '[title="Draw Area"]',
+        'button[title*="Draw"]',
+        'button[class*="w-10 h-10 rounded-lg"]',
+        '.fixed.top-4 .flex.items-center.gap-4 > :nth-child(3) > :nth-child(2)'
+      );
+    } else if (targetId === 'zoom-controls') {
+      selectors.push(
+        '[class*="ZoomControls"]',
+        '.fixed.left-4.bottom-4',
+        '.fixed.left-4.bottom-4 > div'
+      );
+    }
+
+    // Try each selector
+    for (const selector of selectors) {
+      try {
+        const element = document.querySelector(selector);
+        if (element) {
+          console.log(`Found element for ${targetId} using selector: ${selector}`);
+          return element;
         }
       } catch (err) {
-        error('Error in handlePrevious', {
-          error: err.message,
-          currentStep
-        });
+        console.warn(`Error with selector ${selector}:`, err);
       }
-    });
-  }, [currentStep, logAsync, logUserInteraction, error]);
+    }
 
-  const handleSkip = useCallback(() => {
-    return logAsync('handleSkip', () => {
-      try {
-        logUserInteraction('tour_skip', 'skip_button', {
-          currentStep: currentStep,
-          totalSteps: tourSteps.length,
-          stepId: tourSteps[currentStep]?.id,
-          completionPercentage: ((currentStep + 1) / tourSteps.length * 100).toFixed(1)
-        });
-
-        setIsVisible(false);
-        performFinalCleanup();
-        onComplete();
-      } catch (err) {
-        error('Error in handleSkip', {
-          error: err.message,
-          currentStep
-        });
+    // Fallback - try to find by approximate location on screen
+    try {
+      if (targetId === 'time-controls') {
+        const bottomElements = Array.from(document.querySelectorAll('.fixed.bottom-4 *'));
+        const largestElement = bottomElements.sort(
+          (a, b) => b.offsetWidth * b.offsetHeight - a.offsetWidth * a.offsetHeight
+        )[0];
+        if (largestElement) return largestElement;
+      } else if (targetId === 'zoom-controls') {
+        const leftElements = Array.from(document.querySelectorAll('.fixed.left-4 *'));
+        const largestElement = leftElements.sort(
+          (a, b) => b.offsetWidth * b.offsetHeight - a.offsetWidth * a.offsetHeight
+        )[0];
+        if (largestElement) return largestElement;
       }
-    });
-  }, [currentStep, tourSteps.length, onComplete, performFinalCleanup, logAsync, logUserInteraction, error]);
+    } catch (err) {
+      console.warn('Error in fallback element finding:', err);
+    }
 
-  const findElement = useCallback((targetId) => {
-    return logAsync('findElement', () => {
-      const selectors = [
-        `#${targetId}`,
-        `[data-tour-id="${targetId}"]`,
-        `[data-testid="${targetId}"]`,
-        `.${targetId}`,
-        `[class*="${targetId}"]`
-      ];
-
-      for (const selector of selectors) {
-        try {
-          const element = document.querySelector(selector);
-          if (element) {
-            debug('Found element for target', {
-              targetId,
-              selector,
-              elementTag: element.tagName,
-              elementId: element.id
-            });
-            return element;
-          }
-        } catch (err) {
-          warn('Error with selector', {
-            selector,
-            error: err.message,
-            targetId
-          });
-        }
-      }
-
-      // Fallback: search by text content or aria-label
-      try {
-        const allElements = document.querySelectorAll('*');
-        for (const element of allElements) {
-          if (
-            element.textContent?.toLowerCase().includes(targetId.toLowerCase()) ||
-            element.getAttribute('aria-label')?.toLowerCase().includes(targetId.toLowerCase())
-          ) {
-            return element;
-          }
-        }
-      } catch (err) {
-        warn('Error in fallback element finding', {
-          error: err.message,
-          targetId
-        });
-      }
-
-      warn('Could not find element for target', { targetId });
-      return null;
-    });
-  }, [logAsync, debug, warn]);
-
-  const highlightElement = useCallback((step) => {
-    return logAsync('highlightElement', () => {
-      // Cleanup previous element
-      if (previousElementRef.current) {
-        debug('Executing cleanup function for previous element');
-        try {
-          cleanupElement(previousElementRef.current);
-        } catch (err) {
-          error('Error during cleanup', {
-            error: err.message,
-            elementId: previousElementRef.current?.id
-          });
-        }
-      }
-
-      const element = findElement(step.target);
-      if (!element) {
-        warn('Could not find element for step', {
-          stepId: step.id,
-          target: step.target
-        });
-        return;
-      }
-
-      debug('Found element for step', {
-        stepId: step.id,
-        target: step.target,
-        elementTag: element.tagName
-      });
-
-      // Apply highlight styling
-      const highlightClass = isDarkMode ? 'tour-highlight-dark' : 'tour-highlight-light';
-      element.classList.add('tour-highlight', highlightClass);
-
-      // Store reference for cleanup
-      previousElementRef.current = element;
-
-      // Scroll element into view
-      element.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
-      });
-    });
-  }, [findElement, cleanupElement, isDarkMode, logAsync, debug, warn, error]);
-
-  const globalCleanup = useCallback(() => {
-    return logAsync('globalCleanup', () => {
-      try {
-        const tourElements = document.querySelectorAll('.tour-highlight, .tour-highlight-dark, .tour-highlight-light');
-        tourElements.forEach(el => {
-          debug('Removing residual tour styling', {
-            elementId: el.id,
-            className: el.className
-          });
-          cleanupElement(el);
-        });
-      } catch (err) {
-        error('Error in global cleanup', {
-          error: err.message
-        });
-      }
-    });
-  }, [cleanupElement, logAsync, debug, error]);
+    console.warn(`Could not find element for ${targetId}`);
+    return null;
+  }, []);
 
   // Remove highlight from previous element when changing steps
   useEffect(() => {
     // First ensure any previous highlighting is completely removed
     if (cleanupFunctionRef.current) {
       try {
-        debug('Executing cleanup function for previous element');
+        console.log('Executing cleanup function for previous element');
         cleanupFunctionRef.current();
       } catch (err) {
-        error('Error during cleanup', { error: err.message });
+        console.error('Error during cleanup:', err);
       }
       cleanupFunctionRef.current = null;
     }
@@ -331,15 +301,11 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
     const timeoutId = setTimeout(() => {
       const step = tourSteps[currentStep];
       if (step.target) {
-        const element = findElement(step.target);
+        const element = findElementByMultipleSelectors(step.target);
 
         // Add better debug information
         if (element) {
-          debug('Found element for step', {
-            target: step.target,
-            elementTag: element.tagName,
-            elementId: element.id
-          });
+          console.log(`Found element for ${step.target}:`, element);
           setPreviousElement(highlightedElement);
           setHighlightedElement(element);
 
@@ -377,7 +343,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
           // Set up the cleanup function for later
           cleanupFunctionRef.current = applyHighlighting();
         } else {
-          warn('Could not find element for step', { target: step.target });
+          console.warn(`Could not find element for ${step.target}`);
           setPreviousElement(null);
           setHighlightedElement(null);
         }
@@ -391,7 +357,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
   }, [
     currentStep,
     tourSteps,
-    findElement,
+    findElementByMultipleSelectors,
     previousElement,
     isDarkMode,
     highlightedElement,
@@ -415,10 +381,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
                   style.includes('#8b5cf6'))) ||
               (style.includes('box-shadow') && style.includes('scale(1.02)'))
             ) {
-              debug('Removing residual tour styling', {
-                elementTag: el.tagName,
-                elementId: el.id
-              });
+              console.log('Removing residual tour styling:', el);
               el.removeAttribute('style');
             }
           }
@@ -456,7 +419,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
         try {
           cleanupFunctionRef.current();
         } catch (err) {
-          error('Error in global cleanup', { error: err.message });
+          console.error('Error in global cleanup:', err);
         }
         cleanupFunctionRef.current = null;
       }
@@ -601,7 +564,6 @@ const FeatureTooltip = ({
   stepNumber,
   totalSteps
 }) => {
-  const { warn } = useLogger('FeatureTooltip');
   const [position, setPosition] = useState({ top: 0, left: 0 });
 
   // Default positions for each step if element isn't found
@@ -670,10 +632,7 @@ const FeatureTooltip = ({
 
           setPosition({ top, left });
         } catch (error) {
-          warn('Error positioning tooltip', {
-            error: error.message,
-            stepTarget: step.target
-          });
+          console.warn('Error positioning tooltip:', error);
         }
       } else {
         // If no element, use default positions

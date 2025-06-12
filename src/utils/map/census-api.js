@@ -1,4 +1,3 @@
-import _ from 'lodash';
 
 /**
  * Fetches population data for all census tracts in the United States

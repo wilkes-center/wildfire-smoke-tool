@@ -88,7 +88,7 @@ const MapComponent = ({ onShowIntro }) => {
   const getCurrentDateTime = useDateTimeCalculator(currentHour);
 
   const { updateLayers } = useMapLayers(
-    mapInstance,
+    mapRef,
     pm25Threshold,
     currentHour,
     isMapLoaded,

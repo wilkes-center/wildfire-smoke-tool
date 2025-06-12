@@ -304,11 +304,13 @@ class Logger {
    * Start performance timer
    */
   startTimer(operation) {
+    // Capture start time in closure to avoid incorrect `this` reference
+    const startTime = performance.now();
+
     return {
       operation,
-      startTime: performance.now(),
       end: () => {
-        const duration = performance.now() - this.startTime;
+        const duration = performance.now() - startTime;
         return this.performance(operation, duration);
       }
     };

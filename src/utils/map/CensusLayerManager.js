@@ -1,5 +1,5 @@
 // src/utils/map/CensusLayerManager.js
-import { waitForMapReady, removeLayerAndSource, updateLayerColors } from './layerUtils';
+import { removeLayerAndSource, updateLayerColors, waitForMapReady } from './layerUtils';
 
 const CENSUS_SOURCE_ID = 'census-tracts';
 const CENSUS_LAYER_ID = 'census-tracts-layer';

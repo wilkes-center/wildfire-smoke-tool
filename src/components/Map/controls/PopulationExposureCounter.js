@@ -1,8 +1,6 @@
 import _ from 'lodash';
 import { Users2 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useLogger } from '../../../hooks/useLogger';
-import logger from '../../../utils/logger';
 
 import { PM25_LEVELS } from '../../../constants/pm25Levels';
 import getSelectedCensusTracts from '../../../utils/map/censusAnalysis';
@@ -40,7 +38,7 @@ const findActiveLayer = (map, date, hour) => {
   );
 
   if (!tileset) {
-    logger.warn('No tileset found for current time', { date, hour });
+    console.warn('No tileset found for:', { date, hour });
     return null;
   }
 
@@ -49,15 +47,6 @@ const findActiveLayer = (map, date, hour) => {
 };
 
 const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, isPlaying }) => {
-  const {
-    debug,
-    warn,
-    error,
-    logAsync,
-    startTimer,
-    logUserInteraction
-  } = useLogger('PopulationExposureCounter');
-
   const [stats, setStats] = useState({
     censusStats: {
       value: null,
@@ -151,10 +140,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
         }));
       }
     } catch (error) {
-      error('Error fetching census data', {
-        error: error.message,
-        polygon: polygon?.length || 0
-      });
+      console.error('Error fetching census data:', error);
       setStats(prev => ({
         ...prev,
         censusStats: {
@@ -193,14 +179,11 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
       const activeLayer = findActiveLayer(map, currentDateTime.date, currentDateTime.hour);
 
       if (!activeLayer) {
-        warn('No active layer found for the current time period', {
-          date: currentDateTime.date,
-          hour: currentDateTime.hour
-        });
+        console.warn('No active layer found for the current time period');
 
         // Use cached data if available instead of showing error
         if (lastValidPM25DataRef.current) {
-          debug('Using cached PM2.5 data for this time period');
+          console.log('Using cached PM2.5 data for this time period');
           setStats(prev => ({
             ...prev,
             exposureByPM25: {
@@ -257,23 +240,17 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
             return isPointInPolygon(feature.geometry.coordinates, polygon);
           });
 
-        debug('Method 1: Found PM2.5 data points within selected area', {
-          featureCount: features.length,
-          bounds,
-          activeLayer
-        });
+        console.log(
+          `Method 1: Found ${features.length} PM2.5 data points within the selected area`
+        );
       } catch (err) {
-        warn('Error using queryRenderedFeatures with bounds', {
-          error: err.message,
-          activeLayer
-        });
+        console.warn('Error using queryRenderedFeatures with bounds:', err);
       }
 
       // Method 2: If first method doesn't work, try querySourceFeatures
       if (features.length === 0) {
-        let sourceId;
         try {
-          sourceId = activeLayer.replace('layer-', 'source-');
+          const sourceId = activeLayer.replace('layer-', 'source-');
           if (map.getSource(sourceId)) {
             // This queries the source directly, which might get us more features
             const sourceFeatures = map.querySourceFeatures(sourceId, {
@@ -287,30 +264,22 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
               return isPointInPolygon(feature.geometry.coordinates, polygon);
             });
 
-            debug('Method 2: Found PM2.5 data points from source', {
-              featureCount: features.length,
-              sourceId
-            });
+            console.log(`Method 2: Found ${features.length} PM2.5 data points from source`);
           }
         } catch (err) {
-          warn('Error using querySourceFeatures', {
-            error: err.message,
-            sourceId
-          });
+          console.warn('Error using querySourceFeatures:', err);
         }
       }
 
       // Method 3: If still no features, try to get all visible features and filter manually
       if (features.length === 0) {
         try {
+          // Get all visible features from the layer
           const visibleFeatures = map.queryRenderedFeatures({
             layers: [activeLayer]
           });
 
-          debug('Method 3: Found total visible features', {
-            visibleFeatureCount: visibleFeatures.length,
-            activeLayer
-          });
+          console.log(`Method 3: Found ${visibleFeatures.length} total visible features`);
 
           // Filter by time and polygon
           features = visibleFeatures.filter(feature => {
@@ -319,22 +288,16 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
             return isPointInPolygon(feature.geometry.coordinates, polygon);
           });
 
-          debug('Method 3: After filtering, features are in polygon', {
-            filteredFeatureCount: features.length,
-            timeString
-          });
+          console.log(`Method 3: After filtering, ${features.length} features are in the polygon`);
         } catch (err) {
-          warn('Error using alternative feature query', {
-            error: err.message,
-            activeLayer
-          });
+          console.warn('Error using alternative feature query:', err);
         }
       }
 
       // Method 4: Scan the visible area with a grid of points
       if (features.length === 0) {
-        const gridSize = 20; // 20x20 grid
         try {
+          const gridSize = 20; // 20x20 grid
           const lngStep = (bounds.maxLng - bounds.minLng) / gridSize;
           const latStep = (bounds.maxLat - bounds.minLat) / gridSize;
 
@@ -347,11 +310,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
             }
           }
 
-          debug('Method 4: Created grid points to sample', {
-            gridPointCount: gridPoints.length,
-            gridSize,
-            bounds
-          });
+          console.log(`Method 4: Created ${gridPoints.length} grid points to sample`);
 
           // Query each point
           let gridFeatures = [];
@@ -378,27 +337,17 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
             return true;
           });
 
-          debug('Method 4: Found features using grid sampling', {
-            featureCount: features.length,
-            gridFeatureCount: gridFeatures.length
-          });
+          console.log(`Method 4: Found ${features.length} features using grid sampling`);
         } catch (err) {
-          warn('Error using grid sampling method', {
-            error: err.message,
-            gridSize
-          });
+          console.warn('Error using grid sampling method:', err);
         }
       }
 
-      debug('Final result: Found PM2.5 data points to process', {
-        featureCount: features.length,
-        timeString,
-        activeLayer
-      });
+      console.log(`Final result: Found ${features.length} PM2.5 data points to process`);
 
       // If no features found but we have cached data, use that instead
       if (features.length === 0 && lastValidPM25DataRef.current) {
-        warn('No new data found, using cached PM2.5 data');
+        console.log('No new data found, using cached PM2.5 data');
         setStats(prev => ({
           ...prev,
           exposureByPM25: {
@@ -436,17 +385,13 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
           return grid;
         }, []);
 
-        debug('Created PM2.5 grid with valid points', {
-          gridPointCount: pm25Grid.length
-        });
+        console.log(`Created PM2.5 grid with ${pm25Grid.length} valid points`);
 
         // Calculate average PM2.5 and distribute population
         if (pm25Grid.length > 0) {
           calculatedAvgPM25 =
             pm25Grid.reduce((sum, point) => sum + point.pm25, 0) / pm25Grid.length;
-          debug('Average PM2.5 for the area calculated', {
-            avgPM25: calculatedAvgPM25.toFixed(1)
-          });
+          console.log(`Average PM2.5 for the area: ${calculatedAvgPM25.toFixed(1)}`);
 
           // First, count points in each category for distribution calculation
           const pointsPerCategory = {};
@@ -481,9 +426,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
           const totalPopulation = censusDataRef.current?.summary?.totalPopulation;
 
           if (totalPopulation) {
-            debug('Total population available for distribution', {
-              totalPopulation: totalPopulation.toLocaleString()
-            });
+            console.log(`Total population: ${totalPopulation.toLocaleString()}`);
 
             // Distribute population based on point distribution
             PM25_LEVELS.forEach(level => {
@@ -492,7 +435,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
               exposureByPM25[level.label] = Math.round(proportion * totalPopulation);
             });
           } else {
-            debug('No population data available, using point counts');
+            console.log('No population data available, using point counts');
             // Just use the point counts
             PM25_LEVELS.forEach(level => {
               exposureByPM25[level.label] = pointsPerCategory[level.label] || 0;
@@ -503,7 +446,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
 
       // If we still have no data after all attempts, but have cached data
       if (!hasData && lastValidPM25DataRef.current) {
-        warn('Could not find new PM2.5 data, using cached data');
+        console.warn('Could not find new PM2.5 data, using cached data');
         setStats(prev => ({
           ...prev,
           exposureByPM25: {
@@ -518,7 +461,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
 
       // If we have no data and no cache, show error
       if (!hasData && !lastValidPM25DataRef.current) {
-        warn('Could not find any PM2.5 data for this area and time period');
+        console.warn('Could not find any PM2.5 data for this area and time period');
         setStats(prev => ({
           ...prev,
           exposureByPM25: {
@@ -556,20 +499,14 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
         }
       }));
 
-      debug('PM2.5 Exposure calculated successfully', {
-        exposureByPM25,
-        distributionByPM25
-      });
+      console.log('PM2.5 Exposure calculated:', exposureByPM25);
+      console.log('PM2.5 Distribution calculated:', distributionByPM25);
     } catch (error) {
-      error('Error calculating exposure', {
-        error: error.message,
-        currentDateTime,
-        polygon: polygon?.length || 0
-      });
+      console.error('Error calculating exposure:', error);
 
       // Try to use cached data if available
       if (lastValidPM25DataRef.current) {
-        debug('Using cached data due to error');
+        console.log('Using cached data due to error');
         setStats(prev => ({
           ...prev,
           exposureByPM25: {

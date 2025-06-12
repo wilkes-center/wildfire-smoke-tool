@@ -1,440 +1,527 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { getPM25ColorInterpolation } from '../../constants/pm25Levels';
+
+import { getPM25ColorInterpolation } from '../../utils/map/colors';
 import { TILESET_INFO } from '../../utils/map/constants';
-import { useLogger } from '../useLogger';
 
 export const useMapLayers = (
-  mapInstance,
+  mapRef,
   pm25Threshold,
   currentHour,
   isMapLoaded,
-  getDateTime,
+  getCurrentDateTime,
   isDarkMode,
-  reinitializeRef
+  needsLayerReinitRef
 ) => {
-  const { debug, warn, error, logAsync, startTimer } = useLogger('useMapLayers');
   const loadedSourcesRef = useRef(new Set());
   const loadedLayersRef = useRef(new Set());
   const previousChunkRef = useRef(null);
   const preloadedChunksRef = useRef(new Set());
   const CHUNKS_TO_PRELOAD = 4;
   const MAX_LOADED_CHUNKS = 12;
+  const getRelevantTilesets = useCallback((date, hour, count = CHUNKS_TO_PRELOAD) => {
+    const tilesets = new Set();
+    let currentDate = new Date(date);
+    let currentHour = hour;
 
-  const getRelevantTilesets = useCallback(() => {
-    const timer = startTimer('getRelevantTilesets');
+    console.log(
+      `Getting relevant tilesets for date: ${currentDate.toISOString().split('T')[0]}, hour: ${currentHour}`
+    );
 
-    if (!getDateTime) {
-      warn('getDateTime function not available');
-      timer.end();
-      return [];
-    }
-
-    const { date, hour } = getDateTime(currentHour);
-
-    debug('Getting relevant tilesets', {
-      currentHour,
-      date,
-      hour
-    });
-
-    // Find the tileset that contains the current hour
-    const currentTileset = TILESET_INFO.find(tileset => {
-      const tilesetDate = tileset.date;
-      const isCorrectDate = tilesetDate === date;
-      const isInHourRange = hour >= tileset.startHour && hour <= tileset.endHour;
-
-      debug('Checking tileset', {
-        tilesetId: tileset.id,
-        tilesetDate,
-        startHour: tileset.startHour,
-        endHour: tileset.endHour,
-        currentHour: hour,
-        isCorrectDate,
-        isInHourRange
-      });
-
-      return isCorrectDate && isInHourRange;
-    });
-
-    const result = [];
+    const currentTileset = TILESET_INFO.find(
+      tileset =>
+        tileset.date === currentDate.toISOString().split('T')[0] &&
+        currentHour >= tileset.startHour &&
+        currentHour <= tileset.endHour
+    );
 
     if (currentTileset) {
-      result.push(currentTileset);
-      debug('Found current tileset', {
-        tilesetId: currentTileset.id,
-        startHour: currentTileset.startHour,
-        endHour: currentTileset.endHour
-      });
+      tilesets.add(currentTileset);
+      console.log(`Added current tileset: ${currentTileset.id}`);
     } else {
-      warn('No tileset found for current time', {
-        date,
-        hour,
-        availableTilesets: TILESET_INFO.map(t => ({
-          id: t.id,
-          date: t.date,
-          startHour: t.startHour,
-          endHour: t.endHour
-        }))
-      });
+      console.warn(
+        `No current tileset found for date: ${currentDate.toISOString().split('T')[0]}, hour: ${currentHour}`
+      );
+      console.log('Available tilesets:', TILESET_INFO);
     }
 
-    debug('Returning relevant tilesets', {
-      count: result.length,
-      tilesets: result.map(t => ({
-        id: t.id,
-        date: t.date,
-        startHour: t.startHour,
-        endHour: t.endHour
-      }))
-    });
+    for (let i = 0; i < count; i++) {
+      currentHour++;
+      if (currentHour >= 24) {
+        currentHour = 0;
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
 
-    timer.end();
+      const nextTileset = TILESET_INFO.find(
+        tileset =>
+          tileset.date === currentDate.toISOString().split('T')[0] &&
+          currentHour >= tileset.startHour &&
+          currentHour <= tileset.endHour
+      );
+
+      if (nextTileset) {
+        tilesets.add(nextTileset);
+        console.log(`Added next tileset: ${nextTileset.id}`);
+      }
+    }
+
+    currentDate = new Date(date);
+    currentHour = hour - 1;
+    if (currentHour < 0) {
+      currentHour = 23;
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+
+    const prevTileset = TILESET_INFO.find(
+      tileset =>
+        tileset.date === currentDate.toISOString().split('T')[0] &&
+        currentHour >= tileset.startHour &&
+        currentHour <= tileset.endHour
+    );
+
+    if (prevTileset) {
+      tilesets.add(prevTileset);
+      console.log(`Added previous tileset: ${prevTileset.id}`);
+    }
+
+    const result = Array.from(tilesets);
+    console.log(`Returning ${result.length} relevant tilesets:`, result);
     return result;
-  }, [currentHour, getDateTime, debug, warn, startTimer]);
+  }, []);
 
-  const cleanupOldChunks = useCallback(() => {
-    return logAsync('cleanupOldChunks', () => {
-      const map = mapInstance;
-      if (!map) return;
+  const cleanupOldChunks = useCallback(
+    (map, currentTilesetId) => {
+      if (!map || !map.getStyle()) return;
 
-      const relevantTilesets = getRelevantTilesets();
-      const relevantIds = new Set(relevantTilesets.map(t => t.id));
+      const chunksToKeep = new Set([currentTilesetId]);
+      const { date, hour } = getCurrentDateTime();
 
-      // Remove old layers
+      getRelevantTilesets(new Date(date), hour).forEach(tileset => chunksToKeep.add(tileset.id));
+
+      // Remove old layers and sources
       loadedLayersRef.current.forEach(layerId => {
-        const tilesetId = layerId.replace('layer-chunk-', '');
-        if (!relevantIds.has(tilesetId)) {
+        const tilesetId = layerId.replace('layer-', '');
+        if (!chunksToKeep.has(tilesetId)) {
           try {
             if (map.getLayer(layerId)) {
               map.removeLayer(layerId);
-              loadedLayersRef.current.delete(layerId);
             }
+            loadedLayersRef.current.delete(layerId);
+            preloadedChunksRef.current.delete(tilesetId);
           } catch (error) {
-            error('Error removing layer', { layerId, error: error.message });
+            console.error(`Error removing layer ${layerId}:`, error);
           }
         }
       });
 
-      // Remove old sources
       loadedSourcesRef.current.forEach(sourceId => {
-        const tilesetId = sourceId.replace('source-chunk-', '');
-        if (!relevantIds.has(tilesetId)) {
+        const tilesetId = sourceId.replace('source-', '');
+        if (!chunksToKeep.has(tilesetId)) {
           try {
             if (map.getSource(sourceId)) {
               map.removeSource(sourceId);
-              loadedSourcesRef.current.delete(sourceId);
             }
+            loadedSourcesRef.current.delete(sourceId);
           } catch (error) {
-            error('Error removing source', { sourceId, error: error.message });
+            console.error(`Error removing source ${sourceId}:`, error);
           }
         }
       });
-    });
-  }, [mapInstance, getRelevantTilesets, logAsync, error]);
+    },
+    [getCurrentDateTime, getRelevantTilesets]
+  );
 
-  const updateLayerColors = useCallback(() => {
-    return logAsync('updateLayerColors', () => {
-      const map = mapInstance;
-      if (!map) return;
+  const updateLayerColors = useCallback(
+    map => {
+      if (!map || !map.getStyle()) return;
 
-      const colorExpression = getPM25ColorInterpolation(pm25Threshold);
+      // Get current date/time and possible tileset info
+      const dateTimeInfo = getCurrentDateTime();
+      const { date, hour, tileset: tilesetId } = dateTimeInfo;
 
-      loadedLayersRef.current.forEach(layerId => {
-        try {
-          if (map.getLayer(layerId)) {
-            map.setPaintProperty(layerId, 'fill-color', colorExpression);
+      // Use the tileset ID if provided, otherwise search by date/hour
+      const currentTileset = tilesetId
+        ? TILESET_INFO.find(tileset => tileset.id === tilesetId)
+        : TILESET_INFO.find(
+            tileset => tileset.date === date && hour >= tileset.startHour && hour <= tileset.endHour
+          );
 
-            // Update visibility based on current time
-            const { date, hour } = getDateTime(currentHour);
-            const currentLayerId = `layer-chunk-${date}_${hour.toString().padStart(2, '0')}`;
+      if (!currentTileset) return;
 
-            if (layerId === currentLayerId) {
-              map.setLayoutProperty(layerId, 'visibility', 'visible');
-              debug('Made layer visible', { layerId });
-            } else {
-              map.setLayoutProperty(layerId, 'visibility', 'none');
-            }
-          }
-        } catch (err) {
-          error('Error updating layer colors', { layerId, error: err.message });
-        }
-      });
+      const currentLayerId = `layer-${currentTileset.id}`;
+      const timeString = `${date}T${String(hour).padStart(2, '0')}:00:00`;
 
-      // Set opacity for current layer
-      const { date, hour } = getDateTime(currentHour);
-      const currentLayerId = `layer-chunk-${date}_${hour.toString().padStart(2, '0')}`;
-
-      if (map.getLayer(currentLayerId)) {
-        const opacity = isDarkMode ? 0.9 : 0.75;
-        map.setPaintProperty(currentLayerId, 'fill-opacity', opacity);
-        debug('Updated layer opacity', {
-          layerId: currentLayerId,
-          opacity,
-          isDarkMode
-        });
-      }
-    });
-  }, [mapInstance, pm25Threshold, currentHour, getDateTime, isDarkMode, logAsync, debug, error]);
-
-  const initializeLayers = useCallback(() => {
-    return logAsync('initializeLayers', () => {
-      const map = mapInstance;
-      if (!map || !map.isStyleLoaded()) return;
-
-      const relevantTilesets = getRelevantTilesets();
-      debug('Initializing relevant tilesets', {
-        count: relevantTilesets.length,
-        tilesets: relevantTilesets.map(t => t.id)
-      });
-
-      relevantTilesets.forEach(tileset => {
-        const sourceId = `source-chunk-${tileset.id}`;
-        const layerId = `layer-chunk-${tileset.id}`;
-
-        // Add source if not already added
-        if (!map.getSource(sourceId)) {
-          debug('Adding source', {
-            sourceId,
-            tilesetId: tileset.id,
-            url: `mapbox://${tileset.id}`
-          });
-
-          map.addSource(sourceId, {
-            type: 'vector',
-            url: `mapbox://${tileset.id}`
-          });
-          loadedSourcesRef.current.add(sourceId);
-        }
-
-        // Add layer if not already added
-        if (!map.getLayer(layerId)) {
-          debug('Adding layer', {
-            layerId,
-            sourceId,
-            sourceLayer: tileset.layer
-          });
-
-          const colorExpression = getPM25ColorInterpolation(pm25Threshold);
-
-          map.addLayer({
-            id: layerId,
-            type: 'fill',
-            source: sourceId,
-            'source-layer': tileset.layer,
-            paint: {
-              'fill-color': colorExpression,
-              'fill-opacity': isDarkMode ? 0.9 : 0.75
-            },
-            layout: {
-              visibility: 'none'
-            }
-          });
-          loadedLayersRef.current.add(layerId);
-        }
-      });
-
-      // Update layer visibility and colors
-      updateLayerColors();
-    });
-  }, [mapInstance, getRelevantTilesets, pm25Threshold, isDarkMode, updateLayerColors, logAsync, debug]);
-
-  const updateLayers = useCallback(() => {
-    return logAsync('updateLayers', () => {
-      const map = mapInstance;
-      if (!map || !isMapLoaded) return;
-
-      const { date, hour } = getDateTime(currentHour);
-      debug('Updating layers for current time', { date, hour, currentHour });
-      debug('Available tilesets', {
-        count: TILESET_INFO.length,
-        tilesets: TILESET_INFO.map(t => ({
-          id: t.id,
-          date: t.date,
-          startHour: t.startHour,
-          endHour: t.endHour
-        }))
-      });
-
-      // Find the tileset that contains the current hour
-      const currentTileset = TILESET_INFO.find(tileset => {
-        const tilesetDate = tileset.date;
-        const isCorrectDate = tilesetDate === date;
-        const isInHourRange = hour >= tileset.startHour && hour <= tileset.endHour;
-        return isCorrectDate && isInHourRange;
-      });
-
-      if (!currentTileset) {
-        warn('No tileset found for current time', { date, hour });
-        return;
-      }
-
-      debug('Using tileset', {
-        tilesetId: currentTileset.id,
-        layer: currentTileset.layer,
-        startHour: currentTileset.startHour,
-        endHour: currentTileset.endHour
-      });
-
-      const currentLayerId = `layer-chunk-${currentTileset.id}`;
-      const currentSourceId = `source-chunk-${currentTileset.id}`;
-
-      // Hide all layers first
+      // First hide all layers and update colors
       loadedLayersRef.current.forEach(layerId => {
         if (map.getLayer(layerId)) {
-          debug('Processing layer visibility', {
-            layerId,
-            isCurrentLayer: layerId === currentLayerId
-          });
+          // Update colors for all layers
+          map.setPaintProperty(layerId, 'circle-color', getPM25ColorInterpolation(isDarkMode));
 
-          if (layerId === currentLayerId) {
-            map.setLayoutProperty(layerId, 'visibility', 'visible');
-            debug('Made layer visible', { layerId });
-          } else {
-            map.setLayoutProperty(layerId, 'visibility', 'none');
-            debug('Hidden layer', { layerId });
-          }
+          // Hide all layers initially
+          map.setLayoutProperty(layerId, 'visibility', 'none');
+          console.log(`Hidden layer: ${layerId}`);
         }
       });
 
-      // Create layer if it doesn't exist
-      if (!map.getLayer(currentLayerId)) {
-        debug('Creating missing layer', { layerId: currentLayerId });
+      // Then only show the current layer
+      if (map.getLayer(currentLayerId)) {
+        // Set filter for current time and PM2.5 threshold
+        map.setFilter(currentLayerId, [
+          'all',
+          ['==', ['get', 'time'], timeString],
+          ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+        ]);
 
-        // Add source if needed
-        if (!map.getSource(currentSourceId)) {
-          debug('Adding source', {
-            sourceId: currentSourceId,
-            tilesetId: currentTileset.id,
-            url: `mapbox://${currentTileset.id}`
-          });
+        // Make current layer visible and set opacity
+        map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
+        map.setPaintProperty(currentLayerId, 'circle-opacity', isDarkMode ? 0.9 : 0.75);
 
-          map.addSource(currentSourceId, {
-            type: 'vector',
-            url: `mapbox://${currentTileset.id}`
-          });
-          loadedSourcesRef.current.add(currentSourceId);
-        }
+        console.log(`Made layer ${currentLayerId} visible with opacity ${isDarkMode ? 0.9 : 0.75}`);
+      }
+    },
+    [isDarkMode, getCurrentDateTime, pm25Threshold]
+  );
 
-        debug('Adding layer', {
-          layerId: currentLayerId,
-          sourceId: currentSourceId,
-          sourceLayer: currentTileset.layer
-        });
+  const initializeLayers = useCallback(
+    map => {
+      if (!map || !map.getStyle()) return;
 
-        const colorExpression = getPM25ColorInterpolation(pm25Threshold);
-
-        map.addLayer({
-          id: currentLayerId,
-          type: 'fill',
-          source: currentSourceId,
-          'source-layer': currentTileset.layer,
-          paint: {
-            'fill-color': colorExpression,
-            'fill-opacity': isDarkMode ? 0.9 : 0.75
-          },
-          layout: {
-            visibility: 'visible'
+      try {
+        loadedLayersRef.current.forEach(layerId => {
+          if (map.getLayer(layerId)) {
+            map.removeLayer(layerId);
           }
         });
-        loadedLayersRef.current.add(currentLayerId);
-      } else {
-        debug('Current layer exists', { layerId: currentLayerId });
 
-        // Update existing layer
+        loadedSourcesRef.current.forEach(sourceId => {
+          if (map.getSource(sourceId)) {
+            map.removeSource(sourceId);
+          }
+        });
+
+        loadedLayersRef.current.clear();
+        loadedSourcesRef.current.clear();
+        preloadedChunksRef.current.clear();
+        previousChunkRef.current = null;
+
+        const { date, hour } = getCurrentDateTime();
+
+        const relevantTilesets = getRelevantTilesets(new Date(date), hour);
+        console.log('Initializing relevant tilesets:', relevantTilesets);
+
+        relevantTilesets.forEach(tileset => {
+          const sourceId = `source-${tileset.id}`;
+          const layerId = `layer-${tileset.id}`;
+
+          if (!map.getSource(sourceId)) {
+            console.log(`Adding source: ${sourceId}, url: mapbox://${tileset.id}`);
+            map.addSource(sourceId, {
+              type: 'vector',
+              url: `mapbox://${tileset.id}`,
+              maxzoom: 9
+            });
+            loadedSourcesRef.current.add(sourceId);
+          }
+
+          // Add layer
+          if (!map.getLayer(layerId)) {
+            console.log(`Adding layer: ${layerId}, source-layer: ${tileset.layer}`);
+            map.addLayer({
+              id: layerId,
+              type: 'circle',
+              source: sourceId,
+              'source-layer': tileset.layer,
+              maxzoom: 9,
+              paint: {
+                'circle-radius': [
+                  'interpolate',
+                  ['exponential', 2],
+                  ['zoom'],
+                  4,
+                  2,
+                  5,
+                  5,
+                  6,
+                  10,
+                  7,
+                  55,
+                  8,
+                  70,
+                  9,
+                  90
+                ],
+                'circle-color': getPM25ColorInterpolation(isDarkMode),
+                'circle-blur': 0.6,
+                'circle-opacity': 0 // Always start with zero opacity
+              },
+              layout: {
+                visibility: 'none'
+              }
+            });
+            loadedLayersRef.current.add(layerId);
+            preloadedChunksRef.current.add(tileset.id);
+          }
+        });
+
+        // Update colors for all layers
+        updateLayerColors(map);
+      } catch (error) {
+        console.error('Error initializing layers:', error);
+      }
+    },
+    [getCurrentDateTime, getRelevantTilesets, isDarkMode, updateLayerColors]
+  );
+
+  // Modified updateLayers function in useMapLayers.js
+
+  const updateLayers = useCallback(
+    map => {
+      if (!map || !map.getStyle()) return;
+
+      try {
+        // Get current date/time and possible tileset info
+        const dateTimeInfo = getCurrentDateTime();
+        const { date, hour, tileset: tilesetId } = dateTimeInfo;
+
+        console.log('Current date/hour:', { date, hour, tilesetId });
+        console.log('Available tilesets:', TILESET_INFO);
+
+        // Use the tileset ID if provided, otherwise search by date/hour
+        const currentTileset = tilesetId
+          ? TILESET_INFO.find(tileset => tileset.id === tilesetId)
+          : TILESET_INFO.find(
+              tileset =>
+                tileset.date === date && hour >= tileset.startHour && hour <= tileset.endHour
+            );
+
+        if (!currentTileset) {
+          console.warn('No tileset found for:', { date, hour });
+          return;
+        }
+
+        console.log('Using tileset:', currentTileset);
+
+        // Calculate next hour for transition preparation
+        const nextHour = (hour + 1) % 24;
+        const nextDate =
+          nextHour === 0
+            ? new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            : date;
+
+        const nextTileset = TILESET_INFO.find(
+          tileset =>
+            tileset.date === nextDate &&
+            nextHour >= tileset.startHour &&
+            nextHour <= tileset.endHour
+        );
+
+        // Update current layer
+        const currentLayerId = `layer-${currentTileset.id}`;
+        const currentSourceId = `source-${currentTileset.id}`;
+        const timeString = `${date}T${String(hour).padStart(2, '0')}:00:00`;
+
+        console.log(
+          `Timeline data mapping: currentHour=${currentHour}, date=${date}, hour=${hour}, tileset=${currentTileset.id}`
+        );
+        console.log(`Looking for time ${timeString} in layer ${currentLayerId}`);
+
+        console.log(`Setting filter for layer ${currentLayerId} with time ${timeString}`);
+
+        // Hide all layers first
+        loadedLayersRef.current.forEach(layerId => {
+          if (map.getLayer(layerId)) {
+            // Set to invisible instead of just opacity 0
+            map.setLayoutProperty(layerId, 'visibility', 'none');
+            console.log(`Hidden layer: ${layerId}`);
+          }
+        });
+
+        // Check if the current layer exists, if not, create it
+        if (!map.getLayer(currentLayerId)) {
+          console.log(`Creating missing layer: ${currentLayerId}`);
+
+          // First check if the source exists, if not create it
+          if (!map.getSource(currentSourceId)) {
+            console.log(`Adding source: ${currentSourceId}, url: mapbox://${currentTileset.id}`);
+            map.addSource(currentSourceId, {
+              type: 'vector',
+              url: `mapbox://${currentTileset.id}`,
+              maxzoom: 9
+            });
+            loadedSourcesRef.current.add(currentSourceId);
+          }
+
+          // Add the layer
+          console.log(`Adding layer: ${currentLayerId}, source-layer: ${currentTileset.layer}`);
+          map.addLayer({
+            id: currentLayerId,
+            type: 'circle',
+            source: currentSourceId,
+            'source-layer': currentTileset.layer,
+            maxzoom: 9,
+            paint: {
+              'circle-radius': [
+                'interpolate',
+                ['exponential', 2],
+                ['zoom'],
+                4,
+                2,
+                5,
+                5,
+                6,
+                10,
+                7,
+                55,
+                8,
+                70,
+                9,
+                90
+              ],
+              'circle-color': getPM25ColorInterpolation(isDarkMode),
+              'circle-blur': 0.6,
+              'circle-opacity': 0
+            },
+            layout: {
+              visibility: 'none' // Start as hidden
+            }
+          });
+          loadedLayersRef.current.add(currentLayerId);
+          preloadedChunksRef.current.add(currentTileset.id);
+        }
+
+        // Now that we're sure the layer exists, update it
+        console.log(`Current layer exists: ${currentLayerId}`);
+
+        // Set visibility first
         map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
 
-        const opacity = isDarkMode ? 0.9 : 0.75;
-        map.setPaintProperty(currentLayerId, 'fill-opacity', opacity);
-        debug('Updated layer opacity', {
-          layerId: currentLayerId,
-          opacity
-        });
+        // Then set opacity
+        map.setPaintProperty(currentLayerId, 'circle-opacity', isDarkMode ? 0.9 : 0.75);
+        console.log(`Set opacity to ${isDarkMode ? 0.9 : 0.75} for layer: ${currentLayerId}`);
 
-        const colorExpression = getPM25ColorInterpolation(pm25Threshold);
-        map.setPaintProperty(currentLayerId, 'fill-color', colorExpression);
-        debug('Updated layer colors', {
-          layerId: currentLayerId,
-          pm25Threshold
-        });
+        // Finally set filter
+        map.setFilter(currentLayerId, [
+          'all',
+          ['==', ['get', 'time'], timeString],
+          ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+        ]);
+        console.log(`Set filter for ${currentLayerId} with PM25 threshold: ${pm25Threshold}`);
+
+        // Preload next chunk's data if we're near the end of current chunk
+        if (nextTileset && hour === currentTileset.endHour) {
+          const nextSourceId = `source-${nextTileset.id}`;
+          const nextLayerId = `layer-${nextTileset.id}`;
+
+          // Add next chunk's source if it doesn't exist
+          if (!map.getSource(nextSourceId)) {
+            map.addSource(nextSourceId, {
+              type: 'vector',
+              url: `mapbox://${nextTileset.id}`,
+              maxzoom: 9
+            });
+            loadedSourcesRef.current.add(nextSourceId);
+          }
+
+          // Add next chunk's layer if it doesn't exist
+          if (!map.getLayer(nextLayerId)) {
+            map.addLayer({
+              id: nextLayerId,
+              type: 'circle',
+              source: nextSourceId,
+              'source-layer': nextTileset.layer,
+              maxzoom: 9,
+              paint: {
+                'circle-radius': [
+                  'interpolate',
+                  ['exponential', 2],
+                  ['zoom'],
+                  4,
+                  2,
+                  5,
+                  5,
+                  6,
+                  10,
+                  7,
+                  25,
+                  8,
+                  50,
+                  9,
+                  90
+                ],
+                'circle-color': getPM25ColorInterpolation(isDarkMode),
+                'circle-blur': 0.6,
+                'circle-opacity': 0
+              },
+              layout: {
+                visibility: 'none' // Start as hidden
+              }
+            });
+            loadedLayersRef.current.add(nextLayerId);
+          }
+
+          // Prepare next chunk's data
+          const nextTimeString = `${nextDate}T${String(nextHour).padStart(2, '0')}:00:00`;
+          map.setFilter(nextLayerId, [
+            'all',
+            ['==', ['get', 'time'], nextTimeString],
+            ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+          ]);
+        }
+
+        // Clean up old layers that are no longer needed
+        if (loadedLayersRef.current.size >= MAX_LOADED_CHUNKS) {
+          cleanupOldChunks(map, currentTileset.id);
+        }
+
+        previousChunkRef.current = currentTileset.id;
+      } catch (error) {
+        console.error('Error updating layers:', error);
       }
+    },
+    [getCurrentDateTime, cleanupOldChunks, pm25Threshold, isDarkMode, getRelevantTilesets]
+  );
 
-      // Clean up old chunks
-      cleanupOldChunks();
-    });
-  }, [
-    mapInstance,
-    isMapLoaded,
-    currentHour,
-    getDateTime,
-    pm25Threshold,
-    isDarkMode,
-    cleanupOldChunks,
-    logAsync,
-    debug,
-    warn
-  ]);
-
-  // Effect for dark mode changes
   useEffect(() => {
-    debug('Dark mode changed', { isDarkMode });
-    if (isMapLoaded) {
-      updateLayerColors();
-    }
-  }, [isDarkMode, isMapLoaded, updateLayerColors, debug]);
+    const map = mapRef.current?.getMap();
+    if (!map || !isMapLoaded) return;
 
-  // Effect for PM2.5 threshold changes
-  useEffect(() => {
-    debug('PM2.5 threshold changed', { pm25Threshold });
-    if (isMapLoaded) {
-      updateLayerColors();
-    }
-  }, [pm25Threshold, isMapLoaded, updateLayerColors, debug]);
+    // Force immediate update of colors and visibility
+    updateLayerColors(map);
+  }, [isDarkMode, isMapLoaded, updateLayerColors]);
 
-  // Effect for current hour changes
+  // Handle style changes
   useEffect(() => {
-    debug('Current hour changed', { currentHour });
-    if (isMapLoaded) {
-      updateLayers();
-    }
-  }, [currentHour, isMapLoaded, updateLayers, debug]);
-
-  // Effect for style changes
-  useEffect(() => {
-    const map = mapInstance;
+    const map = mapRef.current?.getMap();
     if (!map) return;
 
     const handleStyleData = () => {
-      if (map.isStyleLoaded()) {
-        debug('Map style loaded, reinitializing layers');
-        initializeLayers();
+      if (needsLayerReinitRef.current) {
+        console.log('Reinitializing layers after style change');
+        initializeLayers(map);
+        updateLayers(map);
+        needsLayerReinitRef.current = false;
       }
     };
 
     map.on('styledata', handleStyleData);
     return () => map.off('styledata', handleStyleData);
-  }, [mapInstance, initializeLayers, debug]);
+  }, [initializeLayers, updateLayers]);
 
-  // Initial setup
+  // Handle initial layer setup and updates
   useEffect(() => {
-    if (mapInstance && isMapLoaded) {
-      debug('Initial layer initialization triggered', {
-        mapInstance: !!mapInstance,
-        isMapLoaded,
-        reinitializeRef: reinitializeRef?.current
-      });
-      initializeLayers();
-      if (reinitializeRef) {
-        reinitializeRef.current = false;
-      }
-    }
-  }, [mapInstance, isMapLoaded, initializeLayers, reinitializeRef, debug]);
+    const map = mapRef.current?.getMap();
+    if (!map || !isMapLoaded) return;
 
-  return {
-    updateLayers,
-    initializeLayers,
-    cleanupOldChunks,
-    updateLayerColors
-  };
+    // First, initialize the layers
+    if (!loadedLayersRef.current.size) {
+      console.log('Initial layer initialization');
+      initializeLayers(map);
+    }
+
+    // Then update them
+    updateLayers(map);
+  }, [isMapLoaded, updateLayers, initializeLayers, currentHour]);
+
+  return { updateLayers, initializeLayers };
 };
 
 export default useMapLayers;

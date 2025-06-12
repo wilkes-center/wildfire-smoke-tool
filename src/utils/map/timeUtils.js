@@ -1,5 +1,3 @@
-import logger from '../logger';
-
 /**
  * Formats a timestamp into a readable date-time string
  * @param {Object} timestamp - Object containing date and hour properties
@@ -22,7 +20,7 @@ export const formatDateTime = timestamp => {
   const utcDate = new Date(Date.UTC(year, month - 1, day));
   const formattedDate = utcDate.toLocaleDateString('en-US', dateOptions);
 
-  logger.debug(`Formatting date: ${timestamp.date}, hour: ${timestamp.hour} -> ${formattedDate}`);
+  console.log(`Formatting date: ${timestamp.date}, hour: ${timestamp.hour} -> ${formattedDate}`);
 
   return formattedDate;
 };
@@ -33,40 +31,49 @@ export const formatDateTime = timestamp => {
  * @returns {Object} Object with formatted date, time, and timezone info
  */
 export const formatLocalDateTime = timestamp => {
-  if (!timestamp || !timestamp.date || timestamp.hour === undefined) {
-    logger.warn('Invalid timestamp provided to formatLocalDateTime', { timestamp });
-    return { time: 'Invalid', timezone: '', date: 'Invalid' };
-  }
+  if (!timestamp || !timestamp.date) return { date: '', time: '', timezone: '' };
 
-  try {
-    const { date, hour } = timestamp;
-    const dateObj = new Date(`${date}T${hour.toString().padStart(2, '0')}:00:00Z`);
+  // Convert to Date object, handling both date string and Date objects
+  const dateStr =
+    typeof timestamp.date === 'string'
+      ? timestamp.date
+      : timestamp.date.toISOString().split('T')[0];
 
-    const formattedDate = dateObj.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone: 'UTC'
-    });
+  // Parse the date string and hour as UTC
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const utcDate = new Date(Date.UTC(year, month - 1, day, timestamp.hour, 0, 0, 0));
 
-    logger.debug('Formatting date', {
-      inputDate: timestamp.date,
-      inputHour: timestamp.hour,
-      formattedDate
-    });
+  // Format in user's local timezone
+  const localDate = utcDate.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
 
-    return {
-      time: `${hour.toString().padStart(2, '0')}:00`,
-      timezone: 'UTC',
-      date: formattedDate
-    };
-  } catch (error) {
-    logger.error('Error formatting local date time', {
-      error: error.message,
-      timestamp
-    });
-    return { time: 'Error', timezone: '', date: 'Error' };
-  }
+  const localTime = utcDate.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+
+  // Get timezone abbreviation
+  const timezone = utcDate
+    .toLocaleTimeString('en-US', {
+      timeZoneName: 'short'
+    })
+    .split(' ')
+    .pop();
+
+  console.log(
+    `Converting UTC ${timestamp.date} ${timestamp.hour}:00 -> Local ${localDate} ${localTime} ${timezone}`
+  );
+
+  return {
+    date: localDate,
+    time: localTime,
+    timezone,
+    fullDateTime: utcDate
+  };
 };
 
 /**
@@ -119,42 +126,33 @@ export const isLocalTimeDifferentFromUTC = timestamp => {
  * @returns {number} The current hour index in the timeline (0-based)
  */
 export const getCurrentTimelineHour = (startDate, totalHours) => {
-  try {
-    const now = new Date();
-    const currentUTC = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0, 0)
-    );
+  const now = new Date();
+  const currentUTC = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0, 0)
+  );
 
-    // Calculate hours since timeline start
-    const hoursSinceStart = Math.floor((currentUTC - startDate) / (1000 * 60 * 60));
+  // Calculate hours since timeline start
+  const hoursSinceStart = Math.floor((currentUTC - startDate) / (1000 * 60 * 60));
 
-    logger.debug('Timeline calculation', {
-      now: now.toISOString(),
-      currentUTC: currentUTC.toISOString(),
-      startDate: startDate.toISOString(),
-      hoursSinceStart,
-      totalHours
-    });
+  console.log('Timeline calculation:', {
+    now: now.toISOString(),
+    currentUTC: currentUTC.toISOString(),
+    startDate: startDate.toISOString(),
+    hoursSinceStart,
+    totalHours
+  });
 
-    // Clamp to valid range
-    if (hoursSinceStart < 0) {
-      logger.debug('Current time is before timeline start, using hour 0');
-      return 0;
-    }
-
-    if (hoursSinceStart >= totalHours) {
-      logger.debug('Current time is after timeline end, using last hour');
-      return totalHours - 1;
-    }
-
-    logger.debug('Setting initial timeline hour', { hoursSinceStart });
-    return hoursSinceStart;
-  } catch (error) {
-    logger.error('Error calculating current timeline hour', {
-      error: error.message,
-      startDate: startDate?.toISOString(),
-      totalHours
-    });
+  // Clamp to valid range
+  if (hoursSinceStart < 0) {
+    console.log('Current time is before timeline start, using hour 0');
     return 0;
   }
+
+  if (hoursSinceStart >= totalHours) {
+    console.log('Current time is after timeline end, using last hour');
+    return totalHours - 1;
+  }
+
+  console.log(`Setting initial timeline hour to: ${hoursSinceStart}`);
+  return hoursSinceStart;
 };
