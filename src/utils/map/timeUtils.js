@@ -1,4 +1,4 @@
-import { logger } from '../logger';
+import logger from '../logger';
 
 /**
  * Formats a timestamp into a readable date-time string

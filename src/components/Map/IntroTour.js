@@ -27,6 +27,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
   const [previousElement, setPreviousElement] = useState(null);
   const cleanupFunctionRef = useRef(null);
   const highlightedElementsRef = useRef(new Set());
+  const previousElementRef = useRef(null);
 
   const tourSteps = [
     {
@@ -283,18 +284,6 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
       // Store reference for cleanup
       previousElementRef.current = element;
 
-      // Calculate tooltip position
-      const rect = element.getBoundingClientRect();
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-
-      setTooltipPosition({
-        top: rect.top + scrollTop,
-        left: rect.left + scrollLeft,
-        width: rect.width,
-        height: rect.height
-      });
-
       // Scroll element into view
       element.scrollIntoView({
         behavior: 'smooth',
@@ -327,10 +316,10 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
     // First ensure any previous highlighting is completely removed
     if (cleanupFunctionRef.current) {
       try {
-        console.log('Executing cleanup function for previous element');
+        debug('Executing cleanup function for previous element');
         cleanupFunctionRef.current();
       } catch (err) {
-        console.error('Error during cleanup:', err);
+        error('Error during cleanup', { error: err.message });
       }
       cleanupFunctionRef.current = null;
     }
@@ -346,7 +335,11 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
 
         // Add better debug information
         if (element) {
-          console.log(`Found element for ${step.target}:`, element);
+          debug('Found element for step', {
+            target: step.target,
+            elementTag: element.tagName,
+            elementId: element.id
+          });
           setPreviousElement(highlightedElement);
           setHighlightedElement(element);
 
@@ -384,7 +377,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
           // Set up the cleanup function for later
           cleanupFunctionRef.current = applyHighlighting();
         } else {
-          console.warn(`Could not find element for ${step.target}`);
+          warn('Could not find element for step', { target: step.target });
           setPreviousElement(null);
           setHighlightedElement(null);
         }
@@ -422,7 +415,10 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
                   style.includes('#8b5cf6'))) ||
               (style.includes('box-shadow') && style.includes('scale(1.02)'))
             ) {
-              console.log('Removing residual tour styling:', el);
+              debug('Removing residual tour styling', {
+                elementTag: el.tagName,
+                elementId: el.id
+              });
               el.removeAttribute('style');
             }
           }
@@ -460,7 +456,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
         try {
           cleanupFunctionRef.current();
         } catch (err) {
-          console.error('Error in global cleanup:', err);
+          error('Error in global cleanup', { error: err.message });
         }
         cleanupFunctionRef.current = null;
       }
@@ -605,6 +601,7 @@ const FeatureTooltip = ({
   stepNumber,
   totalSteps
 }) => {
+  const { warn } = useLogger('FeatureTooltip');
   const [position, setPosition] = useState({ top: 0, left: 0 });
 
   // Default positions for each step if element isn't found
@@ -673,7 +670,10 @@ const FeatureTooltip = ({
 
           setPosition({ top, left });
         } catch (error) {
-          console.warn('Error positioning tooltip:', error);
+          warn('Error positioning tooltip', {
+            error: error.message,
+            stepTarget: step.target
+          });
         }
       } else {
         // If no element, use default positions

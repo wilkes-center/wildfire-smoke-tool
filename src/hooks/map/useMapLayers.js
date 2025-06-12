@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { getPM25ColorInterpolation } from '../../utils/map/colorUtils';
-import { TILESET_INFO } from '../../utils/map/tilesetInfo';
+import { getPM25ColorInterpolation } from '../../constants/pm25Levels';
+import { TILESET_INFO } from '../../utils/map/constants';
 import { useLogger } from '../useLogger';
 
 export const useMapLayers = (
-  mapRef,
+  mapInstance,
   pm25Threshold,
   currentHour,
   isMapLoaded,
@@ -30,55 +30,62 @@ export const useMapLayers = (
     }
 
     const { date, hour } = getDateTime(currentHour);
-    const currentTilesetId = `${date}_${hour.toString().padStart(2, '0')}`;
 
     debug('Getting relevant tilesets', {
       currentHour,
       date,
-      hour,
-      currentTilesetId
+      hour
+    });
+
+    // Find the tileset that contains the current hour
+    const currentTileset = TILESET_INFO.find(tileset => {
+      const tilesetDate = tileset.date;
+      const isCorrectDate = tilesetDate === date;
+      const isInHourRange = hour >= tileset.startHour && hour <= tileset.endHour;
+
+      debug('Checking tileset', {
+        tilesetId: tileset.id,
+        tilesetDate,
+        startHour: tileset.startHour,
+        endHour: tileset.endHour,
+        currentHour: hour,
+        isCorrectDate,
+        isInHourRange
+      });
+
+      return isCorrectDate && isInHourRange;
     });
 
     const result = [];
-    const currentTileset = TILESET_INFO.find(t => t.id === currentTilesetId);
 
     if (currentTileset) {
       result.push(currentTileset);
-      debug('Added current tileset', { tilesetId: currentTileset.id });
+      debug('Found current tileset', {
+        tilesetId: currentTileset.id,
+        startHour: currentTileset.startHour,
+        endHour: currentTileset.endHour
+      });
     } else {
       warn('No tileset found for current time', {
         date,
         hour,
-        currentTilesetId,
-        availableTilesets: TILESET_INFO.map(t => t.id)
+        availableTilesets: TILESET_INFO.map(t => ({
+          id: t.id,
+          date: t.date,
+          startHour: t.startHour,
+          endHour: t.endHour
+        }))
       });
-    }
-
-    // Add next hour tileset if available
-    const nextHour = hour + 1;
-    if (nextHour < 24) {
-      const nextTilesetId = `${date}_${nextHour.toString().padStart(2, '0')}`;
-      const nextTileset = TILESET_INFO.find(t => t.id === nextTilesetId);
-      if (nextTileset) {
-        result.push(nextTileset);
-        debug('Added next tileset', { tilesetId: nextTileset.id });
-      }
-    }
-
-    // Add previous hour tileset if available
-    const prevHour = hour - 1;
-    if (prevHour >= 0) {
-      const prevTilesetId = `${date}_${prevHour.toString().padStart(2, '0')}`;
-      const prevTileset = TILESET_INFO.find(t => t.id === prevTilesetId);
-      if (prevTileset) {
-        result.push(prevTileset);
-        debug('Added previous tileset', { tilesetId: prevTileset.id });
-      }
     }
 
     debug('Returning relevant tilesets', {
       count: result.length,
-      tilesets: result.map(t => t.id)
+      tilesets: result.map(t => ({
+        id: t.id,
+        date: t.date,
+        startHour: t.startHour,
+        endHour: t.endHour
+      }))
     });
 
     timer.end();
@@ -87,7 +94,7 @@ export const useMapLayers = (
 
   const cleanupOldChunks = useCallback(() => {
     return logAsync('cleanupOldChunks', () => {
-      const map = mapRef.current;
+      const map = mapInstance;
       if (!map) return;
 
       const relevantTilesets = getRelevantTilesets();
@@ -123,11 +130,11 @@ export const useMapLayers = (
         }
       });
     });
-  }, [mapRef, getRelevantTilesets, logAsync, error]);
+  }, [mapInstance, getRelevantTilesets, logAsync, error]);
 
   const updateLayerColors = useCallback(() => {
     return logAsync('updateLayerColors', () => {
-      const map = mapRef.current;
+      const map = mapInstance;
       if (!map) return;
 
       const colorExpression = getPM25ColorInterpolation(pm25Threshold);
@@ -167,11 +174,11 @@ export const useMapLayers = (
         });
       }
     });
-  }, [mapRef, pm25Threshold, currentHour, getDateTime, isDarkMode, logAsync, debug, error]);
+  }, [mapInstance, pm25Threshold, currentHour, getDateTime, isDarkMode, logAsync, debug, error]);
 
   const initializeLayers = useCallback(() => {
     return logAsync('initializeLayers', () => {
-      const map = mapRef.current;
+      const map = mapInstance;
       if (!map || !map.isStyleLoaded()) return;
 
       const relevantTilesets = getRelevantTilesets();
@@ -229,23 +236,31 @@ export const useMapLayers = (
       // Update layer visibility and colors
       updateLayerColors();
     });
-  }, [mapRef, getRelevantTilesets, pm25Threshold, isDarkMode, updateLayerColors, logAsync, debug]);
+  }, [mapInstance, getRelevantTilesets, pm25Threshold, isDarkMode, updateLayerColors, logAsync, debug]);
 
   const updateLayers = useCallback(() => {
     return logAsync('updateLayers', () => {
-      const map = mapRef.current;
+      const map = mapInstance;
       if (!map || !isMapLoaded) return;
 
       const { date, hour } = getDateTime(currentHour);
       debug('Updating layers for current time', { date, hour, currentHour });
       debug('Available tilesets', {
         count: TILESET_INFO.length,
-        tilesets: TILESET_INFO.map(t => t.id)
+        tilesets: TILESET_INFO.map(t => ({
+          id: t.id,
+          date: t.date,
+          startHour: t.startHour,
+          endHour: t.endHour
+        }))
       });
 
-      const currentTileset = TILESET_INFO.find(t => {
-        const tilesetId = `${date}_${hour.toString().padStart(2, '0')}`;
-        return t.id === tilesetId;
+      // Find the tileset that contains the current hour
+      const currentTileset = TILESET_INFO.find(tileset => {
+        const tilesetDate = tileset.date;
+        const isCorrectDate = tilesetDate === date;
+        const isInHourRange = hour >= tileset.startHour && hour <= tileset.endHour;
+        return isCorrectDate && isInHourRange;
       });
 
       if (!currentTileset) {
@@ -255,7 +270,9 @@ export const useMapLayers = (
 
       debug('Using tileset', {
         tilesetId: currentTileset.id,
-        layer: currentTileset.layer
+        layer: currentTileset.layer,
+        startHour: currentTileset.startHour,
+        endHour: currentTileset.endHour
       });
 
       const currentLayerId = `layer-chunk-${currentTileset.id}`;
@@ -264,21 +281,14 @@ export const useMapLayers = (
       // Hide all layers first
       loadedLayersRef.current.forEach(layerId => {
         if (map.getLayer(layerId)) {
-          const timeString = layerId.replace('layer-chunk-', '');
           debug('Processing layer visibility', {
             layerId,
-            timeString,
             isCurrentLayer: layerId === currentLayerId
           });
 
           if (layerId === currentLayerId) {
-            debug('Setting filter for current layer', {
-              layerId: currentLayerId,
-              timeString,
-              pm25Threshold
-            });
-
             map.setLayoutProperty(layerId, 'visibility', 'visible');
+            debug('Made layer visible', { layerId });
           } else {
             map.setLayoutProperty(layerId, 'visibility', 'none');
             debug('Hidden layer', { layerId });
@@ -352,7 +362,7 @@ export const useMapLayers = (
       cleanupOldChunks();
     });
   }, [
-    mapRef,
+    mapInstance,
     isMapLoaded,
     currentHour,
     getDateTime,
@@ -390,7 +400,7 @@ export const useMapLayers = (
 
   // Effect for style changes
   useEffect(() => {
-    const map = mapRef.current;
+    const map = mapInstance;
     if (!map) return;
 
     const handleStyleData = () => {
@@ -402,16 +412,22 @@ export const useMapLayers = (
 
     map.on('styledata', handleStyleData);
     return () => map.off('styledata', handleStyleData);
-  }, [mapRef, initializeLayers, debug]);
+  }, [mapInstance, initializeLayers, debug]);
 
   // Initial setup
   useEffect(() => {
-    if (isMapLoaded && reinitializeRef?.current) {
-      debug('Initial layer initialization');
+    if (mapInstance && isMapLoaded) {
+      debug('Initial layer initialization triggered', {
+        mapInstance: !!mapInstance,
+        isMapLoaded,
+        reinitializeRef: reinitializeRef?.current
+      });
       initializeLayers();
-      reinitializeRef.current = false;
+      if (reinitializeRef) {
+        reinitializeRef.current = false;
+      }
     }
-  }, [isMapLoaded, initializeLayers, reinitializeRef, debug]);
+  }, [mapInstance, isMapLoaded, initializeLayers, reinitializeRef, debug]);
 
   return {
     updateLayers,

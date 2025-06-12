@@ -1,24 +1,24 @@
+import { HelpCircle } from 'lucide-react';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import React, { useRef } from 'react';
 import Map from 'react-map-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { HelpCircle } from 'lucide-react';
 
 import { DEFAULT_DARK_BASEMAP, DEFAULT_LIGHT_BASEMAP } from '../../constants/map/basemaps.js';
 import {
-  useMapState,
-  useTimeState,
-  useThemeState,
-  useDrawingState,
-  useUIState,
-  useMapLayers,
-  useTimeAnimation,
-  useDateTimeCalculator,
-  useMapInteraction,
-  useDrawingInteraction,
-  useThemeControl,
-  usePolygonVisualization,
-  useTourManager,
-  useCensusDataManager
+    useCensusDataManager,
+    useDateTimeCalculator,
+    useDrawingInteraction,
+    useDrawingState,
+    useMapInteraction,
+    useMapLayers,
+    useMapState,
+    usePolygonVisualization,
+    useThemeControl,
+    useThemeState,
+    useTimeAnimation,
+    useTimeState,
+    useTourManager,
+    useUIState
 } from '../../hooks';
 import { MAPBOX_TOKEN } from '../../utils/map/constants.js';
 
@@ -32,8 +32,6 @@ import DrawingHelperOverlay from './DrawingHelperOverlay';
 import DrawingTooltip from './DrawingTooltip';
 import IntroTour from './IntroTour';
 import LoadingOverlay from './LoadingOverlay';
-import AreaAnalysis from './panels/AreaAnalysis';
-import MapAdditionalControls from './panels/MapAdditionalControls';
 import RightPanelControls from './panels/RightPanelControls';
 
 // Custom hooks
@@ -90,7 +88,7 @@ const MapComponent = ({ onShowIntro }) => {
   const getCurrentDateTime = useDateTimeCalculator(currentHour);
 
   const { updateLayers } = useMapLayers(
-    mapRef,
+    mapInstance,
     pm25Threshold,
     currentHour,
     isMapLoaded,
