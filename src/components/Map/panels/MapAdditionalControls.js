@@ -205,7 +205,7 @@ const MapAdditionalControls = ({
               ],
               'circle-color': getPM25ColorInterpolation(isDarkMode),
               'circle-blur': 0.6,
-              'circle-opacity': 0
+              'circle-opacity': isDarkMode ? 0.8 : 0.6
             },
             layout: {
               visibility: 'none'
@@ -292,7 +292,6 @@ const MapAdditionalControls = ({
         TILESET_INFO.forEach(tileset => {
           const layerId = `minimap-layer-${tileset.id}`;
           if (map.getLayer(layerId)) {
-            map.setPaintProperty(layerId, 'circle-opacity', 0);
             map.setLayoutProperty(layerId, 'visibility', 'none');
           }
         });
@@ -342,7 +341,7 @@ const MapAdditionalControls = ({
               ],
               'circle-color': getPM25ColorInterpolation(isDarkMode),
               'circle-blur': 0.6,
-              'circle-opacity': 0
+              'circle-opacity': isDarkMode ? 0.8 : 0.6
             },
             layout: {
               visibility: 'none'
@@ -359,8 +358,9 @@ const MapAdditionalControls = ({
             ['>=', ['coalesce', ['to-number', ['get', 'PM25'], null], 0], pm25Threshold || 0]
           ]);
 
-          map.setPaintProperty(currentLayerId, 'circle-opacity', isDarkMode ? 0.6 : 0.5);
           map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
+          // Set opacity for the minimap - use a fixed moderate opacity for better visibility
+          map.setPaintProperty(currentLayerId, 'circle-opacity', isDarkMode ? 0.8 : 0.6);
         }
 
         // Only prepare next chunk if we're at the exact end of current chunk
@@ -406,7 +406,21 @@ const MapAdditionalControls = ({
                 ],
                 'circle-color': getPM25ColorInterpolation(isDarkMode),
                 'circle-blur': 0.6,
-                'circle-opacity': 0
+                'circle-opacity': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  4,
+                  isDarkMode ? 0.9 : 0.75,
+                  6,
+                  isDarkMode ? 0.5 : 0.4,
+                  7,
+                  isDarkMode ? 0.3 : 0.2,
+                  8,
+                  isDarkMode ? 0.2 : 0.15,
+                  9,
+                  isDarkMode ? 0.2 : 0.15
+                ]
               },
               layout: {
                 visibility: 'none'
@@ -424,7 +438,6 @@ const MapAdditionalControls = ({
           ]);
 
           // Keep next layer hidden - don't show it until we actually transition
-          map.setPaintProperty(nextLayerId, 'circle-opacity', 0);
           map.setLayoutProperty(nextLayerId, 'visibility', 'none');
         }
 

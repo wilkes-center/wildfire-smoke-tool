@@ -166,7 +166,6 @@ const MapControls = ({
                   ]);
 
                   // Make layer visible
-                  mapInstance.setPaintProperty(layerId, 'circle-opacity', isDarkMode ? 0.6 : 0.4);
                   mapInstance.setLayoutProperty(layerId, 'visibility', 'visible');
                 } else {
                   console.warn(`Layer not found for time ${timeString}:`, layerId);

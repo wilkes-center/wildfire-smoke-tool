@@ -281,15 +281,13 @@ export const useMapLayers = (
             ]);
 
             map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
-            map.setPaintProperty(currentLayerId, 'circle-opacity', isDarkMode ? 0.9 : 0.75);
             layersUpdated++;
 
             debug('Layer visibility updated', {
               currentLayerId,
               timeString,
               pm25Threshold,
-              isDarkMode,
-              opacity: isDarkMode ? 0.9 : 0.75
+              isDarkMode
             });
           } catch (visibilityError) {
             mapError(`Failed to show current layer ${currentLayerId}`, {
@@ -418,7 +416,21 @@ export const useMapLayers = (
                     ],
                     'circle-color': getPM25ColorInterpolation(isDarkMode),
                     'circle-blur': 0.6,
-                    'circle-opacity': 0
+                    'circle-opacity': [
+                      'interpolate',
+                      ['linear'],
+                      ['zoom'],
+                      4,
+                      isDarkMode ? 0.9 : 0.75,
+                      6,
+                      isDarkMode ? 0.5 : 0.4,
+                      7,
+                      isDarkMode ? 0.3 : 0.2,
+                      8,
+                      isDarkMode ? 0.2 : 0.15,
+                      9,
+                      isDarkMode ? 0.2 : 0.15
+                    ]
                   },
                   layout: {
                     visibility: 'none'
@@ -585,7 +597,21 @@ export const useMapLayers = (
                 ],
                 'circle-color': getPM25ColorInterpolation(isDarkMode),
                 'circle-blur': 0.6,
-                'circle-opacity': 0
+                'circle-opacity': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  4,
+                  isDarkMode ? 0.9 : 0.75,
+                  6,
+                  isDarkMode ? 0.5 : 0.4,
+                  7,
+                  isDarkMode ? 0.3 : 0.2,
+                  8,
+                  isDarkMode ? 0.2 : 0.15,
+                  9,
+                  isDarkMode ? 0.2 : 0.15
+                ]
               },
               layout: {
                 visibility: 'none'
@@ -597,7 +623,6 @@ export const useMapLayers = (
 
           // Update the current layer
           map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
-          map.setPaintProperty(currentLayerId, 'circle-opacity', isDarkMode ? 0.9 : 0.75);
           map.setFilter(currentLayerId, [
             'all',
             ['==', ['get', 'time'], timeString],
@@ -606,7 +631,6 @@ export const useMapLayers = (
 
           debug('Layer update completed', {
             currentLayerId,
-            opacity: isDarkMode ? 0.9 : 0.75,
             pm25Threshold
           });
         } catch (updateError) {

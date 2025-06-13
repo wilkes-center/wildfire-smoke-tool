@@ -173,9 +173,8 @@ export const useMapLayers = (
 
         // Make current layer visible and set opacity
         map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
-        map.setPaintProperty(currentLayerId, 'circle-opacity', isDarkMode ? 0.9 : 0.75);
 
-        console.log(`Made layer ${currentLayerId} visible with opacity ${isDarkMode ? 0.9 : 0.75}`);
+        console.log(`Made layer ${currentLayerId} visible with zoom-based opacity`);
       }
     },
     [isDarkMode, getCurrentDateTime, pm25Threshold]
@@ -251,7 +250,21 @@ export const useMapLayers = (
                 ],
                 'circle-color': getPM25ColorInterpolation(isDarkMode),
                 'circle-blur': 0.6,
-                'circle-opacity': 0 // Always start with zero opacity
+                'circle-opacity': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  4,
+                  isDarkMode ? 0.9 : 0.75,
+                  6,
+                  isDarkMode ? 0.5 : 0.4,
+                  7,
+                  isDarkMode ? 0.3 : 0.2,
+                  8,
+                  isDarkMode ? 0.2 : 0.15,
+                  9,
+                  isDarkMode ? 0.2 : 0.15
+                ]
               },
               layout: {
                 visibility: 'none'
@@ -378,7 +391,21 @@ export const useMapLayers = (
               ],
               'circle-color': getPM25ColorInterpolation(isDarkMode),
               'circle-blur': 0.6,
-              'circle-opacity': 0
+              'circle-opacity': [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                4,
+                isDarkMode ? 0.9 : 0.75,
+                6,
+                isDarkMode ? 0.5 : 0.4,
+                7,
+                isDarkMode ? 0.3 : 0.2,
+                8,
+                isDarkMode ? 0.2 : 0.15,
+                9,
+                isDarkMode ? 0.2 : 0.15
+              ]
             },
             layout: {
               visibility: 'none' // Start as hidden
@@ -395,8 +422,10 @@ export const useMapLayers = (
         map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
 
         // Then set opacity
-        map.setPaintProperty(currentLayerId, 'circle-opacity', isDarkMode ? 0.9 : 0.75);
-        console.log(`Set opacity to ${isDarkMode ? 0.9 : 0.75} for layer: ${currentLayerId}`);
+        // Remove the fixed opacity setting since we now use zoom-based opacity
+        // map.setPaintProperty(currentLayerId, 'circle-opacity', isDarkMode ? 0.9 : 0.75);
+
+        console.log(`Made layer ${currentLayerId} visible with zoom-based opacity`);
 
         // Finally set filter
         map.setFilter(currentLayerId, [
@@ -449,7 +478,21 @@ export const useMapLayers = (
                 ],
                 'circle-color': getPM25ColorInterpolation(isDarkMode),
                 'circle-blur': 0.6,
-                'circle-opacity': 0
+                'circle-opacity': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  4,
+                  isDarkMode ? 0.9 : 0.75,
+                  6,
+                  isDarkMode ? 0.9 : 0.75,
+                  7,
+                  isDarkMode ? 0.4 : 0.3,
+                  8,
+                  isDarkMode ? 0.3 : 0.2,
+                  9,
+                  isDarkMode ? 0.3 : 0.2
+                ]
               },
               layout: {
                 visibility: 'none' // Start as hidden

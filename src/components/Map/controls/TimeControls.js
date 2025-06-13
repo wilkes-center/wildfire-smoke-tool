@@ -123,7 +123,7 @@ export const TimeControls = ({
                   : 'bg-white/90 border border-mahogany'
               }`}
             >
-              {[1, 2, 3].map(speed => (
+              {[1, 2, 3, 8].map(speed => (
                 <button
                   key={speed}
                   onClick={() => {

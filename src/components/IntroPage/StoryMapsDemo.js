@@ -552,7 +552,21 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
                 ],
                 'circle-color': getPM25ColorInterpolation(false), // Light theme
                 'circle-blur': 0.6,
-                'circle-opacity': 0
+                'circle-opacity': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  4,
+                  0.75,
+                  6,
+                  0.75,
+                  7,
+                  0.3,
+                  8,
+                  0.2,
+                  9,
+                  0.2
+                ]
               },
               layout: {
                 visibility: 'none'
@@ -605,7 +619,21 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
                 ],
                 'circle-color': getPM25ColorInterpolation(false), // Light theme
                 'circle-blur': 0.6,
-                'circle-opacity': 0
+                'circle-opacity': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  4,
+                  0.75,
+                  6,
+                  0.75,
+                  7,
+                  0.3,
+                  8,
+                  0.2,
+                  9,
+                  0.2
+                ]
               },
               layout: {
                 visibility: 'none'
@@ -828,7 +856,6 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
 
           map.setFilter(currentLayerId, layerFilter);
           map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
-          map.setPaintProperty(currentLayerId, 'circle-opacity', 0.75);
 
           console.log(
             `Successfully showing layer: ${currentLayerId} for section ${currentSection + 1}`
