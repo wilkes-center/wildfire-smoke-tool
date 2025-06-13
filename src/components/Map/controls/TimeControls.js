@@ -84,17 +84,18 @@ export const TimeControls = ({
       const tilesetDate = TILESET_INFO[tilesetIndex].date;
       console.log(`Day ${dayOffset} date from tileset: ${tilesetDate}`);
 
-      // Parse the date string and convert to local date for display
+      // Parse the date string and format it consistently with DateTime component
       const dateStr = tilesetDate;
       const [year, month, day] = dateStr.split('-').map(Number);
 
-      // Create UTC date first
+      // Create UTC date and format in UTC timezone to avoid day shifts
       const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
 
-      // Format in user's local timezone to match the time display
+      // Format the date in UTC timezone to ensure consistent display
       const localDateStr = utcDate.toLocaleDateString('en-US', {
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'UTC'  // This ensures we display the UTC date, not shifted to local
       });
 
       console.log(
@@ -108,10 +109,11 @@ export const TimeControls = ({
     const date = new Date(START_DATE);
     date.setUTCDate(date.getUTCDate() + dayOffset);
 
-    // Apply local formatting with UTC indicator
+    // Format in UTC timezone to ensure consistent display
     const localDateStr = date.toLocaleDateString('en-US', {
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'UTC'  // This ensures we display the UTC date, not shifted to local
     });
 
     console.log(`TimeControls fallback: Day ${dayOffset} -> ${localDateStr} (from START_DATE)`);
@@ -154,50 +156,34 @@ export const TimeControls = ({
             onClick={() => setShowSpeedOptions(!showSpeedOptions)}
             className={`h-10 px-4 rounded-lg text-sm font-medium transition-colors backdrop-blur-sm shadow-lg ${
               isDarkMode
-                ? 'bg-white/90 text-gray-800 hover:bg-white/80'
-                : 'bg-white/90 text-mahogany hover:bg-white/80'
+                ? 'bg-gray-800/90 hover:bg-gray-700/90 text-white border border-white'
+                : 'bg-gray-100/90 hover:bg-gray-200/90 text-gray-700 border border-mahogany'
             }`}
           >
-            {playbackSpeed}x
-          </button>
-
-          {/* Go to Current Time Button - Always visible */}
-          <button
-            onClick={handleGoToCurrentTime}
-            className={`h-10 px-3 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors backdrop-blur-sm shadow-lg border ${
-              isDarkMode
-                ? 'bg-blue-900/20 text-blue-300 border-blue-700/30 hover:bg-blue-900/30'
-                : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-            }`}
-            title="Jump to current time"
-          >
-            <Clock className="w-4 h-4" />
-            <span>Now</span>
+            {playbackSpeed}x Speed
           </button>
 
           {showSpeedOptions && (
             <div
-              className={`absolute bottom-full mb-2 rounded-lg shadow-lg backdrop-blur-sm ${
-                isDarkMode
-                  ? 'bg-white/90 border border-gray-200'
-                  : 'bg-white/90 border border-mahogany/20'
+              className={`absolute bottom-full mb-2 flex gap-1 p-2 rounded-lg shadow-lg backdrop-blur-sm ${
+                isDarkMode ? 'bg-gray-800/90 border border-white' : 'bg-white/90 border border-mahogany'
               }`}
             >
-              {[1, 2, 3].map(speed => (
+              {[1, 2, 4, 8].map(speed => (
                 <button
                   key={speed}
                   onClick={() => {
                     setPlaybackSpeed(speed);
                     setShowSpeedOptions(false);
                   }}
-                  className={`w-full px-4 py-2 text-sm transition-all ${
+                  className={`px-3 py-1 rounded-md transition-colors text-sm ${
                     playbackSpeed === speed
                       ? isDarkMode
-                        ? 'bg-forest/20 text-gray-800'
-                        : 'bg-sage-light text-mahogany'
+                        ? 'bg-gray-600 text-white'
+                        : 'bg-gray-200 text-gray-800'
                       : isDarkMode
-                        ? 'hover:bg-gray-100 text-gray-600'
-                        : 'hover:bg-gray-50 text-gray-600'
+                        ? 'hover:bg-gray-700 text-gray-300'
+                        : 'hover:bg-gray-100 text-gray-600'
                   }`}
                 >
                   {speed}x
@@ -260,18 +246,12 @@ export const TimeControls = ({
                   />
                   {/* Date label */}
                   <div
-                    className="text-xs font-medium mt-1"
+                    className="text-xs font-medium mt-1 absolute"
                     style={{
-                      position: 'absolute',
                       whiteSpace: 'nowrap',
                       color: primaryColor,
-                      transform:
-                        index === 0
-                          ? 'translateX(0)'
-                          : index === 1
-                            ? 'translateX(-100%)'
-                            : 'translateX(-50%)',
-                      left: index === 0 ? 0 : index === 1 ? '100%' : '50%'
+                      transform: index === 0 ? 'translateX(0)' : 'translateX(-50%)',
+                      left: index === 0 ? '0' : '50%'
                     }}
                   >
                     {marker.label}
@@ -318,6 +298,19 @@ export const TimeControls = ({
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Show Current Time button */}
+        <button
+          onClick={handleGoToCurrentTime}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border ${
+            isDarkMode
+              ? 'border-white bg-gray-800/90 hover:bg-gray-700/90 text-white'
+              : 'border-mahogany bg-gray-100/90 hover:bg-gray-200/90 text-mahogany'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          <span className="text-sm font-medium">Now</span>
+        </button>
       </div>
     </div>
   );

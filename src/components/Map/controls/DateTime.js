@@ -2,7 +2,6 @@ import { Calendar, Clock } from 'lucide-react';
 import React from 'react';
 
 import {
-  formatDateTime,
   formatLocalDateTime,
   isLocalTimeDifferentFromUTC
 } from '../../../utils/map/timeUtils';
@@ -15,48 +14,85 @@ export const DateTime = ({ timestamp, currentDateTime, isDarkMode, showUTC = fal
   // Enhanced debugging to see what's being passed in
   console.log('DateTime component received:', dateTimeObj);
 
-  const formattedDateTime = formatDateTime(dateTimeObj);
   const localDateTime = formatLocalDateTime(dateTimeObj);
-  const shouldShowUTC = showUTC || isLocalTimeDifferentFromUTC(dateTimeObj);
+  const showLocalTime = isLocalTimeDifferentFromUTC(dateTimeObj);
+
+  // Format UTC date
+  const [year, month, day] = dateTimeObj.date.split('-').map(Number);
+  const utcDate = new Date(Date.UTC(year, month - 1, day));
+  const utcDateStr = utcDate.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC'
+  });
 
   return (
     <div
-      className={`backdrop-blur-md rounded-lg border-2 shadow-lg px-6 py-3 ${
+      className={`backdrop-blur-md rounded-xl border-2 shadow-lg px-8 py-4 ${
         isDarkMode ? 'bg-gray-900/95 border-white' : 'bg-white/95 border-mahogany'
       }`}
     >
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center gap-8">
+        {/* Date Section */}
+        <div className="flex items-center gap-4">
           <div
-            className={`p-2 rounded-md ${
+            className={`p-3 rounded-lg ${
               isDarkMode ? 'bg-forest/10 text-white' : 'bg-sage-light text-forest'
             }`}
           >
-            <Calendar className="w-5 h-5" />
+            <Calendar className="w-6 h-6" />
           </div>
-          <span className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-forest'}`}>
-            {localDateTime.date}
-          </span>
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-2">
+              <span className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}>
+                {utcDateStr}
+              </span>
+              <span className={`text-base ${isDarkMode ? 'text-white/60' : 'text-forest/60'}`}>
+                UTC
+              </span>
+            </div>
+            {showLocalTime && (
+              <div className="flex items-baseline gap-1.5">
+                <span className={`text-base ${isDarkMode ? 'text-white/70' : 'text-forest/70'}`}>
+                  {localDateTime.date}
+                </span>
+                <span className={`text-sm ${isDarkMode ? 'text-white/50' : 'text-forest/50'}`}>
+                  {localDateTime.timezone}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className={`h-6 w-px ${isDarkMode ? 'bg-white/30' : 'bg-sage'}`} />
+        <div className={`h-12 w-px ${isDarkMode ? 'bg-white/30' : 'bg-sage'}`} />
 
-        <div className="flex items-center gap-3">
+        {/* Time Section */}
+        <div className="flex items-center gap-4">
           <div
-            className={`p-2 rounded-md ${
+            className={`p-3 rounded-lg ${
               isDarkMode ? 'bg-forest/10 text-white' : 'bg-sage-light text-forest'
             }`}
           >
-            <Clock className="w-5 h-5" />
+            <Clock className="w-6 h-6" />
           </div>
-          <div className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-forest'}`}>
-            {localDateTime.time}
-            <span className={`ml-2 text-sm ${isDarkMode ? 'text-white/80' : 'text-forest-light'}`}>
-              {localDateTime.timezone}
-            </span>
-            {shouldShowUTC && (
-              <div className={`text-sm mt-1 ${isDarkMode ? 'text-white/60' : 'text-forest/60'}`}>
-                UTC: {String(dateTimeObj.hour).padStart(2, '0')}:00
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-2">
+              <span className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}>
+                {String(dateTimeObj.hour).padStart(2, '0')}:00
+              </span>
+              <span className={`text-base ${isDarkMode ? 'text-white/60' : 'text-forest/60'}`}>
+                UTC
+              </span>
+            </div>
+            {showLocalTime && (
+              <div className="flex items-baseline gap-1.5">
+                <span className={`text-base ${isDarkMode ? 'text-white/70' : 'text-forest/70'}`}>
+                  {localDateTime.time}
+                </span>
+                <span className={`text-sm ${isDarkMode ? 'text-white/50' : 'text-forest/50'}`}>
+                  {localDateTime.timezone}
+                </span>
               </div>
             )}
           </div>
