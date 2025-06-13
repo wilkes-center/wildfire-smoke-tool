@@ -20,14 +20,15 @@ const getDateRange = () => {
   const today = getCurrentUTCDate();
 
   const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
+  // End date is the end of tomorrow (48 hours total)
   const endDate = new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000 - 1);
 
   console.log('Date range:', {
     today: today.toISOString().split('T')[0],
     tomorrow: tomorrow.toISOString().split('T')[0],
-    totalHours: Math.floor((endDate - today) / (1000 * 60 * 60))
+    totalHours: 48  // Fixed to 48 hours for 2 days
   });
 
   return {
@@ -35,7 +36,7 @@ const getDateRange = () => {
     tomorrow,
     startDate: today,
     endDate,
-    totalHours: Math.floor((endDate - today) / (1000 * 60 * 60))
+    totalHours: 48  // 2 days = 48 hours
   };
 };
 
@@ -72,6 +73,7 @@ export const START_DATE = startDate;
 export const END_DATE = endDate;
 export const TOTAL_HOURS = totalHours;
 
+// Only generate tileset info for today and tomorrow (2 days)
 export const TILESET_INFO = [...generateTilesetInfo(today), ...generateTilesetInfo(tomorrow)];
 
 export { PM25_LEVELS };

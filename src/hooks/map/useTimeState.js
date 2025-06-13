@@ -16,7 +16,7 @@ export const useTimeState = () => {
 
   const [currentHour, setCurrentHour] = useState(initialHour);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(3);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
 
   return {
     currentHour,

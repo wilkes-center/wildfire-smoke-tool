@@ -19,10 +19,7 @@ const PM25LegendVertical = ({ isDarkMode }) => {
       <div className="space-y-2">
         {/* Header */}
         <div className="text-sm font-medium text-center">
-          PM2.5 Levels
-          <div className={`text-xs font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            (μg/m³)
-          </div>
+          PM2.5 Levels (μg/m³)
         </div>
 
         {/* Vertical color bars */}

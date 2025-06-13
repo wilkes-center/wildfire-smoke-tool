@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, Clock, Pause, Play } from 'lucide-react';
 import React, { useState } from 'react';
 
-import { START_DATE, TILESET_INFO, TOTAL_HOURS } from '../../../utils/map/constants.js';
+import { START_DATE, TOTAL_HOURS } from '../../../utils/map/constants.js';
 import { formatLocalDateTime, getCurrentTimelineHour } from '../../../utils/map/timeUtils.js';
 
 export const TimeControls = ({
@@ -49,63 +49,13 @@ export const TimeControls = ({
 
   // Get local time for current hour tooltip
   const getCurrentLocalTime = () => {
-    const dayOffset = Math.floor(currentHour / 24);
-    const hourOfDay = currentHour % 24;
-
-    // Use the same logic as generateDateLabel to get the actual tileset date
-    const tilesetIndex = dayOffset * 2; // First chunk of the day (0-11 hours)
-
-    let dateStr;
-    if (tilesetIndex < TILESET_INFO.length) {
-      // Get the date directly from TILESET_INFO to ensure alignment
-      dateStr = TILESET_INFO[tilesetIndex].date;
-    } else {
-      // Fallback calculation if tileset not found
-      const date = new Date(START_DATE);
-      date.setUTCDate(date.getUTCDate() + dayOffset);
-      dateStr = date.toISOString().split('T')[0];
-    }
-
-    const localTime = formatLocalDateTime({ date: dateStr, hour: hourOfDay });
-    return localTime;
+    const startDate = new Date(START_DATE);
+    const currentDate = new Date(startDate.getTime() + currentHour * 60 * 60 * 1000);
+    return formatLocalDateTime(currentDate);
   };
 
+  // Generate date labels dynamically
   const generateDateLabel = dayOffset => {
-    // Important: tilesets are ordered by date, with 2 per day (0-11 hours and 12-23 hours)
-    const tilesetIndex = dayOffset * 2; // First chunk of the day (0-11 hours)
-
-    console.log(
-      `TimeControls generateDateLabel: dayOffset=${dayOffset}, tilesetIndex=${tilesetIndex}`
-    );
-    console.log('TILESET_INFO:', TILESET_INFO);
-
-    if (tilesetIndex < TILESET_INFO.length) {
-      // Get the date directly from TILESET_INFO to ensure alignment
-      const tilesetDate = TILESET_INFO[tilesetIndex].date;
-      console.log(`Day ${dayOffset} date from tileset: ${tilesetDate}`);
-
-      // Parse the date string and format it consistently with DateTime component
-      const dateStr = tilesetDate;
-      const [year, month, day] = dateStr.split('-').map(Number);
-
-      // Create UTC date and format in UTC timezone to avoid day shifts
-      const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-
-      // Format the date in UTC timezone to ensure consistent display
-      const localDateStr = utcDate.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        timeZone: 'UTC'  // This ensures we display the UTC date, not shifted to local
-      });
-
-      console.log(
-        `TimeControls: Day ${dayOffset} -> ${localDateStr} (from tileset ${tilesetDate})`
-      );
-      return `${localDateStr} (UTC)`;
-    }
-
-    // Fallback calculation if tileset not found
-    console.warn(`No tileset found for day offset ${dayOffset} (index ${tilesetIndex})`);
     const date = new Date(START_DATE);
     date.setUTCDate(date.getUTCDate() + dayOffset);
 
@@ -113,21 +63,22 @@ export const TimeControls = ({
     const localDateStr = date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      timeZone: 'UTC'  // This ensures we display the UTC date, not shifted to local
+      timeZone: 'UTC'
     });
 
-    console.log(`TimeControls fallback: Day ${dayOffset} -> ${localDateStr} (from START_DATE)`);
     return `${localDateStr} (UTC)`;
   };
 
-  // Position day markers at the start of each day (0, 24 hours)
-  const dayMarkerPositions = [
-    { label: generateDateLabel(0), hour: 0 },
-    { label: generateDateLabel(1), hour: 24 }
-  ].map(marker => ({
-    ...marker,
-    position: (marker.hour / (TOTAL_HOURS - 1)) * 100
-  }));
+  // Dynamically position day markers based on the total timeline hours
+  // This ensures we only render markers that fall within the timeline range
+  const dayMarkerPositions = Array.from({ length: Math.ceil(TOTAL_HOURS / 24) }, (_, dayIndex) => {
+    const hour = dayIndex * 24;
+    return {
+      label: generateDateLabel(dayIndex),
+      hour,
+      position: (hour / (TOTAL_HOURS - 1)) * 100
+    };
+  });
 
   // Color based on theme
   const primaryColor = isDarkMode ? '#f9f6ef' : '#751d0c';
@@ -169,7 +120,7 @@ export const TimeControls = ({
                 isDarkMode ? 'bg-gray-800/90 border border-white' : 'bg-white/90 border border-mahogany'
               }`}
             >
-              {[1, 2, 4, 8].map(speed => (
+              {[1, 2, 3].map(speed => (
                 <button
                   key={speed}
                   onClick={() => {
@@ -207,26 +158,16 @@ export const TimeControls = ({
 
           <div className="relative flex-1 pb-8">
             <div
-              className={`absolute -top-8 py-1 px-2 rounded-lg text-sm font-medium transform -translate-x-1/2 border ${isDarkMode ? 'border-white' : 'border-mahogany'} ${isDarkMode ? 'text-black' : 'text-white'}`}
+              className={`absolute -top-8 py-1 px-2 rounded-lg text-sm font-medium transform -translate-x-1/2 border ${isDarkMode ? 'border-white' : 'border-mahogany'} ${isDarkMode ? 'bg-gray-800/90 text-white' : 'bg-gray-100/90 text-mahogany'}`}
               style={{
-                left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
-                backgroundColor: primaryColor,
-                zIndex: 10
+                left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`
               }}
+              title={currentLocalTime.display}
             >
-              {currentLocalTime.time} {currentLocalTime.timezone}
+              {currentLocalTime.time}
             </div>
 
-            <div
-              className="absolute h-8 w-0.5 -translate-x-1/2"
-              style={{
-                left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
-                top: '-8px',
-                backgroundColor: primaryColor
-              }}
-            />
-
-            {/* Day markers at the start of each day with vertical lines */}
+            {/* Day markers with dates - only 2 days */}
             <div className="absolute inset-x-0 bottom-0 h-8 pointer-events-none">
               {dayMarkerPositions.map((marker, index) => (
                 <div key={index} className="absolute" style={{ left: `${marker.position}%` }}>

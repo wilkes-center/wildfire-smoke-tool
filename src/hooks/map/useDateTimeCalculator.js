@@ -17,26 +17,21 @@ export const useDateTimeCalculator = currentHour => {
 
     // Extract exact metadata from TILESET_INFO to determine which data we should be showing
     const hoursInDay = 24;
-    const dayIndex = Math.floor(currentHour / hoursInDay); // 0, 1, 2, or 3 (day in the 4-day timeline)
+    const dayIndex = Math.floor(currentHour / hoursInDay); // 0 or 1 (day in the 2-day timeline)
     const hourOfDay = currentHour % hoursInDay; // Hour within the day (0-23)
 
     // Force dates to match TILESET_INFO exactly
-    // Instead of calculating the index based on offset from the start date,
-    // we'll just use TILESET_INFO in order
-    //
     // Timeline hours correspond to:
-    // - hour 0-23 (day 0) -> TILESET_INFO[0] and [1]
-    // - hour 24-47 (day 1) -> TILESET_INFO[2] and [3]
-    // - hour 48-71 (day 2) -> TILESET_INFO[4] and [5]
-    // - hour 72-95 (day 3) -> TILESET_INFO[6] and [7]
+    // - hour 0-23 (day 0 - today) -> TILESET_INFO[0] and [1]
+    // - hour 24-47 (day 1 - tomorrow) -> TILESET_INFO[2] and [3]
 
-    // First determine which of the 4 days we're viewing (0-3)
-    const tilesetDay = Math.min(dayIndex, 3); // Clamp to 0-3 range
+    // First determine which of the 2 days we're viewing (0-1)
+    const tilesetDay = Math.min(dayIndex, 1); // Clamp to 0-1 range
 
     // Then determine which chunk within that day (0 for morning, 1 for afternoon)
     const isAfternoon = hourOfDay >= 12;
 
-    // Calculate the index in the TILESET_INFO array (0-7)
+    // Calculate the index in the TILESET_INFO array (0-3)
     const tilesetIndex = tilesetDay * 2 + (isAfternoon ? 1 : 0);
 
     // Get the matching tileset
