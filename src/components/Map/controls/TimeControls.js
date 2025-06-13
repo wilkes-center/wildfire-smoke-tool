@@ -52,7 +52,9 @@ export const TimeControls = ({
   const getCurrentLocalTime = () => {
     const startDate = new Date(START_DATE);
     const currentDate = new Date(startDate.getTime() + currentHour * 60 * 60 * 1000);
-    return formatLocalDateTime(currentDate);
+    const dateStr = currentDate.toISOString().split('T')[0];
+    const hour = currentDate.getUTCHours();
+    return formatLocalDateTime({ date: dateStr, hour: hour });
   };
 
   // Generate date labels dynamically
@@ -160,15 +162,25 @@ export const TimeControls = ({
           </button>
 
           <div className="relative flex-1 pb-8">
+            {/* Custom time marker that shows the current time */}
             <div
-              className={`absolute -top-8 py-1 px-2 rounded-lg text-sm font-medium transform -translate-x-1/2 border ${isDarkMode ? 'border-white' : 'border-mahogany'} ${isDarkMode ? 'bg-gray-800/90 text-white' : 'bg-gray-100/90 text-mahogany'}`}
+              className={`absolute -top-8 py-1 px-2 rounded-lg text-sm font-medium transform -translate-x-1/2 border transition-all duration-200 ease-out z-20 shadow-md ${isDarkMode ? 'border-white bg-gray-800/95 text-white' : 'border-mahogany bg-white/95 text-mahogany'}`}
               style={{
                 left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`
               }}
-              title={currentLocalTime.display}
+              title={`Local time: ${currentLocalTime.time} ${currentLocalTime.timezone} | Date: ${currentLocalTime.date}`}
             >
-              {currentLocalTime.time}
+              {currentLocalTime.time} {currentLocalTime.timezone}
             </div>
+
+            {/* Custom slider marker */}
+            <div
+              className={`absolute w-4 h-4 rounded-full transform -translate-x-1/2 -translate-y-1/2 border-2 transition-all duration-200 ease-out z-20 shadow-lg ${isDarkMode ? 'bg-white border-gray-800' : 'bg-mahogany border-white'}`}
+              style={{
+                left: `${(currentHour / (TOTAL_HOURS - 1)) * 100}%`,
+                top: '50%'
+              }}
+            />
 
             {/* Day markers with dates - only 2 days */}
             <div className="absolute inset-x-0 bottom-0 h-8 pointer-events-none">
@@ -227,7 +239,7 @@ export const TimeControls = ({
               max={TOTAL_HOURS - 1}
               value={currentHour}
               onChange={handleSliderChange}
-              className={`absolute inset-0 w-full h-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full ${isDarkMode ? '[&::-webkit-slider-thumb]:bg-white' : '[&::-webkit-slider-thumb]:bg-mahogany'} [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-[2px] ${isDarkMode ? '[&::-webkit-slider-thumb]:border-white' : '[&::-webkit-slider-thumb]:border-mahogany'}`}
+              className={`absolute inset-0 w-full h-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:opacity-0 [&::-webkit-slider-thumb]:cursor-pointer`}
             />
           </div>
 

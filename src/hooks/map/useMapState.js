@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 
 const INITIAL_VIEWPORT = {
   latitude: 39.8283,
