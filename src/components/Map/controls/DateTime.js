@@ -42,22 +42,32 @@ export const DateTime = ({ timestamp, currentDateTime, isDarkMode, showUTC = fal
             <Calendar className="w-6 h-6" />
           </div>
           <div className="flex flex-col">
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-2 whitespace-nowrap">
               <span
-                className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}
+                className={`font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}
+                style={{ fontSize: 'clamp(0.75rem, 1.8vw, 1rem)' }}
               >
                 {utcDateStr}
               </span>
-              <span className={`text-base ${isDarkMode ? 'text-white/60' : 'text-forest/60'}`}>
+              <span
+                className={`${isDarkMode ? 'text-white/60' : 'text-forest/60'}`}
+                style={{ fontSize: 'clamp(0.625rem, 1.5vw, 0.875rem)' }}
+              >
                 UTC
               </span>
             </div>
             {showLocalTime && (
-              <div className="flex items-baseline gap-1.5">
-                <span className={`text-base ${isDarkMode ? 'text-white/70' : 'text-forest/70'}`}>
+              <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                <span
+                  className={`${isDarkMode ? 'text-white/70' : 'text-forest/70'}`}
+                  style={{ fontSize: 'clamp(0.625rem, 1.5vw, 0.875rem)' }}
+                >
                   {localDateTime.date}
                 </span>
-                <span className={`text-sm ${isDarkMode ? 'text-white/50' : 'text-forest/50'}`}>
+                <span
+                  className={`${isDarkMode ? 'text-white/50' : 'text-forest/50'}`}
+                  style={{ fontSize: 'clamp(0.5625rem, 1.2vw, 0.75rem)' }}
+                >
                   {localDateTime.timezone}
                 </span>
               </div>
@@ -77,22 +87,32 @@ export const DateTime = ({ timestamp, currentDateTime, isDarkMode, showUTC = fal
             <Clock className="w-6 h-6" />
           </div>
           <div className="flex flex-col">
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-2 whitespace-nowrap">
               <span
-                className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}
+                className={`font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}
+                style={{ fontSize: 'clamp(0.75rem, 1.8vw, 1rem)' }}
               >
                 {String(dateTimeObj.hour).padStart(2, '0')}:00
               </span>
-              <span className={`text-base ${isDarkMode ? 'text-white/60' : 'text-forest/60'}`}>
+              <span
+                className={`${isDarkMode ? 'text-white/60' : 'text-forest/60'}`}
+                style={{ fontSize: 'clamp(0.625rem, 1.5vw, 0.875rem)' }}
+              >
                 UTC
               </span>
             </div>
             {showLocalTime && (
-              <div className="flex items-baseline gap-1.5">
-                <span className={`text-base ${isDarkMode ? 'text-white/70' : 'text-forest/70'}`}>
+              <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                <span
+                  className={`${isDarkMode ? 'text-white/70' : 'text-forest/70'}`}
+                  style={{ fontSize: 'clamp(0.625rem, 1.5vw, 0.875rem)' }}
+                >
                   {localDateTime.time}
                 </span>
-                <span className={`text-sm ${isDarkMode ? 'text-white/50' : 'text-forest/50'}`}>
+                <span
+                  className={`${isDarkMode ? 'text-white/50' : 'text-forest/50'}`}
+                  style={{ fontSize: 'clamp(0.5625rem, 1.2vw, 0.75rem)' }}
+                >
                   {localDateTime.timezone}
                 </span>
               </div>

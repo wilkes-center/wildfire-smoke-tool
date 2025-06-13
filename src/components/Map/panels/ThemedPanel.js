@@ -17,7 +17,7 @@ const ThemedPanel = ({
   if (isExpanded) {
     return (
       <div
-        className={`w-[480px] rounded-xl shadow-xl overflow-hidden border-2 ${
+        className={`w-[clamp(20rem,30vw,35rem)] rounded-xl shadow-xl overflow-hidden border-2 ${
           isDarkMode ? 'bg-gray-900/95 border-white' : 'bg-white/95 border-mahogany'
         } ${className} backdrop-blur-md`}
       >

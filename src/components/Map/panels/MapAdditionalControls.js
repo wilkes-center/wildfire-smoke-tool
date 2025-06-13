@@ -517,7 +517,7 @@ const MapAdditionalControls = ({
 
   const panelContent = (
     <div className="px-1">
-      <div className="w-full h-[360px] overflow-hidden rounded-lg relative">
+      <div className="w-full h-[clamp(20rem,22.5vh,28rem)] overflow-hidden rounded-lg relative">
         {minimapViewport && (
           <Map
             ref={minimapRef}
@@ -582,9 +582,9 @@ const MapAdditionalControls = ({
     <div
       style={{
         position: 'fixed',
-        top: isExpanded ? '450px' : '20px',
-        right: '20px',
-        width: isExpanded ? '480px' : '48px',
+        top: isExpanded ? '28.125rem' : '1.25rem',
+        right: '1.25rem',
+        width: isExpanded ? 'clamp(20rem,30vw,35rem)' : '3rem',
         zIndex: 1000,
         transition: 'all 0.3s ease-in-out'
       }}

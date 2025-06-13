@@ -37,7 +37,7 @@ const StatsTable = ({ data, isDarkMode }) => {
   };
 
   return (
-    <div className="h-[320px] overflow-auto">
+    <div className="h-[clamp(18rem,20vh,25rem)] overflow-auto">
       <table className="w-full">
         <thead className="sticky top-0">
           <tr>
@@ -197,7 +197,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
         y={y + 16}
         textAnchor="middle"
         fill={isDarkMode ? '#9CA3AF' : '#6B7280'}
-        style={{ fontSize: '12px', fontWeight: 'bold' }}
+        style={{ fontSize: '0.75rem', fontWeight: 'bold' }}
       >
         {(() => {
           const [year, month, day] = date.split('-').map(Number);
@@ -211,7 +211,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
         y={y + 12}
         textAnchor="middle"
         fill={isDarkMode ? '#9CA3AF' : '#6B7280'}
-        style={{ fontSize: '11px' }}
+        style={{ fontSize: '0.6875rem' }}
       >
         {`${hour}:00`}
       </text>
@@ -252,7 +252,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
   };
 
   return (
-    <div className={`h-[320px] w-full relative ${isDarkMode ? 'bg-gray-800/30' : 'bg-white/30'}`}>
+    <div className={`h-[clamp(18rem,20vh,25rem)] w-full relative ${isDarkMode ? 'bg-gray-800/30' : 'bg-white/30'}`}>
       <ResponsiveContainer>
         <LineChart data={completeData} margin={{ top: 20, right: 10, left: 30, bottom: 30 }}>
           <CartesianGrid
@@ -530,7 +530,7 @@ const AreaAnalysis = ({
 
       {isLoading && (
         <div
-          className={`h-[320px] flex items-center justify-center ${
+          className={`h-[clamp(18rem,20vh,25rem)] flex items-center justify-center ${
             isDarkMode ? 'text-gray-400' : 'text-gray-500'
           }`}
         >
@@ -548,7 +548,7 @@ const AreaAnalysis = ({
 
       {!isLoading && !error && data.length === 0 && (
         <div
-          className={`h-[320px] flex items-center justify-center ${
+          className={`h-[clamp(18rem,20vh,25rem)] flex items-center justify-center ${
             isDarkMode ? 'text-gray-400' : 'text-gray-500'
           }`}
         >
@@ -608,9 +608,9 @@ const AreaAnalysis = ({
     <div
       style={{
         position: 'fixed',
-        top: isExpanded ? '450px' : '20px',
-        right: '20px',
-        width: isExpanded ? '480px' : '48px',
+        top: isExpanded ? '28.125rem' : '1.25rem',
+        right: '1.25rem',
+        width: isExpanded ? 'clamp(20rem,30vw,35rem)' : '3rem',
         zIndex: 1000,
         transition: 'all 0.3s ease-in-out'
       }}

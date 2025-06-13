@@ -4,10 +4,10 @@
 
 .app-header {
   background-color: #1a1a1a; /* Olympic Park Obsidian */
-  padding: 20px;
+  padding: 1.25rem; /* Changed from 20px to 1.25rem */
   color: #f9f6ef; /* Snowbird White */
 }
 
 main {
-  height: calc(100vh - 80px); /* Adjusted for header only */
+  height: calc(100vh - 5rem); /* Changed from 80px to 5rem for better scaling */
 }

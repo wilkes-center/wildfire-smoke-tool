@@ -68,7 +68,7 @@ const RightPanelControls = ({
       {/* Panels - Open Below Buttons */}
       <div className="flex flex-col gap-2">
         {showAreaStats && (
-          <div className="w-[480px]">
+          <div className="w-[clamp(20rem,30vw,35rem)]">
             <AreaAnalysis
               map={map}
               currentDateTime={currentDateTime}
@@ -82,7 +82,7 @@ const RightPanelControls = ({
         )}
 
         {showAreaOverview && (
-          <div className="w-[480px]">
+          <div className="w-[clamp(20rem,30vw,35rem)]">
             <MapAdditionalControls
               map={map}
               mapStyle={mapStyle}

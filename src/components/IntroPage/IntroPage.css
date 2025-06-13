@@ -21,11 +21,11 @@
 }
 
 .intro-content {
-  max-width: 1000px;
+  max-width: 62.5rem; /* Changed from 1000px to 62.5rem */
   width: 92%;
   background-color: white;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  border-radius: 1rem; /* Changed from 16px to 1rem */
+  box-shadow: 0 0.625rem 2.5rem rgba(0, 0, 0, 0.08); /* Changed from 10px 40px */
   margin: 0 auto;
   overflow: hidden;
   animation: fadeIn 0.8s ease-out forwards;
@@ -64,19 +64,19 @@ header::before {
 }
 
 .logo {
-  width: 80px;
-  height: 80px;
+  width: 5rem; /* Changed from 80px to 5rem */
+  height: 5rem; /* Changed from 80px to 5rem */
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15); /* Changed from 8px 24px */
 }
 
 .logo-icon {
-  width: 40px;
-  height: 40px;
+  width: 2.5rem; /* Changed from 40px to 2.5rem */
+  height: 2.5rem; /* Changed from 40px to 2.5rem */
   color: #751d0c; /* Mahogany */
 }
 
@@ -87,7 +87,7 @@ h1 {
   margin: 0;
   position: relative;
   z-index: 1;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1); /* Changed from 2px 4px */
 }
 
 .title-accent {
@@ -98,12 +98,12 @@ h1 {
 .title-accent::after {
   content: "";
   position: absolute;
-  bottom: -3px;
+  bottom: -0.1875rem; /* Changed from -3px to -0.1875rem */
   left: 0;
   width: 100%;
-  height: 3px;
+  height: 0.1875rem; /* Changed from 3px to 0.1875rem */
   background: rgba(206, 162, 93, 0.7);
-  border-radius: 2px;
+  border-radius: 0.125rem; /* Changed from 2px to 0.125rem */
 }
 
 .subtitle {
@@ -114,7 +114,7 @@ h1 {
   position: relative;
   z-index: 1;
   color: rgba(255, 255, 255, 0.85);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.03125rem; /* Changed from 0.5px to 0.03125rem */
 }
 
 .enter-button {
@@ -126,29 +126,29 @@ h1 {
   font-weight: 500;
   padding: 0.9rem 2rem;
   border: none;
-  border-radius: 50px;
+  border-radius: 3.125rem; /* Changed from 50px to 3.125rem */
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
-  box-shadow: 0 4px 15px rgba(117, 29, 12, 0.3);
+  box-shadow: 0 0.25rem 0.9375rem rgba(117, 29, 12, 0.3); /* Changed from 4px 15px */
 }
 
 .enter-button:hover {
   background: #8b2815;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(117, 29, 12, 0.4);
+  transform: translateY(-0.125rem); /* Changed from -2px to -0.125rem */
+  box-shadow: 0 0.375rem 1.25rem rgba(117, 29, 12, 0.4); /* Changed from 6px 20px */
 }
 
 .enter-icon {
-  margin-left: 10px;
+  margin-left: 0.625rem; /* Changed from 10px to 0.625rem */
   transition: transform 0.3s ease;
 }
 
 .enter-button:hover .enter-icon {
-  transform: translateX(3px);
+  transform: translateX(0.1875rem); /* Changed from 3px to 0.1875rem */
 }
 
 /* Content sections */
@@ -157,7 +157,7 @@ section {
 }
 
 .intro-section {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 0.0625rem solid rgba(0, 0, 0, 0.05); /* Changed from 1px */
 }
 
 h2 {
@@ -174,12 +174,12 @@ h2 {
 h2::after {
   content: "";
   position: absolute;
-  bottom: -5px;
+  bottom: -0.3125rem; /* Changed from -5px to -0.3125rem */
   left: 0;
-  width: 40px;
-  height: 3px;
+  width: 2.5rem; /* Changed from 40px to 2.5rem */
+  height: 0.1875rem; /* Changed from 3px to 0.1875rem */
   background: #751d0c; /* Mahogany */
-  border-radius: 2px;
+  border-radius: 0.125rem; /* Changed from 2px to 0.125rem */
 }
 
 p {
@@ -199,87 +199,85 @@ p {
   align-items: center;
   font-family: "Red Hat Display", sans-serif;
   font-size: 1rem;
-  font-weight: 500;
-  color: #2d5954; /* Great Salt Lake Green */
+  color: #751d0c; /* Mahogany */
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  margin-right: 0.3125rem; /* Changed from 5px to 0.3125rem */
+  border-bottom: 0.0625rem solid transparent; /* Changed from 1px */
+  padding-bottom: 0.125rem; /* Changed from 2px to 0.125rem */
 }
 
 .external-link:hover {
-  color: #751d0c; /* Mahogany */
+  color: #8b2815;
+  border-bottom-color: #8b2815;
 }
 
 .external-link span {
-  margin-right: 5px;
-  border-bottom: 1px solid transparent;
-  padding-bottom: 2px;
-  transition: all 0.2s ease;
+  border-bottom: 0.0625rem solid transparent; /* Changed from 1px */
+  transition: border-color 0.3s ease;
 }
 
 .external-link:hover span {
-  border-bottom-color: currentColor;
+  border-bottom-color: #8b2815;
 }
 
 /* Features section */
 .features-section {
-  background-color: #f9f6ef; /* Snowbird White */
-  padding-top: 3.5rem;
-  padding-bottom: 3.5rem;
+  background: #f9f6ef; /* Snowbird White */
+  padding: 3rem;
 }
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(17.5rem, 1fr)); /* Changed from 280px to 17.5rem */
+  gap: 2rem;
   margin-top: 2rem;
 }
 
 .feature-card {
   background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  border-radius: 0.75rem; /* Changed from 12px to 0.75rem */
+  padding: 2rem;
+  box-shadow: 0 0.3125rem 0.9375rem rgba(0, 0, 0, 0.05); /* Changed from 5px 15px */
   transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  border: 0.0625rem solid rgba(0, 0, 0, 0.05); /* Changed from 1px */
 }
 
 .feature-card-dark {
-  background: #1a1a1a; /* Olympic Park Obsidian */
+  background: #2d5954; /* Great Salt Lake Green */
   color: white;
-  border: none;
 }
 
 .feature-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  transform: translateY(-0.3125rem); /* Changed from -5px to -0.3125rem */
+  box-shadow: 0 0.625rem 1.5625rem rgba(0, 0, 0, 0.08); /* Changed from 10px 25px */
 }
 
 .feature-icon {
+  width: 3rem; /* Changed from 48px to 3rem */
+  height: 3rem; /* Changed from 48px to 3rem */
+  border-radius: 0.75rem; /* Changed from 12px to 0.75rem */
+  background: rgba(117, 29, 12, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  margin-bottom: 1rem;
-  background: linear-gradient(135deg, rgba(45, 89, 84, 0.1) 0%, rgba(45, 89, 84, 0.2) 100%);
-  color: #2d5954; /* Great Salt Lake Green */
+  margin-bottom: 1.5rem;
+  color: #751d0c; /* Mahogany */
 }
 
 .feature-card-dark .feature-icon {
-  background: linear-gradient(135deg, rgba(206, 162, 93, 0.2) 0%, rgba(206, 162, 93, 0.3) 100%);
-  color: #cea25d; /* Gold color */
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
 }
 
 .feature-card h3 {
   font-family: "Sora", sans-serif;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin-top: 0;
-  margin-bottom: 0.75rem;
-  color: #1a1a1a;
+  margin: 0 0 1rem 0;
+  color: #1a1a1a; /* Olympic Park Obsidian */
 }
 
 .feature-card-dark h3 {
@@ -289,25 +287,25 @@ p {
 .feature-card p {
   font-family: "Red Hat Display", sans-serif;
   font-size: 0.95rem;
-  line-height: 1.5;
-  margin-bottom: 0;
-  color: #555;
+  line-height: 1.6;
+  color: #666;
+  margin: 0;
 }
 
 .feature-card-dark p {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .divider {
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.05), transparent);
-  margin: 0;
+  height: 0.0625rem; /* Changed from 1px to 0.0625rem */
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+  margin: 3rem 0;
+  border: none;
 }
 
 /* How to use section */
 .how-to-section {
-  padding-top: 3.5rem;
-  padding-bottom: 3.5rem;
+  padding: 3rem;
 }
 
 .steps {
@@ -316,7 +314,8 @@ p {
 
 .step {
   display: flex;
-  margin-bottom: 2rem;
+  align-items: flex-start;
+  margin-bottom: 2.5rem;
 }
 
 .step:last-child {
@@ -324,46 +323,47 @@ p {
 }
 
 .step-number {
-  width: 36px;
-  height: 36px;
+  width: 2.25rem; /* Changed from 36px to 2.25rem */
+  height: 2.25rem; /* Changed from 36px to 2.25rem */
+  border-radius: 50%;
+  background: #751d0c; /* Mahogany */
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #2d5954; /* Great Salt Lake Green */
-  color: white;
   font-family: "Sora", sans-serif;
   font-weight: 600;
-  border-radius: 50%;
-  margin-right: 1rem;
+  font-size: 1rem;
+  margin-right: 1.5rem;
   flex-shrink: 0;
 }
 
 .step-content h3 {
   font-family: "Sora", sans-serif;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin-top: 0;
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem 0;
   color: #1a1a1a; /* Olympic Park Obsidian */
 }
 
 .step-content p {
   font-family: "Red Hat Display", sans-serif;
   font-size: 1rem;
-  line-height: 1.5;
-  margin-bottom: 0;
-  color: #333;
+  line-height: 1.6;
+  color: #666;
+  margin: 0;
 }
 
-/* Footer section */
+/* Footer */
 footer {
-  background: #f9f6ef; /* Snowbird White */
-  padding: 2rem 3rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  background: #1a1a1a; /* Olympic Park Obsidian */
+  color: white;
+  padding: 2.5rem 3rem;
+  border-top: 0.0625rem solid rgba(0, 0, 0, 0.05); /* Changed from 1px */
 }
 
 .footer-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .footer-section:last-child {
@@ -372,47 +372,45 @@ footer {
 
 .footer-content {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
 .footer-icon {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  border-radius: 50%;
+  width: 2.25rem; /* Changed from 36px to 2.25rem */
+  height: 2.25rem; /* Changed from 36px to 2.25rem */
   margin-right: 1rem;
-  color: #751d0c; /* Mahogany */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  flex-shrink: 0;
+  color: #cea25d; /* Gold */
 }
 
 footer p {
-  font-size: 0.9rem;
-  margin-bottom: 0;
-  color: #555;
+  font-family: "Red Hat Display", sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  padding: 0.75rem 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.05); /* Changed from 2px 6px */
 }
 
 footer a {
-  color: #2d5954; /* Great Salt Lake Green */
+  color: #cea25d; /* Gold */
   text-decoration: none;
   font-weight: 500;
-  margin-left: 5px;
-  transition: color 0.2s ease;
+  transition: color 0.3s ease;
+  margin-left: 0.3125rem; /* Changed from 5px to 0.3125rem */
 }
 
 footer a:hover {
-  color: #751d0c; /* Mahogany */
-  text-decoration: underline;
+  color: #e6c478;
 }
 
-/* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(1.25rem); /* Changed from 20px to 1.25rem */
   }
   to {
     opacity: 1;
@@ -423,64 +421,65 @@ footer a:hover {
 /* Responsive styles */
 @media (max-width: 768px) {
   header {
-    padding: 3rem 1.5rem;
+    padding: 3rem 2rem;
   }
 
   h1 {
-    font-size: 2.25rem;
+    font-size: 2.5rem;
+  }
+
+  .subtitle {
+    font-size: 1.1rem;
+  }
+
+  section {
+    padding: 2rem;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  footer {
+    padding: 2rem;
+  }
+
+  .logo {
+    width: 4.375rem; /* Changed from 70px to 4.375rem */
+    height: 4.375rem; /* Changed from 70px to 4.375rem */
+  }
+
+  .logo-icon {
+    width: 2.1875rem; /* Changed from 35px to 2.1875rem */
+    height: 2.1875rem; /* Changed from 35px to 2.1875rem */
+  }
+}
+
+@media (max-width: 480px) {
+  header {
+    padding: 2.5rem 1.5rem;
+  }
+
+  h1 {
+    font-size: 2rem;
   }
 
   .subtitle {
     font-size: 1rem;
   }
 
+  .enter-button {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+  }
+
   section {
-    padding: 2rem 1.5rem;
-  }
-
-  .features-grid {
-    grid-template-columns: 1fr;
-  }
-
-  footer {
     padding: 1.5rem;
   }
 
-  .logo {
-    width: 70px;
-    height: 70px;
-  }
-
-  .logo-icon {
-    width: 35px;
-    height: 35px;
-  }
-}
-
-@media (max-width: 480px) {
-  header {
-    padding: 2.5rem 1rem;
-  }
-
-  h1 {
-    font-size: 1.75rem;
-  }
-
-  .subtitle {
-    font-size: 0.9rem;
-  }
-
-  .enter-button {
-    padding: 0.75rem 1.5rem;
-    font-size: 0.9rem;
-  }
-
-  section {
-    padding: 1.5rem 1rem;
-  }
-
   h2 {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
   }
 
   p {
@@ -489,31 +488,35 @@ footer a:hover {
 
   .step {
     flex-direction: column;
+    align-items: flex-start;
   }
 
   .step-number {
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    margin-right: 0;
   }
 
   footer {
-    padding: 1.5rem 1rem;
+    padding: 1.5rem;
   }
 
   .footer-content {
     flex-direction: column;
+    align-items: flex-start;
   }
 
   .footer-icon {
     margin-bottom: 0.5rem;
+    margin-right: 0;
   }
 
   .logo {
-    width: 60px;
-    height: 60px;
+    width: 3.75rem; /* Changed from 60px to 3.75rem */
+    height: 3.75rem; /* Changed from 60px to 3.75rem */
   }
 
   .logo-icon {
-    width: 30px;
-    height: 30px;
+    width: 1.875rem; /* Changed from 30px to 1.875rem */
+    height: 1.875rem; /* Changed from 30px to 1.875rem */
   }
 }

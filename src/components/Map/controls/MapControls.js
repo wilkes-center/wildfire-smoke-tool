@@ -73,7 +73,7 @@ const MapControls = ({
               title="Draw Area"
             >
               <Pen className="w-5 h-5" />
-              <span className="font-medium">Draw Area</span>
+              <span className="font-medium" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Draw Area</span>
             </button>
           )}
 
@@ -89,7 +89,7 @@ const MapControls = ({
               title="Clear Area Selection"
             >
               <X className="w-5 h-5" />
-              <span className="font-medium">Clear Area</span>
+              <span className="font-medium" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Clear Area</span>
             </button>
           )}
 
@@ -112,7 +112,7 @@ const MapControls = ({
               title="Cancel Drawing"
             >
               <X className="w-5 h-5" />
-              <span className="font-medium">Cancel</span>
+              <span className="font-medium" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Cancel</span>
             </button>
           )}
         </div>
@@ -125,7 +125,7 @@ const MapControls = ({
       </div>
 
       {/* Bottom Time Controls */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-3xl pointer-events-auto">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl pointer-events-auto">
       <TimeControls
           currentHour={currentHour}
           setCurrentHour={setCurrentHour}
