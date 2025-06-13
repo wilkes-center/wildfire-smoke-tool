@@ -1,7 +1,8 @@
-import { Wind } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { PM25_LEVELS, getPM25Level } from '../../../constants/pm25Levels';
+import { Wind } from 'lucide-react';
+
+import { PM25_LEVELS } from '../../../constants/pm25Levels';
 
 const DEFAULT_THRESHOLD = 5;
 
@@ -71,13 +72,13 @@ export const PM25Controls = ({
                 step="0.1"
                 value={pm25Threshold}
                 onChange={e => setPM25Threshold(parseFloat(e.target.value))}
-                className={`w-full h-1 rounded-lg appearance-none cursor-pointer 
+                className={`w-full h-1 rounded-lg appearance-none cursor-pointer
                   ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}
                 style={{
-                  backgroundImage: `linear-gradient(to right, 
-                    ${isDarkMode ? '#3B82F6' : '#2563EB'} 0%, 
-                    ${isDarkMode ? '#3B82F6' : '#2563EB'} ${(pm25Threshold / 500) * 100}%, 
-                    ${isDarkMode ? '#374151' : '#E5E7EB'} ${(pm25Threshold / 500) * 100}%, 
+                  backgroundImage: `linear-gradient(to right,
+                    ${isDarkMode ? '#3B82F6' : '#2563EB'} 0%,
+                    ${isDarkMode ? '#3B82F6' : '#2563EB'} ${(pm25Threshold / 500) * 100}%,
+                    ${isDarkMode ? '#374151' : '#E5E7EB'} ${(pm25Threshold / 500) * 100}%,
                     ${isDarkMode ? '#374151' : '#E5E7EB'} 100%)`
                 }}
               />

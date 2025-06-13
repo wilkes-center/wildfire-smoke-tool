@@ -1,5 +1,6 @@
-import { Minimize2 } from 'lucide-react';
 import React from 'react';
+
+import { Minimize2 } from 'lucide-react';
 
 const ThemedPanel = ({
   title,

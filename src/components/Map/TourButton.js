@@ -1,5 +1,6 @@
-import { PlayCircle } from 'lucide-react';
 import React from 'react';
+
+import { PlayCircle } from 'lucide-react';
 
 const TourButton = ({ onClick, isDarkMode }) => {
   return (

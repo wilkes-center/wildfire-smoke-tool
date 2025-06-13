@@ -1,5 +1,5 @@
-import { Map as MapIcon } from 'lucide-react';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
 import { Map } from 'react-map-gl';
 
 import { getPM25ColorInterpolation } from '../../../utils/map/colors';

@@ -1,29 +1,32 @@
-import { HelpCircle } from 'lucide-react';
-import 'mapbox-gl/dist/mapbox-gl.css';
 import React, { useRef } from 'react';
+
+import 'mapbox-gl/dist/mapbox-gl.css';
+
+import { HelpCircle } from 'lucide-react';
+
 import Map from 'react-map-gl';
 
-import { DEFAULT_DARK_BASEMAP, DEFAULT_LIGHT_BASEMAP } from '../../constants/map/basemaps.js';
-import {
-    useCensusDataManager,
-    useDateTimeCalculator,
-    useDrawingInteraction,
-    useDrawingState,
-    useMapInteraction,
-    useMapLayers,
-    useMapState,
-    usePolygonVisualization,
-    useThemeControl,
-    useThemeState,
-    useTimeAnimation,
-    useTimeState,
-    useTourManager,
-    useUIState
-} from '../../hooks';
 import { MAPBOX_TOKEN } from '../../utils/map/constants.js';
 
-// Map UI Components
+import { DEFAULT_DARK_BASEMAP, DEFAULT_LIGHT_BASEMAP } from '../../constants/map/basemaps.js';
+
 import MapControls from './controls';
+import {
+  useCensusDataManager,
+  useDateTimeCalculator,
+  useDrawingInteraction,
+  useDrawingState,
+  useMapInteraction,
+  useMapLayers,
+  useMapState,
+  usePolygonVisualization,
+  useThemeControl,
+  useThemeState,
+  useTimeAnimation,
+  useTimeState,
+  useTourManager,
+  useUIState
+} from '../../hooks';
 import PM25Legend from './controls/PM25LegendVertical';
 import PM25ThresholdSlider from './controls/PM25ThresholdSlider';
 import PopulationExposureCounter from './controls/PopulationExposureCounter';
@@ -33,8 +36,6 @@ import DrawingTooltip from './DrawingTooltip';
 import IntroTour from './IntroTour';
 import LoadingOverlay from './LoadingOverlay';
 import RightPanelControls from './panels/RightPanelControls';
-
-// Custom hooks
 
 const MapComponent = ({ onShowIntro }) => {
   // Reference variables

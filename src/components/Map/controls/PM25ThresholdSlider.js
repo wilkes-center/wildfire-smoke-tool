@@ -1,5 +1,6 @@
-import { Check, Edit2 } from 'lucide-react';
 import React, { useState } from 'react';
+
+import { Check, Edit2 } from 'lucide-react';
 
 import { PM25_LEVELS } from '../../../constants/pm25Levels';
 
@@ -56,7 +57,7 @@ const PM25ThresholdSlider = ({ pm25Threshold = 5, setPM25Threshold, isDarkMode }
       <div className={`w-px h-6 mx-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
       <div
         className="flex items-center gap-2"
-        title={isEditing ? "Click check to save" : "Click to edit threshold"}
+        title={isEditing ? 'Click check to save' : 'Click to edit threshold'}
       >
         {isEditing ? (
           <>
@@ -78,7 +79,10 @@ const PM25ThresholdSlider = ({ pm25Threshold = 5, setPM25Threshold, isDarkMode }
                 max="500"
                 step="0.1"
               />
-              <span className="text-xl font-medium" style={{ color: isDarkMode ? '#e5e7eb' : '#1f2937' }}>
+              <span
+                className="text-xl font-medium"
+                style={{ color: isDarkMode ? '#e5e7eb' : '#1f2937' }}
+              >
                 + μg/m³
               </span>
             </div>

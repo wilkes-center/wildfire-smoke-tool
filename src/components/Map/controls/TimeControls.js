@@ -1,5 +1,6 @@
-import { ChevronLeft, ChevronRight, Clock, Pause, Play } from 'lucide-react';
 import React, { useState } from 'react';
+
+import { ChevronLeft, ChevronRight, Clock, Pause, Play } from 'lucide-react';
 
 import { START_DATE, TOTAL_HOURS } from '../../../utils/map/constants.js';
 import { formatLocalDateTime, getCurrentTimelineHour } from '../../../utils/map/timeUtils.js';
@@ -117,7 +118,9 @@ export const TimeControls = ({
           {showSpeedOptions && (
             <div
               className={`absolute bottom-full mb-2 flex gap-1 p-2 rounded-lg shadow-lg backdrop-blur-sm ${
-                isDarkMode ? 'bg-gray-800/90 border border-white' : 'bg-white/90 border border-mahogany'
+                isDarkMode
+                  ? 'bg-gray-800/90 border border-white'
+                  : 'bg-white/90 border border-mahogany'
               }`}
             >
               {[1, 2, 3].map(speed => (

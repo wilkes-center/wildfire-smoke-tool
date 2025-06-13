@@ -1,8 +1,9 @@
+import { useCallback, useEffect, useState } from 'react';
+
 import _ from 'lodash';
-import { useState, useCallback, useEffect } from 'react';
 
 import { fetchCensusPopulation, isValidGEOID } from './census-api';
-import { isPointInPolygon, getBoundingBox } from './geometryUtils';
+import { getBoundingBox, isPointInPolygon } from './geometryUtils';
 import { removeLayerAndSource } from './layerUtils';
 
 const censusCache = {

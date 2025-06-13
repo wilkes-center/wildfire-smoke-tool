@@ -1,5 +1,6 @@
-import { Wind, Info } from 'lucide-react';
 import React from 'react';
+
+import { Info, Wind } from 'lucide-react';
 
 const PM25Section = () => {
   return (

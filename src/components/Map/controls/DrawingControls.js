@@ -1,5 +1,6 @@
-import { Pen, X } from 'lucide-react';
 import React from 'react';
+
+import { Pen, X } from 'lucide-react';
 
 export const DrawingControls = ({
   polygon,

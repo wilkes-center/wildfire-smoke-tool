@@ -1,5 +1,6 @@
-import { Users2 } from 'lucide-react';
 import React from 'react';
+
+import { Users2 } from 'lucide-react';
 
 const ContentPanel = ({ isDarkMode, children, title, subtitle }) => {
   return (

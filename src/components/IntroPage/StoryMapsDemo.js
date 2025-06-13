@@ -1,32 +1,32 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import Map from 'react-map-gl';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
 import 'mapbox-gl/dist/mapbox-gl.css';
+
 import {
-  Play,
-  Pause,
-  Users,
-  AlertTriangle,
-  Eye,
-  Target,
-  ChevronRight,
-  MapPin,
-  Clock,
-  Activity,
-  Shield,
-  Zap,
-  ArrowLeft
+    ArrowLeft,
+    ChevronRight,
+    Eye,
+    MapPin,
+    Pause,
+    Play,
+    Target
 } from 'lucide-react';
 
+import Map from 'react-map-gl';
+
 // Import images
+import { getPM25ColorInterpolation } from '../../utils/map/colors';
+import { MAPBOX_TOKEN, TILESET_INFO } from '../../utils/map/constants.js';
+
+import { DEFAULT_LIGHT_BASEMAP } from '../../constants/map/basemaps.js';
+import { PM25_LEVELS } from '../../constants/pm25Levels';
+
 import healthCategories from '../../assets/storymaps/images/health-categories.jpg';
 import populationExposure from '../../assets/storymaps/images/population-exposure.jpg';
 import wildfireSmokeIntro from '../../assets/storymaps/images/wildfire-smoke-intro.jpg';
 
 // Import map utilities and constants
-import { DEFAULT_DARK_BASEMAP, DEFAULT_LIGHT_BASEMAP } from '../../constants/map/basemaps.js';
-import { PM25_LEVELS } from '../../constants/pm25Levels';
-import { getPM25ColorInterpolation } from '../../utils/map/colors';
-import { MAPBOX_TOKEN, TILESET_INFO } from '../../utils/map/constants.js';
+
 
 // Separate memoized components for each media type
 const ImageComponent = React.memo(({ mediaSrc, mediaAlt, currentSection, sectionsLength }) => {

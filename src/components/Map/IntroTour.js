@@ -1,15 +1,16 @@
-import {
-    ChevronLeft,
-    ChevronRight,
-    Clock,
-    Info,
-    MapPin,
-    PenLine,
-    Sun,
-    Wind,
-    X
-} from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+import {
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Info,
+  MapPin,
+  PenLine,
+  Sun,
+  Wind,
+  X
+} from 'lucide-react';
 
 const IntroTour = ({ onComplete, isDarkMode }) => {
   const [isVisible, setIsVisible] = useState(true);

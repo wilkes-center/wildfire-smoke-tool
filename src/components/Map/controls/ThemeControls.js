@@ -1,5 +1,6 @@
-import { Sun, Moon } from 'lucide-react';
 import React from 'react';
+
+import { Moon, Sun } from 'lucide-react';
 
 export const ThemeControls = ({ isDarkMode, setIsDarkMode }) => {
   return (

@@ -1,5 +1,6 @@
-import { MapPin, Info, HelpCircle, MessageSquare, Github, Play, ChevronRight } from 'lucide-react';
 import React, { useState } from 'react';
+
+import { Github, HelpCircle, Info, MapPin, MessageSquare, Play } from 'lucide-react';
 // import StoryMapsDemo from './StoryMapsDemo';
 
 const IntroPage = ({ onComplete }) => {
@@ -141,7 +142,7 @@ const IntroPage = ({ onComplete }) => {
                 </p>
 
                 {/* Interactive Demo Button - DISABLED */}
-                {/* 
+                {/*
                 <div className="mt-8 pt-6 border-t border-forest/20">
                   <button
                     onClick={handleLaunchDemo}

@@ -1,10 +1,8 @@
-import { Calendar, Clock } from 'lucide-react';
 import React from 'react';
 
-import {
-  formatLocalDateTime,
-  isLocalTimeDifferentFromUTC
-} from '../../../utils/map/timeUtils';
+import { Calendar, Clock } from 'lucide-react';
+
+import { formatLocalDateTime, isLocalTimeDifferentFromUTC } from '../../../utils/map/timeUtils';
 
 export const DateTime = ({ timestamp, currentDateTime, isDarkMode, showUTC = false }) => {
   // Support both prop naming conventions for backward compatibility
@@ -45,7 +43,9 @@ export const DateTime = ({ timestamp, currentDateTime, isDarkMode, showUTC = fal
           </div>
           <div className="flex flex-col">
             <div className="flex items-baseline gap-2">
-              <span className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}>
+              <span
+                className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}
+              >
                 {utcDateStr}
               </span>
               <span className={`text-base ${isDarkMode ? 'text-white/60' : 'text-forest/60'}`}>
@@ -78,7 +78,9 @@ export const DateTime = ({ timestamp, currentDateTime, isDarkMode, showUTC = fal
           </div>
           <div className="flex flex-col">
             <div className="flex items-baseline gap-2">
-              <span className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}>
+              <span
+                className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}
+              >
                 {String(dateTimeObj.hour).padStart(2, '0')}:00
               </span>
               <span className={`text-base ${isDarkMode ? 'text-white/60' : 'text-forest/60'}`}>

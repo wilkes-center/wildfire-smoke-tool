@@ -40,9 +40,9 @@ export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
     // 2x speed = 1 second per frame (slower than before)
     // 3x speed = 0.5 seconds per frame (what used to be 8x speed)
     const speedToDuration = {
-      1: 2000,    // 2 seconds per hour
-      2: 1000,    // 1 second per hour
-      3: 500      // 0.5 seconds per hour
+      1: 2000, // 2 seconds per hour
+      2: 1000, // 1 second per hour
+      3: 500 // 0.5 seconds per hour
     };
 
     const animationDuration = speedToDuration[playbackSpeed] || 1000;

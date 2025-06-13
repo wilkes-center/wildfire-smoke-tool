@@ -28,7 +28,7 @@ const getDateRange = () => {
   console.log('Date range:', {
     today: today.toISOString().split('T')[0],
     tomorrow: tomorrow.toISOString().split('T')[0],
-    totalHours: 48  // Fixed to 48 hours for 2 days
+    totalHours: 48 // Fixed to 48 hours for 2 days
   });
 
   return {
@@ -36,7 +36,7 @@ const getDateRange = () => {
     tomorrow,
     startDate: today,
     endDate,
-    totalHours: 48  // 2 days = 48 hours
+    totalHours: 48 // 2 days = 48 hours
   };
 };
 

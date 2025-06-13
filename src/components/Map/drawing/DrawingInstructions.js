@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * Shared utility for getting drawing instructions based on polygon state

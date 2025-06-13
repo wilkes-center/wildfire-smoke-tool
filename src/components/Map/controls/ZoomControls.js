@@ -1,5 +1,6 @@
-import { Plus, Minus, Compass } from 'lucide-react';
 import React from 'react';
+
+import { Compass, Minus, Plus } from 'lucide-react';
 
 const ZoomControls = ({ map, isDarkMode }) => {
   const handleZoomIn = () => {

@@ -1,5 +1,6 @@
-import { Clock, CheckCircle } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+
+import { CheckCircle, Clock } from 'lucide-react';
 
 import { START_DATE, TOTAL_HOURS } from '../../../utils/map/constants';
 import { getCurrentTimelineHour } from '../../../utils/map/timeUtils';

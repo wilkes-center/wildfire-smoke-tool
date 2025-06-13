@@ -1,18 +1,19 @@
-import { BarChart2, X } from 'lucide-react';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
   CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
   Tooltip,
-  ResponsiveContainer
+  XAxis,
+  YAxis
 } from 'recharts';
 
-import calculateAreaStats from '../../../utils/map/calculateAreaStats';
+import { BarChart2 } from 'lucide-react';
 
-import { START_DATE, TOTAL_HOURS, TILESET_INFO } from '../../../utils/map/constants';
+import calculateAreaStats from '../../../utils/map/calculateAreaStats';
+import { TILESET_INFO } from '../../../utils/map/constants';
 
 import ThemedPanel from './ThemedPanel';
 

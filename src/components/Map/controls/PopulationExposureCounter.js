@@ -1,10 +1,13 @@
-import _ from 'lodash';
-import { Users2 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { PM25_LEVELS } from '../../../constants/pm25Levels';
+import _ from 'lodash';
+
+import { Users2 } from 'lucide-react';
+
 import getSelectedCensusTracts from '../../../utils/map/censusAnalysis';
 import { TILESET_INFO } from '../../../utils/map/constants';
+
+import { PM25_LEVELS } from '../../../constants/pm25Levels';
 
 // Helper for point-in-polygon check
 const isPointInPolygon = (point, polygon) => {

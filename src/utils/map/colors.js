@@ -1,5 +1,5 @@
 // Directly re-export from pm25Levels to eliminate redundancy
-export { PM25_LEVELS, getPM25Level, getPM25ColorInterpolation } from '../../constants/pm25Levels';
+export { PM25_LEVELS, getPM25ColorInterpolation, getPM25Level } from '../../constants/pm25Levels';
 
 // This mapping is the only unique functionality in this file
 export const NEON_PM25_COLORS = {

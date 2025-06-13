@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+
 import logger, { ERROR_CATEGORIES, LOG_LEVELS } from '../../utils/logger';
 
 const DebugDashboard = ({ isOpen, onClose }) => {
@@ -23,9 +24,7 @@ const DebugDashboard = ({ isOpen, onClose }) => {
     };
 
     Object.values(ERROR_CATEGORIES).forEach(category => {
-      newStats.byCategory[category] = allLogs.filter(
-        log => log.data.category === category
-      ).length;
+      newStats.byCategory[category] = allLogs.filter(log => log.data.category === category).length;
     });
 
     setStats(newStats);
@@ -50,7 +49,8 @@ const DebugDashboard = ({ isOpen, onClose }) => {
   const filteredLogs = logs.filter(log => {
     const levelMatch = filterLevel === 'ALL' || log.level === filterLevel;
     const categoryMatch = filterCategory === 'ALL' || log.data.category === filterCategory;
-    const searchMatch = searchTerm === '' ||
+    const searchMatch =
+      searchTerm === '' ||
       log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
       JSON.stringify(log.data).toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -69,13 +69,13 @@ const DebugDashboard = ({ isOpen, onClose }) => {
   };
 
   // Get level color
-  const getLevelColor = (level) => {
+  const getLevelColor = level => {
     const levelInfo = LOG_LEVELS[level];
     return levelInfo ? levelInfo.color : '#6b7280';
   };
 
   // Format timestamp
-  const formatTimestamp = (timestamp) => {
+  const formatTimestamp = timestamp => {
     return new Date(timestamp).toLocaleTimeString();
   };
 
@@ -92,7 +92,7 @@ const DebugDashboard = ({ isOpen, onClose }) => {
               <input
                 type="checkbox"
                 checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
+                onChange={e => setAutoRefresh(e.target.checked)}
                 className="mr-2"
               />
               Auto-refresh
@@ -146,17 +146,17 @@ const DebugDashboard = ({ isOpen, onClose }) => {
         <div className="p-4 border-b bg-gray-50">
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Level Filter
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Level Filter</label>
               <select
                 value={filterLevel}
-                onChange={(e) => setFilterLevel(e.target.value)}
+                onChange={e => setFilterLevel(e.target.value)}
                 className="w-full border border-gray-300 rounded px-3 py-1"
               >
                 <option value="ALL">All Levels</option>
                 {Object.keys(LOG_LEVELS).map(level => (
-                  <option key={level} value={level}>{level}</option>
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
                 ))}
               </select>
             </div>
@@ -166,23 +166,23 @@ const DebugDashboard = ({ isOpen, onClose }) => {
               </label>
               <select
                 value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
+                onChange={e => setFilterCategory(e.target.value)}
                 className="w-full border border-gray-300 rounded px-3 py-1"
               >
                 <option value="ALL">All Categories</option>
                 {Object.values(ERROR_CATEGORIES).map(category => (
-                  <option key={category} value={category}>{category}</option>
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Search
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
               <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 placeholder="Search logs..."
                 className="w-full border border-gray-300 rounded px-3 py-1"
               />
@@ -193,9 +193,7 @@ const DebugDashboard = ({ isOpen, onClose }) => {
         {/* Logs List */}
         <div className="flex-1 overflow-auto">
           {filteredLogs.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              No logs match the current filters
-            </div>
+            <div className="p-8 text-center text-gray-500">No logs match the current filters</div>
           ) : (
             <div className="divide-y divide-gray-200">
               {filteredLogs.map((log, index) => (
@@ -243,22 +241,14 @@ const LogEntry = React.memo(({ log, getLevelColor, formatTimestamp }) => {
                 {log.data.component}
               </span>
             )}
-            <span className="text-gray-500 text-sm">
-              {formatTimestamp(log.session.timestamp)}
-            </span>
+            <span className="text-gray-500 text-sm">{formatTimestamp(log.session.timestamp)}</span>
           </div>
-          <div className="mt-1 text-gray-900 font-medium">
-            {log.message}
-          </div>
+          <div className="mt-1 text-gray-900 font-medium">{log.message}</div>
           {log.data.error && (
-            <div className="mt-1 text-red-600 text-sm">
-              Error: {log.data.error}
-            </div>
+            <div className="mt-1 text-red-600 text-sm">Error: {log.data.error}</div>
           )}
         </div>
-        <button className="text-gray-400 hover:text-gray-600">
-          {isExpanded ? '−' : '+'}
-        </button>
+        <button className="text-gray-400 hover:text-gray-600">{isExpanded ? '−' : '+'}</button>
       </div>
 
       {isExpanded && (

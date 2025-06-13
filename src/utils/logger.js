@@ -63,7 +63,7 @@ class Logger {
    */
   initializeErrorHandlers() {
     // Unhandled JavaScript errors
-    window.addEventListener('error', (event) => {
+    window.addEventListener('error', event => {
       this.error('Unhandled JavaScript Error', {
         category: ERROR_CATEGORIES.UI,
         message: event.message,
@@ -76,7 +76,7 @@ class Logger {
     });
 
     // Unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
+    window.addEventListener('unhandledrejection', event => {
       this.error('Unhandled Promise Rejection', {
         category: ERROR_CATEGORIES.API,
         reason: event.reason,
@@ -134,10 +134,7 @@ class Logger {
     const style = `color: ${level.color}; font-weight: bold;`;
     const timestamp = new Date().toLocaleTimeString();
 
-    console.groupCollapsed(
-      `%c[${level.label}] ${timestamp} ${formattedMessage.message}`,
-      style
-    );
+    console.groupCollapsed(`%c[${level.label}] ${timestamp} ${formattedMessage.message}`, style);
 
     if (formattedMessage.data && Object.keys(formattedMessage.data).length > 0) {
       console.log('Data:', formattedMessage.data);
@@ -161,7 +158,7 @@ class Logger {
       await fetch(this.remoteEndpoint, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formattedMessage)
       });
@@ -291,7 +288,8 @@ class Logger {
       timestamp: Date.now()
     });
 
-    if (duration > 1000) { // Log slow operations
+    if (duration > 1000) {
+      // Log slow operations
       this.warn(`Slow operation detected: ${operation}`, perfData);
     } else {
       this.debug(`Performance: ${operation}`, perfData);
@@ -333,9 +331,7 @@ class Logger {
    * Get recent error logs
    */
   getRecentErrors(count = 10) {
-    return this.errorBuffer
-      .filter(log => log.level === 'ERROR')
-      .slice(-count);
+    return this.errorBuffer.filter(log => log.level === 'ERROR').slice(-count);
   }
 
   /**
@@ -409,7 +405,7 @@ export default logger;
 export { Logger };
 
 // Helper function for creating component-specific loggers
-export const createLogger = (componentName) => {
+export const createLogger = componentName => {
   return logger.createChildLogger({ component: componentName });
 };
 

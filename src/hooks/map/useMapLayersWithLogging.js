@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
+
 import { getPM25ColorInterpolation } from '../../utils/map/colors';
 import { TILESET_INFO } from '../../utils/map/constants';
+
 import { useLogger } from '../useLogger';
 
 /**
@@ -17,19 +19,11 @@ export const useMapLayers = (
   needsLayerReinitRef
 ) => {
   // Initialize component-specific logger
-  const {
-    debug,
-    warn,
-    error,
-    mapError,
-    startTimer,
-    logAsync,
-    logStateChange,
-    logUserInteraction
-  } = useLogger('useMapLayers', {
-    enablePerformanceTracking: true,
-    context: { currentHour, pm25Threshold, isDarkMode }
-  });
+  const { debug, warn, error, mapError, startTimer, logAsync, logStateChange, logUserInteraction } =
+    useLogger('useMapLayers', {
+      enablePerformanceTracking: true,
+      context: { currentHour, pm25Threshold, isDarkMode }
+    });
 
   const loadedSourcesRef = useRef(new Set());
   const loadedLayersRef = useRef(new Set());
@@ -39,101 +33,104 @@ export const useMapLayers = (
   const MAX_LOADED_CHUNKS = 12;
 
   // Get relevant tilesets with logging
-  const getRelevantTilesets = useCallback((date, hour, count = CHUNKS_TO_PRELOAD) => {
-    const timer = startTimer('getRelevantTilesets');
+  const getRelevantTilesets = useCallback(
+    (date, hour, count = CHUNKS_TO_PRELOAD) => {
+      const timer = startTimer('getRelevantTilesets');
 
-    try {
-      const tilesets = new Set();
-      let currentDate = new Date(date);
-      let currentHour = hour;
+      try {
+        const tilesets = new Set();
+        let currentDate = new Date(date);
+        let currentHour = hour;
 
-      debug('Getting relevant tilesets', {
-        date: currentDate.toISOString().split('T')[0],
-        hour: currentHour,
-        count
-      });
-
-      const currentTileset = TILESET_INFO.find(
-        tileset =>
-          tileset.date === currentDate.toISOString().split('T')[0] &&
-          currentHour >= tileset.startHour &&
-          currentHour <= tileset.endHour
-      );
-
-      if (currentTileset) {
-        tilesets.add(currentTileset);
-        debug(`Added current tileset: ${currentTileset.id}`);
-      } else {
-        warn('No current tileset found', {
+        debug('Getting relevant tilesets', {
           date: currentDate.toISOString().split('T')[0],
           hour: currentHour,
-          availableTilesets: TILESET_INFO.length
+          count
         });
-      }
 
-      // Add future tilesets
-      for (let i = 0; i < count; i++) {
-        currentHour++;
-        if (currentHour >= 24) {
-          currentHour = 0;
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-
-        const nextTileset = TILESET_INFO.find(
+        const currentTileset = TILESET_INFO.find(
           tileset =>
             tileset.date === currentDate.toISOString().split('T')[0] &&
             currentHour >= tileset.startHour &&
             currentHour <= tileset.endHour
         );
 
-        if (nextTileset) {
-          tilesets.add(nextTileset);
-          debug(`Added next tileset: ${nextTileset.id}`);
+        if (currentTileset) {
+          tilesets.add(currentTileset);
+          debug(`Added current tileset: ${currentTileset.id}`);
+        } else {
+          warn('No current tileset found', {
+            date: currentDate.toISOString().split('T')[0],
+            hour: currentHour,
+            availableTilesets: TILESET_INFO.length
+          });
         }
+
+        // Add future tilesets
+        for (let i = 0; i < count; i++) {
+          currentHour++;
+          if (currentHour >= 24) {
+            currentHour = 0;
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+
+          const nextTileset = TILESET_INFO.find(
+            tileset =>
+              tileset.date === currentDate.toISOString().split('T')[0] &&
+              currentHour >= tileset.startHour &&
+              currentHour <= tileset.endHour
+          );
+
+          if (nextTileset) {
+            tilesets.add(nextTileset);
+            debug(`Added next tileset: ${nextTileset.id}`);
+          }
+        }
+
+        // Add previous tileset
+        currentDate = new Date(date);
+        currentHour = hour - 1;
+        if (currentHour < 0) {
+          currentHour = 23;
+          currentDate.setDate(currentDate.getDate() - 1);
+        }
+
+        const prevTileset = TILESET_INFO.find(
+          tileset =>
+            tileset.date === currentDate.toISOString().split('T')[0] &&
+            currentHour >= tileset.startHour &&
+            currentHour <= tileset.endHour
+        );
+
+        if (prevTileset) {
+          tilesets.add(prevTileset);
+          debug(`Added previous tileset: ${prevTileset.id}`);
+        }
+
+        const result = Array.from(tilesets);
+        const perfData = timer.end();
+
+        debug('Relevant tilesets retrieved', {
+          count: result.length,
+          tilesets: result.map(t => t.id),
+          performance: perfData
+        });
+
+        return result;
+      } catch (getError) {
+        timer.end();
+        mapError('Failed to get relevant tilesets', {
+          error: getError.message,
+          stack: getError.stack,
+          date,
+          hour,
+          count
+        });
+        return [];
       }
-
-      // Add previous tileset
-      currentDate = new Date(date);
-      currentHour = hour - 1;
-      if (currentHour < 0) {
-        currentHour = 23;
-        currentDate.setDate(currentDate.getDate() - 1);
-      }
-
-      const prevTileset = TILESET_INFO.find(
-        tileset =>
-          tileset.date === currentDate.toISOString().split('T')[0] &&
-          currentHour >= tileset.startHour &&
-          currentHour <= tileset.endHour
-      );
-
-      if (prevTileset) {
-        tilesets.add(prevTileset);
-        debug(`Added previous tileset: ${prevTileset.id}`);
-      }
-
-      const result = Array.from(tilesets);
-      const perfData = timer.end();
-
-      debug('Relevant tilesets retrieved', {
-        count: result.length,
-        tilesets: result.map(t => t.id),
-        performance: perfData
-      });
-
-      return result;
-    } catch (getError) {
-      timer.end();
-      mapError('Failed to get relevant tilesets', {
-        error: getError.message,
-        stack: getError.stack,
-        date,
-        hour,
-        count
-      });
-      return [];
-    }
-  }, [debug, warn, mapError, startTimer]);
+    },
+    [debug, warn, mapError, startTimer]
+  );
 
   // Cleanup old chunks with comprehensive error handling
   const cleanupOldChunks = useCallback(
@@ -150,9 +147,7 @@ export const useMapLayers = (
         const chunksToKeep = new Set([currentTilesetId]);
         const { date, hour } = getCurrentDateTime();
 
-        getRelevantTilesets(new Date(date), hour).forEach(tileset =>
-          chunksToKeep.add(tileset.id)
-        );
+        getRelevantTilesets(new Date(date), hour).forEach(tileset => chunksToKeep.add(tileset.id));
 
         let layersRemoved = 0;
         let sourcesRemoved = 0;
@@ -227,7 +222,7 @@ export const useMapLayers = (
 
   // Update layer colors with error handling
   const updateLayerColors = useCallback(
-    (map) => {
+    map => {
       const timer = startTimer('updateLayerColors');
 
       try {
@@ -242,7 +237,8 @@ export const useMapLayers = (
         const currentTileset = tilesetId
           ? TILESET_INFO.find(tileset => tileset.id === tilesetId)
           : TILESET_INFO.find(
-              tileset => tileset.date === date && hour >= tileset.startHour && hour <= tileset.endHour
+              tileset =>
+                tileset.date === date && hour >= tileset.startHour && hour <= tileset.endHour
             );
 
         if (!currentTileset) {
@@ -317,7 +313,6 @@ export const useMapLayers = (
           currentLayer: currentLayerId,
           performance: perfData
         });
-
       } catch (colorUpdateError) {
         timer.end();
         mapError('Layer color update failed', {
@@ -331,7 +326,7 @@ export const useMapLayers = (
 
   // Initialize layers with comprehensive error handling
   const initializeLayers = useCallback(
-    (map) => {
+    map => {
       return logAsync('initializeLayers', async () => {
         debug('Starting layer initialization');
 
@@ -408,12 +403,18 @@ export const useMapLayers = (
                       'interpolate',
                       ['exponential', 2],
                       ['zoom'],
-                      4, 2,
-                      5, 5,
-                      6, 10,
-                      7, 55,
-                      8, 70,
-                      9, 90
+                      4,
+                      2,
+                      5,
+                      5,
+                      6,
+                      10,
+                      7,
+                      55,
+                      8,
+                      70,
+                      9,
+                      90
                     ],
                     'circle-color': getPM25ColorInterpolation(isDarkMode),
                     'circle-blur': 0.6,
@@ -465,7 +466,6 @@ export const useMapLayers = (
             sourcesAdded,
             errors: errors.length
           };
-
         } catch (initError) {
           mapError('Layer initialization failed', {
             error: initError.message,
@@ -475,12 +475,22 @@ export const useMapLayers = (
         }
       });
     },
-    [getCurrentDateTime, getRelevantTilesets, isDarkMode, updateLayerColors, logAsync, debug, warn, mapError, startTimer]
+    [
+      getCurrentDateTime,
+      getRelevantTilesets,
+      isDarkMode,
+      updateLayerColors,
+      logAsync,
+      debug,
+      warn,
+      mapError,
+      startTimer
+    ]
   );
 
   // Update layers with comprehensive error handling
   const updateLayers = useCallback(
-    (map) => {
+    map => {
       return logAsync('updateLayers', async () => {
         if (!map || !map.getStyle()) {
           mapError('Cannot update layers - map not ready', {
@@ -560,12 +570,18 @@ export const useMapLayers = (
                   'interpolate',
                   ['exponential', 2],
                   ['zoom'],
-                  4, 2,
-                  5, 5,
-                  6, 10,
-                  7, 55,
-                  8, 70,
-                  9, 90
+                  4,
+                  2,
+                  5,
+                  5,
+                  6,
+                  10,
+                  7,
+                  55,
+                  8,
+                  70,
+                  9,
+                  90
                 ],
                 'circle-color': getPM25ColorInterpolation(isDarkMode),
                 'circle-blur': 0.6,
@@ -593,7 +609,6 @@ export const useMapLayers = (
             opacity: isDarkMode ? 0.9 : 0.75,
             pm25Threshold
           });
-
         } catch (updateError) {
           mapError('Layer update failed', {
             error: updateError.message,
@@ -605,7 +620,17 @@ export const useMapLayers = (
         }
       });
     },
-    [getCurrentDateTime, cleanupOldChunks, isDarkMode, pm25Threshold, currentHour, logAsync, debug, warn, mapError]
+    [
+      getCurrentDateTime,
+      cleanupOldChunks,
+      isDarkMode,
+      pm25Threshold,
+      currentHour,
+      logAsync,
+      debug,
+      warn,
+      mapError
+    ]
   );
 
   // Log state changes
@@ -677,7 +702,6 @@ export const useMapLayers = (
         isMapLoaded
       });
     });
-
   }, [isMapLoaded, currentHour, initializeLayers, updateLayers, debug, mapError, logAsync]);
 
   return {

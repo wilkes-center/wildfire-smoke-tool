@@ -1,4 +1,3 @@
-
 /**
  * Fetches population data for all census tracts in the United States
  * @returns {Promise<Object>} Object with GEOID keys and population values
