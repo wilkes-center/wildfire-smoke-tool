@@ -135,41 +135,98 @@ const MapControls = ({
           isDarkMode={isDarkMode}
           onTimeChange={hour => {
             // Force an immediate layer update when time is changed manually
-            if (mapInstance) {
-              const { date, hour: newHour } = getCurrentDateTime(hour);
-              const currentTileset = TILESET_INFO.find(
-                tileset =>
-                  tileset.date === date &&
-                  newHour >= tileset.startHour &&
-                  newHour <= tileset.endHour
-              );
+            if (mapInstance && mapInstance.getStyle()) {
+              try {
+                const { date, hour: newHour } = getCurrentDateTime(hour);
+                const currentTileset = TILESET_INFO.find(
+                  tileset =>
+                    tileset.date === date &&
+                    newHour >= tileset.startHour &&
+                    newHour <= tileset.endHour
+                );
 
-              if (currentTileset) {
-                const layerId = `layer-${currentTileset.id}`;
-                const timeString = `${date}T${String(newHour).padStart(2, '0')}:00:00`;
+                // Get all layer IDs that start with 'layer-' using a more reliable method
+                const allLayers = [];
+                try {
+                  const style = mapInstance.getStyle();
+                  if (style && style.layers) {
+                    style.layers.forEach(layer => {
+                      if (layer.id && layer.id.startsWith('layer-')) {
+                        allLayers.push(layer.id);
+                      }
+                    });
+                  }
+                } catch (layerError) {
+                  console.warn('Error getting layers, trying alternative method:', layerError);
+                  // Alternative method: use TILESET_INFO to construct layer IDs
+                  TILESET_INFO.forEach(tileset => {
+                    allLayers.push(`layer-${tileset.id}`);
+                  });
+                }
 
                 // Hide all layers first
-                Object.values(mapInstance.getStyle().layers)
-                  .filter(layer => layer.id.startsWith('layer-'))
-                  .forEach(layer => {
-                    mapInstance.setLayoutProperty(layer.id, 'visibility', 'none');
-                    mapInstance.setPaintProperty(layer.id, 'circle-opacity', 0);
-                  });
+                allLayers.forEach(layerId => {
+                  try {
+                    if (mapInstance.getLayer(layerId)) {
+                      mapInstance.setLayoutProperty(layerId, 'visibility', 'none');
+                    }
+                  } catch (hideError) {
+                    console.warn(`Error hiding layer ${layerId}:`, hideError);
+                  }
+                });
 
-                // Make sure the layer exists
-                if (mapInstance.getLayer(layerId)) {
-                  // Update filter for the specific hour
-                  mapInstance.setFilter(layerId, [
-                    'all',
-                    ['==', ['get', 'time'], timeString],
-                    ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
-                  ]);
+                if (currentTileset) {
+                  const layerId = `layer-${currentTileset.id}`;
+                  const timeString = `${date}T${String(newHour).padStart(2, '0')}:00:00`;
 
-                  // Make layer visible
-                  mapInstance.setLayoutProperty(layerId, 'visibility', 'visible');
+                  // Make sure the layer exists
+                  if (mapInstance.getLayer(layerId)) {
+                    try {
+                      // Update filter for the specific hour
+                      mapInstance.setFilter(layerId, [
+                        'all',
+                        ['==', ['get', 'time'], timeString],
+                        ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+                      ]);
+
+                      // Make layer visible
+                      mapInstance.setLayoutProperty(layerId, 'visibility', 'visible');
+                      console.log(`Successfully updated layer ${layerId} for time ${timeString}`);
+                    } catch (layerError) {
+                      console.error(`Error updating layer ${layerId}:`, layerError);
+                    }
+                  } else {
+                    console.warn(`Layer not found for time ${timeString}:`, layerId);
+                  }
                 } else {
-                  console.warn(`Layer not found for time ${timeString}:`, layerId);
+                  // Fallback: use the last available tileset if no current tileset found
+                  console.warn(`No tileset found for time ${newHour}, falling back to last available data`);
+                  const lastTileset = TILESET_INFO[TILESET_INFO.length - 1];
+                  if (lastTileset) {
+                    const fallbackLayerId = `layer-${lastTileset.id}`;
+                    const fallbackHour = lastTileset.endHour;
+                    const fallbackTimeString = `${lastTileset.date}T${String(fallbackHour).padStart(2, '0')}:00:00`;
+
+                    // Show fallback layer if it exists
+                    if (mapInstance.getLayer(fallbackLayerId)) {
+                      try {
+                        mapInstance.setFilter(fallbackLayerId, [
+                          'all',
+                          ['==', ['get', 'time'], fallbackTimeString],
+                          ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+                        ]);
+                        mapInstance.setLayoutProperty(fallbackLayerId, 'visibility', 'visible');
+                        console.log(`Showing fallback layer ${fallbackLayerId} with time ${fallbackTimeString}`);
+                      } catch (fallbackError) {
+                        console.error(`Error showing fallback layer ${fallbackLayerId}:`, fallbackError);
+                      }
+                    } else {
+                      console.warn(`Fallback layer not found: ${fallbackLayerId}`);
+                    }
+                  }
                 }
+              } catch (error) {
+                console.error('Error in onTimeChange callback:', error);
               }
             }
           }}

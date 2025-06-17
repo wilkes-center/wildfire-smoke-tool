@@ -37,15 +37,62 @@ export const TimeControls = ({
 
   // Jump to current time
   const handleGoToCurrentTime = () => {
+    // Pause playback when jumping to current time
+    setIsPlaying(false);
+
     const currentTimelineHour = getCurrentTimelineHour(START_DATE, TOTAL_HOURS);
-    setCurrentHour(currentTimelineHour);
-    if (onTimeChange) onTimeChange(currentTimelineHour);
+
+    // Check if we're beyond the available data timeline
+    if (currentTimelineHour >= TOTAL_HOURS - 1) {
+      // If current time is beyond available data, go to the last available hour
+      // and show a brief indicator that we're at the end of available data
+      const lastAvailableHour = TOTAL_HOURS - 1;
+      setCurrentHour(lastAvailableHour);
+
+      // Add a small delay to ensure state update completes before layer update
+      setTimeout(() => {
+        if (onTimeChange) {
+          try {
+            onTimeChange(lastAvailableHour);
+          } catch (error) {
+            console.error('Error in onTimeChange callback:', error);
+            // Fallback: trigger another state update to force re-render
+            setTimeout(() => setCurrentHour(lastAvailableHour), 100);
+          }
+        }
+      }, 50);
+
+      // Optional: Could add a toast notification here to inform user
+      console.log('Current time is beyond available data. Showing last available hour.');
+    } else {
+      // Normal case: current time is within the available data range
+      setCurrentHour(currentTimelineHour);
+
+      // Add a small delay to ensure state update completes before layer update
+      setTimeout(() => {
+        if (onTimeChange) {
+          try {
+            onTimeChange(currentTimelineHour);
+          } catch (error) {
+            console.error('Error in onTimeChange callback:', error);
+            // Fallback: trigger another state update to force re-render
+            setTimeout(() => setCurrentHour(currentTimelineHour), 100);
+          }
+        }
+      }, 50);
+    }
   };
 
   // Check if we're at current time (within 1 hour tolerance)
   const isAtCurrentTime = () => {
     const currentTimelineHour = getCurrentTimelineHour(START_DATE, TOTAL_HOURS);
     return Math.abs(currentHour - currentTimelineHour) <= 1;
+  };
+
+  // Check if current real-world time is beyond available data
+  const isCurrentTimeBeyondData = () => {
+    const currentTimelineHour = getCurrentTimelineHour(START_DATE, TOTAL_HOURS);
+    return currentTimelineHour >= TOTAL_HOURS - 1;
   };
 
   // Get local time for current hour tooltip
@@ -259,13 +306,24 @@ export const TimeControls = ({
         <button
           onClick={handleGoToCurrentTime}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border ${
-            isDarkMode
-              ? 'border-white bg-gray-800/90 hover:bg-gray-700/90 text-white'
-              : 'border-mahogany bg-gray-100/90 hover:bg-gray-200/90 text-mahogany'
+            isCurrentTimeBeyondData()
+              ? isDarkMode
+                ? 'border-yellow-400 bg-yellow-900/20 hover:bg-yellow-800/30 text-yellow-200'
+                : 'border-yellow-600 bg-yellow-100/90 hover:bg-yellow-200/90 text-yellow-800'
+              : isDarkMode
+                ? 'border-white bg-gray-800/90 hover:bg-gray-700/90 text-white'
+                : 'border-mahogany bg-gray-100/90 hover:bg-gray-200/90 text-mahogany'
           }`}
+          title={
+            isCurrentTimeBeyondData()
+              ? 'Current time is beyond available data. Showing latest available data.'
+              : 'Jump to current time'
+          }
         >
           <Clock className="w-4 h-4" />
-          <span className="text-sm font-medium">Now</span>
+          <span className="text-sm font-medium">
+            {isCurrentTimeBeyondData() ? 'Latest' : 'Now'}
+          </span>
         </button>
       </div>
     </div>

@@ -527,6 +527,41 @@ export const useMapLayers = (
 
           if (!currentTileset) {
             warn('No tileset found for current time', { date, hour });
+
+            // Fallback: try to find the last available tileset instead of leaving map blank
+            const lastTileset = TILESET_INFO[TILESET_INFO.length - 1];
+            if (lastTileset) {
+              debug('Falling back to last available tileset', { tileset: lastTileset });
+
+              // Use the last available tileset
+              const fallbackLayerId = `layer-${lastTileset.id}`;
+
+              // Hide all layers first
+              loadedLayersRef.current.forEach(layerId => {
+                if (map.getLayer(layerId)) {
+                  map.setLayoutProperty(layerId, 'visibility', 'none');
+                }
+              });
+
+              // Show the fallback layer if it exists
+              if (map.getLayer(fallbackLayerId)) {
+                // Use the last hour of the last tileset
+                const fallbackHour = lastTileset.endHour;
+                const fallbackTimeString = `${lastTileset.date}T${String(fallbackHour).padStart(2, '0')}:00:00`;
+
+                map.setFilter(fallbackLayerId, [
+                  'all',
+                  ['==', ['get', 'time'], fallbackTimeString],
+                  ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+                ]);
+                map.setLayoutProperty(fallbackLayerId, 'visibility', 'visible');
+
+                debug('Showing fallback layer', {
+                  layerId: fallbackLayerId,
+                  timeString: fallbackTimeString
+                });
+              }
+            }
             return;
           }
 

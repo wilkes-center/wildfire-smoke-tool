@@ -237,6 +237,39 @@ const MapAdditionalControls = ({
 
         if (!currentTileset) {
           console.warn('No tileset found for:', { date, hour });
+
+          // Fallback: try to find the last available tileset instead of leaving minimap blank
+          const lastTileset = TILESET_INFO[TILESET_INFO.length - 1];
+          if (lastTileset) {
+            console.log('Minimap falling back to last available tileset:', lastTileset);
+
+            // Use the last available tileset
+            const fallbackLayerId = `minimap-layer-${lastTileset.id}`;
+
+            // Hide all layers first
+            TILESET_INFO.forEach(tileset => {
+              const layerId = `minimap-layer-${tileset.id}`;
+              if (map.getLayer(layerId)) {
+                map.setLayoutProperty(layerId, 'visibility', 'none');
+              }
+            });
+
+            // Show the fallback layer if it exists
+            if (map.getLayer(fallbackLayerId)) {
+              // Use the last hour of the last tileset
+              const fallbackHour = lastTileset.endHour;
+              const fallbackTimeString = `${lastTileset.date}T${String(fallbackHour).padStart(2, '0')}:00:00`;
+
+              map.setFilter(fallbackLayerId, [
+                'all',
+                ['==', ['get', 'time'], fallbackTimeString],
+                ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+              ]);
+              map.setLayoutProperty(fallbackLayerId, 'visibility', 'visible');
+
+              console.log(`Showing minimap fallback layer ${fallbackLayerId} with time ${fallbackTimeString}`);
+            }
+          }
           return;
         }
 

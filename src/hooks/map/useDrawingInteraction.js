@@ -177,13 +177,15 @@ export const useDrawingInteraction = ({
 
   // Drawing mode handlers
   const startDrawing = useCallback(() => {
+    // Pause playback when starting to draw
+    setIsPlaying(false);
     setDrawingMode(true);
     setTempPolygon([]);
     setPolygon(null);
     if (mapInstance) {
       mapInstance.getCanvas().style.cursor = 'crosshair';
     }
-  }, [mapInstance, setDrawingMode, setTempPolygon, setPolygon]);
+  }, [mapInstance, setDrawingMode, setTempPolygon, setPolygon, setIsPlaying]);
 
   const finishDrawing = useCallback(() => {
     if (tempPolygon.length >= 3) {
