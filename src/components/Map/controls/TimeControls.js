@@ -54,7 +54,7 @@ export const TimeControls = ({
     const currentDate = new Date(startDate.getTime() + currentHour * 60 * 60 * 1000);
     const dateStr = currentDate.toISOString().split('T')[0];
     const hour = currentDate.getUTCHours();
-    return formatLocalDateTime({ date: dateStr, hour: hour });
+    return formatLocalDateTime({ date: dateStr, hour });
   };
 
   // Generate date labels dynamically

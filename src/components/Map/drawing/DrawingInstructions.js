@@ -1,4 +1,3 @@
-
 /**
  * Shared utility for getting drawing instructions based on polygon state
  * Used by both tooltip and helper overlay components

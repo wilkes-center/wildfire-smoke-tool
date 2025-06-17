@@ -5,7 +5,6 @@ import { Check } from 'lucide-react';
 import DrawingAnimation from './controls/AnimatedDrawingExample';
 import { canCompletePolygon } from './drawing/DrawingInstructions';
 
-
 const DrawingHelperOverlay = ({ drawingMode, tempPolygon, isDarkMode, finishDrawing }) => {
   if (!drawingMode) return null;
 

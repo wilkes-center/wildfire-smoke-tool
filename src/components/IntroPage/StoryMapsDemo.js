@@ -2,15 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-import {
-    ArrowLeft,
-    ChevronRight,
-    Eye,
-    MapPin,
-    Pause,
-    Play,
-    Target
-} from 'lucide-react';
+import { ArrowLeft, ChevronRight, Eye, MapPin, Pause, Play, Target } from 'lucide-react';
 
 import Map from 'react-map-gl';
 
@@ -26,7 +18,6 @@ import populationExposure from '../../assets/storymaps/images/population-exposur
 import wildfireSmokeIntro from '../../assets/storymaps/images/wildfire-smoke-intro.jpg';
 
 // Import map utilities and constants
-
 
 // Separate memoized components for each media type
 const ImageComponent = React.memo(({ mediaSrc, mediaAlt, currentSection, sectionsLength }) => {

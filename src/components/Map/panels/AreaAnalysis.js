@@ -252,7 +252,9 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
   };
 
   return (
-    <div className={`h-[clamp(18rem,20vh,25rem)] w-full relative ${isDarkMode ? 'bg-gray-800/30' : 'bg-white/30'}`}>
+    <div
+      className={`h-[clamp(18rem,20vh,25rem)] w-full relative ${isDarkMode ? 'bg-gray-800/30' : 'bg-white/30'}`}
+    >
       <ResponsiveContainer>
         <LineChart data={completeData} margin={{ top: 20, right: 10, left: 30, bottom: 30 }}>
           <CartesianGrid

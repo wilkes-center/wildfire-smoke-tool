@@ -56,10 +56,7 @@ const MapControls = ({
           />
 
           {/* Centered DateTime */}
-          <DateTime
-            currentDateTime={getCurrentDateTime()}
-            isDarkMode={isDarkMode}
-          />
+          <DateTime currentDateTime={getCurrentDateTime()} isDarkMode={isDarkMode} />
 
           {/* Draw Button (Right of DateTime) */}
           {!polygon && !drawingMode && (
@@ -73,10 +70,11 @@ const MapControls = ({
               title="Draw Area"
             >
               <Pen className="w-5 h-5" />
-              <span className="font-medium" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Draw Area</span>
+              <span className="font-medium" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+                Draw Area
+              </span>
             </button>
           )}
-
 
           {polygon && !drawingMode && (
             <button
@@ -89,7 +87,9 @@ const MapControls = ({
               title="Clear Area Selection"
             >
               <X className="w-5 h-5" />
-              <span className="font-medium" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Clear Area</span>
+              <span className="font-medium" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+                Clear Area
+              </span>
             </button>
           )}
 
@@ -112,21 +112,20 @@ const MapControls = ({
               title="Cancel Drawing"
             >
               <X className="w-5 h-5" />
-              <span className="font-medium" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Cancel</span>
+              <span className="font-medium" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
+                Cancel
+              </span>
             </button>
           )}
         </div>
 
         {/* Current Time Indicator - Under DateTime */}
-        <CurrentTimeIndicator
-          currentHour={currentHour}
-          isDarkMode={isDarkMode}
-        />
+        <CurrentTimeIndicator currentHour={currentHour} isDarkMode={isDarkMode} />
       </div>
 
       {/* Bottom Time Controls */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl pointer-events-auto">
-      <TimeControls
+        <TimeControls
           currentHour={currentHour}
           setCurrentHour={setCurrentHour}
           isPlaying={isPlaying}
@@ -134,14 +133,15 @@ const MapControls = ({
           playbackSpeed={playbackSpeed}
           setPlaybackSpeed={setPlaybackSpeed}
           isDarkMode={isDarkMode}
-          onTimeChange={(hour) => {
+          onTimeChange={hour => {
             // Force an immediate layer update when time is changed manually
             if (mapInstance) {
               const { date, hour: newHour } = getCurrentDateTime(hour);
-              const currentTileset = TILESET_INFO.find(tileset =>
-                tileset.date === date &&
-                newHour >= tileset.startHour &&
-                newHour <= tileset.endHour
+              const currentTileset = TILESET_INFO.find(
+                tileset =>
+                  tileset.date === date &&
+                  newHour >= tileset.startHour &&
+                  newHour <= tileset.endHour
               );
 
               if (currentTileset) {

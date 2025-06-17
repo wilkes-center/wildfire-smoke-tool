@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 
-
 import DebugDashboard from './components/Debug/DebugDashboard';
 import IntroPage from './components/IntroPage/IntroPage';
 import MapComponent from './components/Map/MapComponent';

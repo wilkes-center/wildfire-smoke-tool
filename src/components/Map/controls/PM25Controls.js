@@ -69,7 +69,7 @@ export const PM25Controls = ({
                 type="range"
                 min="5"
                 max="500"
-                step="0.1"
+                step="1"
                 value={pm25Threshold}
                 onChange={e => setPM25Threshold(parseFloat(e.target.value))}
                 className={`w-full h-1 rounded-lg appearance-none cursor-pointer

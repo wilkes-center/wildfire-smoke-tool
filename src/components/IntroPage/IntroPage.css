@@ -229,7 +229,10 @@ p {
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(17.5rem, 1fr)); /* Changed from 280px to 17.5rem */
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(17.5rem, 1fr)
+  ); /* Changed from 280px to 17.5rem */
   gap: 2rem;
   margin-top: 2rem;
 }
