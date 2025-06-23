@@ -74,7 +74,7 @@ export const PM25_LEVELS = [
   },
   {
     value: 500,
-    label: 'Hazardous',
+    label: 'Extremely Hazardous',
     maxValue: Infinity,
     color: '#990033', // Deep red
     darkColor: '#ff00cc', // Bright neon pink

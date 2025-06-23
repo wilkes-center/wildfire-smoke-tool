@@ -574,27 +574,28 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
 
   return (
     <div
-      className={`backdrop-blur-md rounded-xl border-2 ${isDarkMode ? 'border-white' : 'border-mahogany'} shadow-lg px-6 py-4 ${
+      className={`backdrop-blur-md rounded-lg border ${isDarkMode ? 'border-white/30' : 'border-mahogany/30'} shadow-lg px-3 py-2 ${
         isDarkMode ? 'bg-gray-900/95' : 'bg-white/95'
       }`}
     >
-      <div className="space-y-4">
+      <div className="space-y-2">
+        {/* Population Header - More Compact */}
         <div className="flex items-center gap-2">
-          <Users2 className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gold'}`} />
-          <div>
-            <div className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-forest'}`}>
+          <Users2 className={`w-6 h-6 ${isDarkMode ? 'text-white' : 'text-gold'}`} />
+          <div className="flex-1">
+            <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}>
               Population
             </div>
-            <div className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}>
+            <div className={`text-2xl font-bold leading-tight ${isDarkMode ? 'text-white' : 'text-forest'}`}>
               {stats.censusStats.isLoading ? (
                 'Calculating...'
               ) : stats.censusStats.error ? (
-                'Error calculating population'
+                'Error'
               ) : (
                 <>
                   {stats.censusStats.value?.totalPopulation?.toLocaleString() || '0'}
-                  <div className={`text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
-                    in {stats.censusStats.tractCount} Census Tracts
+                  <div className={`text-base font-medium ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}>
+                    in {stats.censusStats.tractCount} census tracts
                   </div>
                 </>
               )}
@@ -602,164 +603,52 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
           </div>
         </div>
 
-        <div className="mt-4">
-          <div className={`text-sm font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-forest'}`}>
-            Population by PM2.5 Level
+        {/* PM2.5 Level Distribution - Compact */}
+        <div>
+          <div className={`text-xs font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-forest'}`}>
+            PM2.5 Level Distribution
           </div>
 
           {stats.exposureByPM25.error || !stats.exposureByPM25.value ? (
             // When there's no data, show 100% Good instead of error
-            <div
-              className={`mt-2 rounded-lg ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50/50'} p-3`}
-            >
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className={`border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <th
-                      className={`text-left pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
-                    >
-                      PM2.5 Level
-                    </th>
-                    <th
-                      className={`text-right pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
-                    >
-                      Percentage
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="align-middle h-8 border-b border-gray-200/20">
-                    <td className="py-1">
-                      <div
-                        className={`flex items-center ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
-                      >
-                        <span
-                          className="inline-block w-3 h-3 rounded-sm flex-shrink-0 mr-2"
-                          style={{ backgroundColor: getPM25Color('Good', isDarkMode) }}
-                        />
-                        <div>
-                          <span className="font-medium text-left">Good</span>
-                          <div
-                            className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-gray-500'}`}
-                          >
-                            0+ µg/m³
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="text-right py-1">
-                      <span
-                        className={`font-medium ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}
-                      >
-                        100.0%
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <div className="mt-3 space-y-1">
-                <div className="w-full">
+            <div className={`rounded-md ${isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50'} p-2`}>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center">
+                  <span
+                    className="inline-block w-2 h-2 rounded-sm mr-1"
+                    style={{ backgroundColor: getPM25Color('Good', isDarkMode) }}
+                  />
+                  <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
+                    Good (0+ µg/m³)
+                  </span>
+                </div>
+                <span className={`font-semibold ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                  100.0%
+                </span>
+              </div>
+              {/* Single bar for Good */}
+              <div className="mt-1">
+                <div
+                  className={`h-1.5 w-full rounded-sm ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}
+                >
                   <div
-                    className={`h-2 w-full rounded-lg overflow-hidden ${
-                      isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
-                    }`}
-                  >
-                    <div
-                      className="h-full"
-                      style={{
-                        width: '100%',
-                        backgroundColor: getPM25Color('Good', isDarkMode)
-                      }}
-                    />
-                  </div>
+                    className="h-full rounded-sm"
+                    style={{
+                      width: '100%',
+                      backgroundColor: getPM25Color('Good', isDarkMode)
+                    }}
+                  />
                 </div>
               </div>
             </div>
           ) : stats.exposureByPM25.isLoading ? (
-            <div className={`text-sm ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
+            <div className={`text-xs ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
               Loading PM2.5 data...
             </div>
           ) : (
-            <div
-              className={`mt-2 rounded-lg ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50/50'} p-3`}
-            >
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className={`border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <th
-                      className={`text-left pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
-                    >
-                      PM2.5 Level
-                    </th>
-                    <th
-                      className={`text-right pb-2 font-semibold ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
-                    >
-                      Percentage
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {PM25_LEVELS.map(category => {
-                    // Get population for this category
-                    const population = stats.exposureByPM25.value[category.label] || 0;
-
-                    // Skip rendering if there's no population in this category
-                    if (population <= 0) return null;
-
-                    // Use distribution percentage instead of calculating from population
-                    const percentage = stats.exposureByPM25.distribution
-                      ? stats.exposureByPM25.distribution[category.label] || 0
-                      : 0;
-
-                    // Use the direct color method
-                    const barColor = getPM25Color(category.label, isDarkMode);
-
-                    // Simplify AQI category name display
-                    let displayName;
-                    if (category.label === 'Unhealthy for Sensitive Groups') {
-                      displayName = 'Unhealthy (Sensitive)';
-                    } else {
-                      displayName = category.label;
-                    }
-
-                    return (
-                      <tr
-                        key={category.label}
-                        className="align-middle h-8 border-b border-gray-200/20"
-                      >
-                        <td className="py-1">
-                          <div
-                            className={`flex items-center ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
-                          >
-                            <span
-                              className="inline-block w-3 h-3 rounded-sm flex-shrink-0 mr-2"
-                              style={{ backgroundColor: barColor }}
-                            />
-                            <div>
-                              <span className="font-medium text-left">{displayName}</span>
-                              <div
-                                className={`text-xs ${isDarkMode ? 'text-white/60' : 'text-gray-500'}`}
-                              >
-                                {category.value}+ µg/m³
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="text-right py-1">
-                          <span
-                            className={`font-medium ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}
-                          >
-                            {percentage.toFixed(1)}%
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  }).filter(Boolean)}
-                </tbody>
-              </table>
-
-              <div className="mt-3 space-y-1">
+            <div className={`rounded-md ${isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50'} p-2`}>
+              {/* Compact single line display of all PM2.5 levels */}
+              <div className="flex flex-wrap items-center gap-2 text-xs mb-2">
                 {PM25_LEVELS.map(category => {
                   // Get population for this category
                   const population = stats.exposureByPM25.value[category.label] || 0;
@@ -772,28 +661,63 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
                     ? stats.exposureByPM25.distribution[category.label] || 0
                     : 0;
 
-                  // Set a minimum visible width for non-zero categories
-                  const barWidth = Math.max(5, percentage);
+                  // Use the direct color method
+                  const barColor = getPM25Color(category.label, isDarkMode);
+
+                  // Simplify AQI category name display
+                  let displayName;
+                  if (category.label === 'Unhealthy for Sensitive Groups') {
+                    displayName = 'USG';
+                  } else if (category.label === 'Extremely Hazardous') {
+                    displayName = 'Ext. Hazardous';
+                  } else {
+                    displayName = category.label;
+                  }
+
+                  return (
+                    <div
+                      key={category.label}
+                      className={`flex items-center ${isDarkMode ? 'text-white' : 'text-gray-700'}`}
+                    >
+                      <span
+                        className="inline-block w-2 h-2 rounded-sm mr-1"
+                        style={{ backgroundColor: barColor }}
+                      />
+                      <span className="font-medium">{displayName}</span>
+                      <span className={`ml-1 font-semibold ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                        {percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                  );
+                }).filter(Boolean)}
+              </div>
+
+              {/* Compact stacked bar chart */}
+              <div className="flex w-full h-2 rounded-sm overflow-hidden">
+                {PM25_LEVELS.map(category => {
+                  // Get population for this category
+                  const population = stats.exposureByPM25.value[category.label] || 0;
+
+                  // Skip rendering if there's no population in this category
+                  if (population <= 0) return null;
+
+                  // Use distribution percentage instead of calculating from population
+                  const percentage = stats.exposureByPM25.distribution
+                    ? stats.exposureByPM25.distribution[category.label] || 0
+                    : 0;
 
                   // Use the direct color method
                   const barColor = getPM25Color(category.label, isDarkMode);
 
                   return (
-                    <div key={`bar-${category.label}`} className="w-full">
-                      <div
-                        className={`h-2 w-full rounded-lg overflow-hidden ${
-                          isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
-                        }`}
-                      >
-                        <div
-                          className="h-full"
-                          style={{
-                            width: `${barWidth}%`,
-                            backgroundColor: barColor
-                          }}
-                        />
-                      </div>
-                    </div>
+                    <div
+                      key={`bar-${category.label}`}
+                      className="h-full"
+                      style={{
+                        width: `${percentage}%`,
+                        backgroundColor: barColor
+                      }}
+                    />
                   );
                 }).filter(Boolean)}
               </div>
