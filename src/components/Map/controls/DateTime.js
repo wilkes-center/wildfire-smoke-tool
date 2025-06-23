@@ -1,10 +1,18 @@
 import React from 'react';
 
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, Info } from 'lucide-react';
 
 import { formatLocalDateTime, isLocalTimeDifferentFromUTC } from '../../../utils/map/timeUtils';
 
-export const DateTime = ({ timestamp, currentDateTime, isDarkMode, showUTC = false }) => {
+export const DateTime = ({
+  timestamp,
+  currentDateTime,
+  isDarkMode,
+  showUTC = false,
+  currentHour,
+  totalHours,
+  isShowingPreviousDays
+}) => {
   // Support both prop naming conventions for backward compatibility
   const dateTimeObj = timestamp || currentDateTime;
   if (!dateTimeObj || !dateTimeObj.date) return null;
@@ -14,6 +22,32 @@ export const DateTime = ({ timestamp, currentDateTime, isDarkMode, showUTC = fal
 
   const localDateTime = formatLocalDateTime(dateTimeObj);
   const showLocalTime = isLocalTimeDifferentFromUTC(dateTimeObj);
+
+  // Check if we're at the end of the timeline and showing previous days
+  const isAtEndOfTimeline = currentHour === totalHours - 1;
+  const shouldShowNextDataMessage = isAtEndOfTimeline && isShowingPreviousDays;
+
+  // Get the next data availability time (19:30 UTC = 1:30 PM MDT)
+  const getNextDataAvailableTime = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const nextUpdateTime = new Date(today.getTime());
+    nextUpdateTime.setUTCHours(19, 30, 0, 0); // 19:30 UTC = 1:30 PM MDT
+
+    // If it's already past today's update time, show tomorrow's update time
+    if (now >= nextUpdateTime) {
+      nextUpdateTime.setUTCDate(nextUpdateTime.getUTCDate() + 1);
+    }
+
+    const dateStr = nextUpdateTime.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC'
+    });
+
+    return `${dateStr} at 19:30 UTC`;
+  };
 
   // Format UTC date
   const [year, month, day] = dateTimeObj.date.split('-').map(Number);
@@ -120,6 +154,20 @@ export const DateTime = ({ timestamp, currentDateTime, isDarkMode, showUTC = fal
           </div>
         </div>
       </div>
+
+      {/* Next day data availability message */}
+      {shouldShowNextDataMessage && (
+        <div className={`mt-4 pt-4 border-t ${isDarkMode ? 'border-white/20' : 'border-mahogany/20'}`}>
+          <div className={`flex items-center gap-2 text-sm ${
+            isDarkMode ? 'text-blue-300' : 'text-blue-600'
+          }`}>
+            <Info className="w-4 h-4 flex-shrink-0" />
+            <span>
+              Next day's data will be available on {getNextDataAvailableTime()}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

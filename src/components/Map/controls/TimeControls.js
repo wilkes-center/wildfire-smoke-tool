@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 
-import { ChevronLeft, ChevronRight, Clock, Pause, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Info, Pause, Play, X } from 'lucide-react';
 
-import { START_DATE, TOTAL_HOURS } from '../../../utils/map/constants.js';
-import { formatLocalDateTime, getCurrentTimelineHour } from '../../../utils/map/timeUtils.js';
+import { IS_SHOWING_PREVIOUS_DAYS, START_DATE, TOTAL_HOURS } from '../../../utils/map/constants.js';
+import { formatLocalDateTime } from '../../../utils/map/timeUtils.js';
 
 export const TimeControls = ({
   currentHour,
@@ -16,6 +16,7 @@ export const TimeControls = ({
   onTimeChange
 }) => {
   const [showSpeedOptions, setShowSpeedOptions] = useState(false);
+  const [showDataAlert, setShowDataAlert] = useState(false);
 
   const handlePrevHour = () => {
     const newHour = Math.max(0, currentHour - 1);
@@ -27,6 +28,11 @@ export const TimeControls = ({
     const newHour = Math.min(TOTAL_HOURS - 1, currentHour + 1);
     setCurrentHour(newHour);
     if (onTimeChange) onTimeChange(newHour);
+
+    // Show alert when reaching the end of timeline and showing previous days
+    if (newHour === TOTAL_HOURS - 1 && IS_SHOWING_PREVIOUS_DAYS) {
+      setShowDataAlert(true);
+    }
   };
 
   const handleSliderChange = e => {
@@ -40,59 +46,86 @@ export const TimeControls = ({
     // Pause playback when jumping to current time
     setIsPlaying(false);
 
-    const currentTimelineHour = getCurrentTimelineHour(START_DATE, TOTAL_HOURS);
+    const now = new Date();
+    const currentUTC = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0, 0)
+    );
 
-    // Check if we're beyond the available data timeline
-    if (currentTimelineHour >= TOTAL_HOURS - 1) {
-      // If current time is beyond available data, go to the last available hour
-      // and show a brief indicator that we're at the end of available data
-      const lastAvailableHour = TOTAL_HOURS - 1;
-      setCurrentHour(lastAvailableHour);
+    // Calculate hours since timeline start
+    const hoursSinceStart = Math.floor((currentUTC - START_DATE) / (1000 * 60 * 60));
 
-      // Add a small delay to ensure state update completes before layer update
-      setTimeout(() => {
-        if (onTimeChange) {
-          try {
-            onTimeChange(lastAvailableHour);
-          } catch (error) {
-            console.error('Error in onTimeChange callback:', error);
-            // Fallback: trigger another state update to force re-render
-            setTimeout(() => setCurrentHour(lastAvailableHour), 100);
-          }
-        }
-      }, 50);
+    console.log('Jump to current time calculation:', {
+      now: now.toISOString(),
+      currentUTC: currentUTC.toISOString(),
+      startDate: START_DATE.toISOString(),
+      hoursSinceStart,
+      totalHours: TOTAL_HOURS
+    });
 
-      // Optional: Could add a toast notification here to inform user
-      console.log('Current time is beyond available data. Showing last available hour.');
+    let targetHour;
+
+    // Clamp to valid range
+    if (hoursSinceStart < 0) {
+      console.log('Current time is before timeline start, using hour 0');
+      targetHour = 0;
+    } else if (hoursSinceStart >= TOTAL_HOURS) {
+      console.log('Current time is after timeline end, using last hour');
+      targetHour = TOTAL_HOURS - 1;
     } else {
-      // Normal case: current time is within the available data range
-      setCurrentHour(currentTimelineHour);
-
-      // Add a small delay to ensure state update completes before layer update
-      setTimeout(() => {
-        if (onTimeChange) {
-          try {
-            onTimeChange(currentTimelineHour);
-          } catch (error) {
-            console.error('Error in onTimeChange callback:', error);
-            // Fallback: trigger another state update to force re-render
-            setTimeout(() => setCurrentHour(currentTimelineHour), 100);
-          }
-        }
-      }, 50);
+      console.log(`Jumping to current timeline hour: ${hoursSinceStart}`);
+      targetHour = hoursSinceStart;
     }
+
+    setCurrentHour(targetHour);
+
+    // Add a small delay to ensure state update completes before layer update
+    setTimeout(() => {
+      if (onTimeChange) {
+        try {
+          onTimeChange(targetHour);
+        } catch (error) {
+          console.error('Error in onTimeChange callback:', error);
+          // Fallback: trigger another state update to force re-render
+          setTimeout(() => setCurrentHour(targetHour), 100);
+        }
+      }
+    }, 50);
   };
 
   // Check if we're at current time (within 1 hour tolerance)
   const isAtCurrentTime = () => {
-    const currentTimelineHour = getCurrentTimelineHour(START_DATE, TOTAL_HOURS);
+    const now = new Date();
+    const currentUTC = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0, 0)
+    );
+
+    // Calculate hours since timeline start
+    const hoursSinceStart = Math.floor((currentUTC - START_DATE) / (1000 * 60 * 60));
+
+    // Clamp to valid range to get the actual current time position
+    let currentTimelineHour;
+    if (hoursSinceStart < 0) {
+      currentTimelineHour = 0;
+    } else if (hoursSinceStart >= TOTAL_HOURS) {
+      currentTimelineHour = TOTAL_HOURS - 1;
+    } else {
+      currentTimelineHour = hoursSinceStart;
+    }
+
     return Math.abs(currentHour - currentTimelineHour) <= 1;
   };
 
   // Check if current real-world time is beyond available data
   const isCurrentTimeBeyondData = () => {
-    const currentTimelineHour = getCurrentTimelineHour(START_DATE, TOTAL_HOURS);
-    return currentTimelineHour >= TOTAL_HOURS - 1;
+    const now = new Date();
+    const currentUTC = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0, 0)
+    );
+
+    // Calculate hours since timeline start
+    const hoursSinceStart = Math.floor((currentUTC - START_DATE) / (1000 * 60 * 60));
+
+    return hoursSinceStart >= TOTAL_HOURS - 1;
   };
 
   // Get local time for current hour tooltip
@@ -134,12 +167,58 @@ export const TimeControls = ({
   const primaryColor = isDarkMode ? '#f9f6ef' : '#751d0c';
   const currentLocalTime = getCurrentLocalTime();
 
+  // Get the UTC time when next day's data will be available (1:30 PM MDT = 19:30 UTC)
+  const getNextDataAvailableTime = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const nextUpdateTime = new Date(today.getTime());
+    nextUpdateTime.setUTCHours(19, 30, 0, 0); // 19:30 UTC = 1:30 PM MDT
+
+    // If it's already past today's update time, show tomorrow's update time
+    if (now >= nextUpdateTime) {
+      nextUpdateTime.setUTCDate(nextUpdateTime.getUTCDate() + 1);
+    }
+
+    return nextUpdateTime.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+      hour12: false
+    }) + ' UTC';
+  };
+
   return (
     <div
       className={`backdrop-blur-md rounded-xl border ${isDarkMode ? 'border-white' : 'border-mahogany'} shadow-lg px-6 py-4 ${
         isDarkMode ? 'bg-gray-900/95' : 'bg-white/95'
       }`}
     >
+      {/* Data availability popup alert */}
+      {showDataAlert && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+          <div
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border ${
+              isDarkMode
+                ? 'bg-blue-900/95 text-blue-100 border-blue-700'
+                : 'bg-blue-50/95 text-blue-800 border-blue-200'
+            }`}
+          >
+            <Info className="w-5 h-5 flex-shrink-0" />
+            <span className="text-sm font-medium">
+              Tomorrow's data will be available at {getNextDataAvailableTime()}
+            </span>
+            <button
+              onClick={() => setShowDataAlert(false)}
+              className={`ml-2 p-1 rounded-full hover:bg-opacity-20 transition-colors ${
+                isDarkMode ? 'hover:bg-white' : 'hover:bg-blue-800'
+              }`}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <button
@@ -321,9 +400,7 @@ export const TimeControls = ({
           }
         >
           <Clock className="w-4 h-4" />
-          <span className="text-sm font-medium">
-            {isCurrentTimeBeyondData() ? 'Latest' : 'Now'}
-          </span>
+          <span className="text-sm font-medium">Now</span>
         </button>
       </div>
     </div>

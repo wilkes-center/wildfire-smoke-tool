@@ -120,7 +120,34 @@ export const isLocalTimeDifferentFromUTC = timestamp => {
 };
 
 /**
- * Calculates the current timeline hour based on user's current time
+ * Check if current time is before 1:30 PM MDT (data update time)
+ * @returns {boolean} True if before MDT data update time
+ */
+export const isBeforeMDTDataUpdate = () => {
+  const now = new Date();
+
+  // Convert current time to MDT (UTC-6)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // 1:30 PM MDT = 19:30 UTC (13:30 + 6 hours)
+  const mdtUpdateTime = new Date(today.getTime());
+  mdtUpdateTime.setUTCHours(19, 30, 0, 0); // 19:30 UTC = 1:30 PM MDT
+
+  const isBeforeUpdate = now < mdtUpdateTime;
+
+  console.log('MDT data update check:', {
+    currentTime: now.toISOString(),
+    mdtUpdateTime: mdtUpdateTime.toISOString(),
+    isBeforeUpdate,
+    currentUTCHour: now.getUTCHours(),
+    currentUTCMinutes: now.getUTCMinutes()
+  });
+
+  return isBeforeUpdate;
+};
+
+/**
+ * Calculates the current timeline hour based on user's current time and data availability
  * @param {Date} startDate - The start date of the timeline (from constants)
  * @param {number} totalHours - Total hours in the timeline (from constants)
  * @returns {number} The current hour index in the timeline (0-based)
@@ -139,9 +166,11 @@ export const getCurrentTimelineHour = (startDate, totalHours) => {
     currentUTC: currentUTC.toISOString(),
     startDate: startDate.toISOString(),
     hoursSinceStart,
-    totalHours
+    totalHours,
+    isBeforeMDTUpdate: isBeforeMDTDataUpdate()
   });
 
+  // Always calculate the actual current time position within the timeline
   // Clamp to valid range
   if (hoursSinceStart < 0) {
     console.log('Current time is before timeline start, using hour 0');

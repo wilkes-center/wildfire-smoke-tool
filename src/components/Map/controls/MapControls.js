@@ -2,7 +2,7 @@ import React from 'react';
 
 import { Pen, X } from 'lucide-react';
 
-import { TILESET_INFO } from '../../../utils/map/constants.js';
+import { IS_SHOWING_PREVIOUS_DAYS, TILESET_INFO, TOTAL_HOURS } from '../../../utils/map/constants.js';
 
 import { CurrentTimeIndicator } from './CurrentTimeIndicator';
 import { DateTime } from './DateTime';
@@ -55,8 +55,14 @@ const MapControls = ({
             basemapOptions={basemapOptions}
           />
 
-          {/* Centered DateTime */}
-          <DateTime currentDateTime={getCurrentDateTime()} isDarkMode={isDarkMode} />
+          {/* Date/Time Display */}
+          <DateTime
+            currentDateTime={getCurrentDateTime()}
+            isDarkMode={isDarkMode}
+            currentHour={currentHour}
+            totalHours={TOTAL_HOURS}
+            isShowingPreviousDays={IS_SHOWING_PREVIOUS_DAYS}
+          />
 
           {/* Draw Button (Right of DateTime) */}
           {!polygon && !drawingMode && (

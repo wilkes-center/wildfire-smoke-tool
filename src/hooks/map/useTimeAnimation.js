@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import { TOTAL_HOURS } from '../../utils/map/constants.js';
 
-export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
+export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour, setIsPlaying) => {
   const animationFrameRef = useRef(null);
   const lastTimestampRef = useRef(0);
   const isAnimatingRef = useRef(false);
@@ -61,14 +61,22 @@ export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
 
         setCurrentHour(prevHour => {
           const nextHour = prevHour + 1;
-          return nextHour >= TOTAL_HOURS ? 0 : nextHour;
+          // Stop animation when reaching the end instead of looping
+          if (nextHour >= TOTAL_HOURS) {
+            setIsPlaying(false);
+            return TOTAL_HOURS - 1; // Stay at the last hour
+          }
+          return nextHour;
         });
 
         lastTimestampRef.current = timestamp;
         isAnimatingRef.current = false;
       }
 
-      animationFrameRef.current = requestAnimationFrame(animate);
+      // Only continue animation if still playing
+      if (isPlaying) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      }
     };
 
     // Start animation loop
@@ -82,5 +90,5 @@ export const useTimeAnimation = (isPlaying, playbackSpeed, setCurrentHour) => {
         animationFrameRef.current = null;
       }
     };
-  }, [isPlaying, playbackSpeed, setCurrentHour]);
+  }, [isPlaying, playbackSpeed, setCurrentHour, setIsPlaying]);
 };

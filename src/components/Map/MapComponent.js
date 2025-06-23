@@ -10,7 +10,6 @@ import { MAPBOX_TOKEN } from '../../utils/map/constants.js';
 
 import { DEFAULT_DARK_BASEMAP, DEFAULT_LIGHT_BASEMAP } from '../../constants/map/basemaps.js';
 
-import MapControls from './controls';
 import {
   useCensusDataManager,
   useDateTimeCalculator,
@@ -27,6 +26,7 @@ import {
   useTourManager,
   useUIState
 } from '../../hooks';
+import MapControls from './controls';
 import PM25Legend from './controls/PM25LegendVertical';
 import PM25ThresholdSlider from './controls/PM25ThresholdSlider';
 import PopulationExposureCounter from './controls/PopulationExposureCounter';
@@ -85,7 +85,7 @@ const MapComponent = ({ onShowIntro }) => {
     uiState;
 
   // Effects and functionality hooks
-  useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour);
+  useTimeAnimation(isPlaying, playbackSpeed, setCurrentHour, setIsPlaying);
   const getCurrentDateTime = useDateTimeCalculator(currentHour);
 
   const { updateLayers } = useMapLayers(
