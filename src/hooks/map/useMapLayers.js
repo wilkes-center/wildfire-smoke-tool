@@ -159,6 +159,15 @@ export const useMapLayers = (
           // Hide all layers initially
           map.setLayoutProperty(layerId, 'visibility', 'none');
           console.log(`Hidden layer: ${layerId}`);
+
+          // Also hide corresponding text layer and update its colors
+          const textLayerId = `text-${layerId}`;
+          if (map.getLayer(textLayerId)) {
+            map.setPaintProperty(textLayerId, 'text-color', isDarkMode ? '#ffffff' : '#000000');
+            map.setPaintProperty(textLayerId, 'text-halo-color', isDarkMode ? '#000000' : '#ffffff');
+            map.setLayoutProperty(textLayerId, 'visibility', 'none');
+            console.log(`Hidden text layer: ${textLayerId}`);
+          }
         }
       });
 
@@ -173,6 +182,18 @@ export const useMapLayers = (
 
         // Make current layer visible and set opacity
         map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
+
+        // Also show corresponding text layer with same filter
+        const textLayerId = `text-${currentLayerId}`;
+        if (map.getLayer(textLayerId)) {
+          map.setFilter(textLayerId, [
+            'all',
+            ['==', ['get', 'time'], timeString],
+            ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+          ]);
+          map.setLayoutProperty(textLayerId, 'visibility', 'visible');
+          console.log(`Made text layer ${textLayerId} visible`);
+        }
 
         console.log(`Made layer ${currentLayerId} visible with zoom-based opacity`);
       }
@@ -272,6 +293,67 @@ export const useMapLayers = (
             });
             loadedLayersRef.current.add(layerId);
             preloadedChunksRef.current.add(tileset.id);
+
+            // Add corresponding text label layer
+            const textLayerId = `text-${layerId}`;
+            if (!map.getLayer(textLayerId)) {
+              console.log(`Adding text layer: ${textLayerId}`);
+              map.addLayer({
+                id: textLayerId,
+                type: 'symbol',
+                source: sourceId,
+                'source-layer': tileset.layer,
+                maxzoom: 9,
+                layout: {
+                  'text-field': [
+                    'to-string',
+                    [
+                      'round',
+                      ['*', ['to-number', ['get', 'PM25'], 0], 10]
+                    ]
+                  ],
+                  'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                  'text-size': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    6,
+                    8,
+                    7,
+                    10,
+                    8,
+                    12,
+                    9,
+                    14
+                  ],
+                  'text-offset': [0, -2],
+                  'text-anchor': 'center',
+                  'text-allow-overlap': false,
+                  'text-ignore-placement': false,
+                  'symbol-spacing': 100,
+                  visibility: 'none'
+                },
+                paint: {
+                  'text-color': isDarkMode ? '#ffffff' : '#000000',
+                  'text-halo-color': isDarkMode ? '#000000' : '#ffffff',
+                  'text-halo-width': 1.5,
+                  'text-opacity': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    6,
+                    0,
+                    7,
+                    0.8,
+                    8,
+                    1,
+                    9,
+                    1
+                  ]
+                }
+              });
+              loadedLayersRef.current.add(textLayerId);
+            }
           }
         });
 
@@ -322,6 +404,12 @@ export const useMapLayers = (
             loadedLayersRef.current.forEach(layerId => {
               if (map.getLayer(layerId)) {
                 map.setLayoutProperty(layerId, 'visibility', 'none');
+
+                // Also hide corresponding text layer
+                const textLayerId = `text-${layerId}`;
+                if (map.getLayer(textLayerId)) {
+                  map.setLayoutProperty(textLayerId, 'visibility', 'none');
+                }
               }
             });
 
@@ -337,6 +425,17 @@ export const useMapLayers = (
                 ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
               ]);
               map.setLayoutProperty(fallbackLayerId, 'visibility', 'visible');
+
+              // Also show corresponding text layer with same filter
+              const textFallbackLayerId = `text-${fallbackLayerId}`;
+              if (map.getLayer(textFallbackLayerId)) {
+                map.setFilter(textFallbackLayerId, [
+                  'all',
+                  ['==', ['get', 'time'], fallbackTimeString],
+                  ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+                ]);
+                map.setLayoutProperty(textFallbackLayerId, 'visibility', 'visible');
+              }
 
               console.log(
                 `Showing fallback layer ${fallbackLayerId} with time ${fallbackTimeString}`
@@ -380,6 +479,13 @@ export const useMapLayers = (
             // Set to invisible instead of just opacity 0
             map.setLayoutProperty(layerId, 'visibility', 'none');
             console.log(`Hidden layer: ${layerId}`);
+
+            // Also hide corresponding text layer
+            const textLayerId = `text-${layerId}`;
+            if (map.getLayer(textLayerId)) {
+              map.setLayoutProperty(textLayerId, 'visibility', 'none');
+              console.log(`Hidden text layer: ${textLayerId}`);
+            }
           }
         });
 
@@ -448,6 +554,67 @@ export const useMapLayers = (
           });
           loadedLayersRef.current.add(currentLayerId);
           preloadedChunksRef.current.add(currentTileset.id);
+
+          // Add corresponding text label layer
+          const textLayerId = `text-${currentLayerId}`;
+          if (!map.getLayer(textLayerId)) {
+            console.log(`Adding text layer: ${textLayerId}`);
+            map.addLayer({
+              id: textLayerId,
+              type: 'symbol',
+              source: currentSourceId,
+              'source-layer': currentTileset.layer,
+              maxzoom: 9,
+              layout: {
+                'text-field': [
+                  'to-string',
+                  [
+                    'round',
+                    ['*', ['to-number', ['get', 'PM25'], 0], 10]
+                  ]
+                ],
+                'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                'text-size': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  6,
+                  8,
+                  7,
+                  10,
+                  8,
+                  12,
+                  9,
+                  14
+                ],
+                'text-offset': [0, -2],
+                'text-anchor': 'center',
+                'text-allow-overlap': false,
+                'text-ignore-placement': false,
+                'symbol-spacing': 100,
+                visibility: 'none'
+              },
+              paint: {
+                'text-color': isDarkMode ? '#ffffff' : '#000000',
+                'text-halo-color': isDarkMode ? '#000000' : '#ffffff',
+                'text-halo-width': 1.5,
+                'text-opacity': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  6,
+                  0,
+                  7,
+                  0.8,
+                  8,
+                  1,
+                  9,
+                  1
+                ]
+              }
+            });
+            loadedLayersRef.current.add(textLayerId);
+          }
         }
 
         // Now that we're sure the layer exists, update it
@@ -455,6 +622,18 @@ export const useMapLayers = (
 
         // Set visibility first
         map.setLayoutProperty(currentLayerId, 'visibility', 'visible');
+
+        // Also show corresponding text layer with same filter
+        const textLayerId = `text-${currentLayerId}`;
+        if (map.getLayer(textLayerId)) {
+          map.setFilter(textLayerId, [
+            'all',
+            ['==', ['get', 'time'], timeString],
+            ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
+          ]);
+          map.setLayoutProperty(textLayerId, 'visibility', 'visible');
+          console.log(`Made text layer ${textLayerId} visible`);
+        }
 
         // Then set opacity
         // Remove the fixed opacity setting since we now use zoom-based opacity
