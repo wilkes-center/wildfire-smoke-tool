@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 
 const INITIAL_VIEWPORT = {
   latitude: 39.8283,
-  longitude: -98.5795,
+  longitude: -105,
   zoom: 4,
   minZoom: 4.5,
   maxZoom: 9

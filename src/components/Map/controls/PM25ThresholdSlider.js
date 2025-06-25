@@ -9,7 +9,7 @@ const PM25ThresholdSlider = ({ pm25Threshold = 5, setPM25Threshold, isDarkMode }
   const [isEditing, setIsEditing] = useState(false);
 
   // Convert PM2.5 value to equidistant position (0-100%)
-  const valueToPosition = (value) => {
+  const valueToPosition = value => {
     // Find which range the value falls into
     for (let i = 0; i < PM25_LEVELS.length - 1; i++) {
       const currentLevel = PM25_LEVELS[i];
@@ -20,7 +20,7 @@ const PM25ThresholdSlider = ({ pm25Threshold = 5, setPM25Threshold, isDarkMode }
         const rangeProgress = (value - currentLevel.value) / (nextLevel.value - currentLevel.value);
         const rangeStartPosition = (i / (PM25_LEVELS.length - 1)) * 100;
         const rangeEndPosition = ((i + 1) / (PM25_LEVELS.length - 1)) * 100;
-        return rangeStartPosition + (rangeProgress * (rangeEndPosition - rangeStartPosition));
+        return rangeStartPosition + rangeProgress * (rangeEndPosition - rangeStartPosition);
       }
     }
 
@@ -32,10 +32,10 @@ const PM25ThresholdSlider = ({ pm25Threshold = 5, setPM25Threshold, isDarkMode }
   };
 
   // Convert equidistant position (0-100%) to PM2.5 value
-  const positionToValue = (position) => {
+  const positionToValue = position => {
     const clampedPosition = Math.max(0, Math.min(100, position));
     const rangeIndex = Math.floor((clampedPosition / 100) * (PM25_LEVELS.length - 1));
-    const rangeProgress = ((clampedPosition / 100) * (PM25_LEVELS.length - 1)) - rangeIndex;
+    const rangeProgress = (clampedPosition / 100) * (PM25_LEVELS.length - 1) - rangeIndex;
 
     if (rangeIndex >= PM25_LEVELS.length - 1) {
       return PM25_LEVELS[PM25_LEVELS.length - 1].value;
@@ -44,7 +44,7 @@ const PM25ThresholdSlider = ({ pm25Threshold = 5, setPM25Threshold, isDarkMode }
     const currentLevel = PM25_LEVELS[rangeIndex];
     const nextLevel = PM25_LEVELS[rangeIndex + 1];
 
-    return currentLevel.value + (rangeProgress * (nextLevel.value - currentLevel.value));
+    return currentLevel.value + rangeProgress * (nextLevel.value - currentLevel.value);
   };
 
   const getCurrentLevel = value => {
@@ -163,10 +163,14 @@ const PM25ThresholdSlider = ({ pm25Threshold = 5, setPM25Threshold, isDarkMode }
       >
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <span
+              className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}
+            >
               Adjust Threshold
             </span>
-            <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+            <span
+              className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}
+            >
               {pm25Threshold.toFixed(1)} μg/m³
             </span>
           </div>
@@ -176,12 +180,14 @@ const PM25ThresholdSlider = ({ pm25Threshold = 5, setPM25Threshold, isDarkMode }
             <div
               className="relative w-full h-2 rounded-lg overflow-hidden"
               style={{
-                background: `linear-gradient(to right, ${PM25_LEVELS.slice(0, -1).map((level, index) => {
-                  const color = isDarkMode ? level.darkColor : level.color;
-                  const startPosition = (index / (PM25_LEVELS.length - 1)) * 100;
-                  const endPosition = ((index + 1) / (PM25_LEVELS.length - 1)) * 100;
-                  return `${color} ${startPosition}%, ${color} ${endPosition}%`;
-                }).join(', ')})`
+                background: `linear-gradient(to right, ${PM25_LEVELS.slice(0, -1)
+                  .map((level, index) => {
+                    const color = isDarkMode ? level.darkColor : level.color;
+                    const startPosition = (index / (PM25_LEVELS.length - 1)) * 100;
+                    const endPosition = ((index + 1) / (PM25_LEVELS.length - 1)) * 100;
+                    return `${color} ${startPosition}%, ${color} ${endPosition}%`;
+                  })
+                  .join(', ')})`
               }}
             >
               {/* Equidistant zone markers on the track */}
@@ -220,14 +226,12 @@ const PM25ThresholdSlider = ({ pm25Threshold = 5, setPM25Threshold, isDarkMode }
               }}
               className="absolute inset-0 w-full h-2 rounded-lg appearance-none cursor-pointer bg-transparent"
               style={{
-                background: 'transparent',
+                background: 'transparent'
               }}
             />
 
             <div className="flex justify-between mt-2">
-              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                5
-              </span>
+              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>5</span>
               <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 500
               </span>

@@ -338,7 +338,9 @@ export const useMapLayers = (
               ]);
               map.setLayoutProperty(fallbackLayerId, 'visibility', 'visible');
 
-              console.log(`Showing fallback layer ${fallbackLayerId} with time ${fallbackTimeString}`);
+              console.log(
+                `Showing fallback layer ${fallbackLayerId} with time ${fallbackTimeString}`
+              );
             }
           }
           return;

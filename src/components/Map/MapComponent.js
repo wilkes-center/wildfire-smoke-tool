@@ -1,3 +1,4 @@
+/* eslint-disable import/order */
 import React, { useRef } from 'react';
 
 import 'mapbox-gl/dist/mapbox-gl.css';

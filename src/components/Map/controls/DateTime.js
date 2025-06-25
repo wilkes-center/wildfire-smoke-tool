@@ -157,14 +157,16 @@ export const DateTime = ({
 
       {/* Next day data availability message */}
       {shouldShowNextDataMessage && (
-        <div className={`mt-4 pt-4 border-t ${isDarkMode ? 'border-white/20' : 'border-mahogany/20'}`}>
-          <div className={`flex items-center gap-2 text-sm ${
-            isDarkMode ? 'text-blue-300' : 'text-blue-600'
-          }`}>
+        <div
+          className={`mt-4 pt-4 border-t ${isDarkMode ? 'border-white/20' : 'border-mahogany/20'}`}
+        >
+          <div
+            className={`flex items-center gap-2 text-sm ${
+              isDarkMode ? 'text-blue-300' : 'text-blue-600'
+            }`}
+          >
             <Info className="w-4 h-4 flex-shrink-0" />
-            <span>
-              Next day's data will be available on {getNextDataAvailableTime()}
-            </span>
+            <span>Next day's data will be available on {getNextDataAvailableTime()}</span>
           </div>
         </div>
       )}

@@ -267,7 +267,9 @@ const MapAdditionalControls = ({
               ]);
               map.setLayoutProperty(fallbackLayerId, 'visibility', 'visible');
 
-              console.log(`Showing minimap fallback layer ${fallbackLayerId} with time ${fallbackTimeString}`);
+              console.log(
+                `Showing minimap fallback layer ${fallbackLayerId} with time ${fallbackTimeString}`
+              );
             }
           }
           return;

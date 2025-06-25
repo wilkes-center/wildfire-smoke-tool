@@ -2,7 +2,11 @@ import React from 'react';
 
 import { Pen, X } from 'lucide-react';
 
-import { IS_SHOWING_PREVIOUS_DAYS, TILESET_INFO, TOTAL_HOURS } from '../../../utils/map/constants.js';
+import {
+  IS_SHOWING_PREVIOUS_DAYS,
+  TILESET_INFO,
+  TOTAL_HOURS
+} from '../../../utils/map/constants.js';
 
 import { CurrentTimeIndicator } from './CurrentTimeIndicator';
 import { DateTime } from './DateTime';
@@ -206,7 +210,9 @@ const MapControls = ({
                   }
                 } else {
                   // Fallback: use the last available tileset if no current tileset found
-                  console.warn(`No tileset found for time ${newHour}, falling back to last available data`);
+                  console.warn(
+                    `No tileset found for time ${newHour}, falling back to last available data`
+                  );
                   const lastTileset = TILESET_INFO[TILESET_INFO.length - 1];
                   if (lastTileset) {
                     const fallbackLayerId = `layer-${lastTileset.id}`;
@@ -222,9 +228,14 @@ const MapControls = ({
                           ['>=', ['coalesce', ['to-number', ['get', 'PM25'], 0], 0], pm25Threshold]
                         ]);
                         mapInstance.setLayoutProperty(fallbackLayerId, 'visibility', 'visible');
-                        console.log(`Showing fallback layer ${fallbackLayerId} with time ${fallbackTimeString}`);
+                        console.log(
+                          `Showing fallback layer ${fallbackLayerId} with time ${fallbackTimeString}`
+                        );
                       } catch (fallbackError) {
-                        console.error(`Error showing fallback layer ${fallbackLayerId}:`, fallbackError);
+                        console.error(
+                          `Error showing fallback layer ${fallbackLayerId}:`,
+                          fallbackError
+                        );
                       }
                     } else {
                       console.warn(`Fallback layer not found: ${fallbackLayerId}`);

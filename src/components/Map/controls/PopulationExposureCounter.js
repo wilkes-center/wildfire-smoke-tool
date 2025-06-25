@@ -586,7 +586,9 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
             <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-forest'}`}>
               Population
             </div>
-            <div className={`text-2xl font-bold leading-tight ${isDarkMode ? 'text-white' : 'text-forest'}`}>
+            <div
+              className={`text-2xl font-bold leading-tight ${isDarkMode ? 'text-white' : 'text-forest'}`}
+            >
               {stats.censusStats.isLoading ? (
                 'Calculating...'
               ) : stats.censusStats.error ? (
@@ -594,7 +596,9 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
               ) : (
                 <>
                   {stats.censusStats.value?.totalPopulation?.toLocaleString() || '0'}
-                  <div className={`text-base font-medium ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}>
+                  <div
+                    className={`text-base font-medium ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}
+                  >
                     in {stats.censusStats.tractCount} census tracts
                   </div>
                 </>
@@ -605,7 +609,9 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
 
         {/* PM2.5 Level Distribution - Compact */}
         <div>
-          <div className={`text-xs font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-forest'}`}>
+          <div
+            className={`text-xs font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-forest'}`}
+          >
             PM2.5 Level Distribution
           </div>
 
@@ -684,7 +690,9 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
                         style={{ backgroundColor: barColor }}
                       />
                       <span className="font-medium">{displayName}</span>
-                      <span className={`ml-1 font-semibold ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}>
+                      <span
+                        className={`ml-1 font-semibold ${isDarkMode ? 'text-white/80' : 'text-gray-600'}`}
+                      >
                         {percentage.toFixed(1)}%
                       </span>
                     </div>

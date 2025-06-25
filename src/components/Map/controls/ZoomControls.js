@@ -18,7 +18,7 @@ const ZoomControls = ({ map, isDarkMode }) => {
   const handleReset = () => {
     if (map) {
       map.flyTo({
-        center: [-98.5795, 39.8283],
+        center: [-105, 39.8283],
         zoom: 4,
         bearing: 0,
         pitch: 0,

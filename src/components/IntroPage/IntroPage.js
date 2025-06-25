@@ -27,7 +27,7 @@ const IntroPage = ({ onComplete }) => {
   // }
 
   return (
-    <div className="fixed inset-0 font-sora bg-cream">
+    <div className="fixed inset-0 font-sora bg-cream flex flex-col">
       {/* Background gradient accents */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-1/3 h-1/3 bg-sage/10 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
@@ -35,7 +35,7 @@ const IntroPage = ({ onComplete }) => {
       </div>
 
       {/* Main container */}
-      <div className="w-full h-full p-8 flex flex-col max-h-screen overflow-auto">
+      <div className="flex-1 w-full p-8 flex flex-col max-h-screen overflow-auto">
         {/* Header with title and tabs */}
         <header className="mb-8">
           <div className="flex items-center justify-center gap-4 mb-6">
@@ -122,9 +122,9 @@ const IntroPage = ({ onComplete }) => {
         {/* Content container */}
         <div className="flex-1 mb-8">
           {activeSection === 'about' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="flex justify-center">
               {/* About This Tool */}
-              <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg">
+              <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg max-w-4xl w-full">
                 <h2 className="text-3xl font-bold text-forest mb-6">About This Tool</h2>
                 <div className="h-1 w-20 bg-mahogany mb-6"></div>
 
@@ -157,80 +157,6 @@ const IntroPage = ({ onComplete }) => {
                   </p>
                 </div>
                 */}
-              </div>
-
-              {/* PM2.5 Information */}
-              <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg">
-                <h3 className="text-2xl font-semibold text-forest mb-6">Understanding PM2.5</h3>
-                <div className="h-1 w-20 bg-mahogany mb-6"></div>
-
-                <p className="text-lg text-forest-dark mb-6 font-redhat">
-                  PM2.5 refers to fine particulate matter with a diameter of 2.5 micrometers or
-                  smaller. These tiny particles can penetrate deep into the lungs and potentially
-                  enter the bloodstream, posing significant health risks.
-                </p>
-
-                {/* PM2.5 Levels visualization */}
-                <div className="mb-6">
-                  <h4 className="text-xl font-semibold text-forest mb-4">PM2.5 Levels</h4>
-
-                  <div className="relative py-4">
-                    <div className="h-8 w-full rounded-lg overflow-hidden">
-                      <div
-                        className="w-full h-full"
-                        style={{
-                          background:
-                            'linear-gradient(to right, #00d600, #ffee00, #ff8800, #ff1a1a, #9933ff, #990033)'
-                        }}
-                      ></div>
-                    </div>
-
-                    {/* Value markers and labels */}
-                    <div className="mt-2 flex justify-between text-xs text-forest-dark">
-                      <div className="text-center">
-                        <div className="font-medium" style={{ color: '#00d600' }}>
-                          Good
-                        </div>
-                        <div>0-12 μg/m³</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium" style={{ color: '#ffee00' }}>
-                          Moderate
-                        </div>
-                        <div>12.1-35.4</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium" style={{ color: '#ff8800' }}>
-                          USG
-                        </div>
-                        <div>35.5-55.4</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium" style={{ color: '#ff1a1a' }}>
-                          Unhealthy
-                        </div>
-                        <div>55.5-150.4</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium" style={{ color: '#9933ff' }}>
-                          Very Unhealthy
-                        </div>
-                        <div>150.5-250.4</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium" style={{ color: '#990033' }}>
-                          Hazardous
-                        </div>
-                        <div>250.5+</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-forest-light italic mt-4">
-                    Note: USG stands for "Unhealthy for Sensitive Groups" - including children,
-                    older adults, and people with respiratory or heart conditions.
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -309,18 +235,6 @@ const IntroPage = ({ onComplete }) => {
                     </div>
                   </li>
                 </ol>
-
-                <div className="mt-8 pt-6 border-t border-forest/20">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 mr-4">
-                      <HelpCircle className="w-6 h-6 text-mahogany" />
-                    </div>
-                    <p className="text-forest-dark font-redhat">
-                      Need more help? A detailed guided tour is available by clicking the help
-                      button in the bottom-right corner of the map interface.
-                    </p>
-                  </div>
-                </div>
               </div>
 
               {/* Video Tutorial - LARGER */}
@@ -391,6 +305,15 @@ const IntroPage = ({ onComplete }) => {
           )}
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="w-full py-4 px-8" style={{ backgroundColor: '#1a1a1a' }}>
+        <div className="text-center">
+          <p className="text-white font-redhat text-sm">
+            The Wilkes Center for Climate Science & Policy
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };

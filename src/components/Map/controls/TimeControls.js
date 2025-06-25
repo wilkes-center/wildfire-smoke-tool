@@ -48,7 +48,15 @@ export const TimeControls = ({
 
     const now = new Date();
     const currentUTC = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0, 0)
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        now.getUTCHours(),
+        0,
+        0,
+        0
+      )
     );
 
     // Calculate hours since timeline start
@@ -96,7 +104,15 @@ export const TimeControls = ({
   const isAtCurrentTime = () => {
     const now = new Date();
     const currentUTC = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0, 0)
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        now.getUTCHours(),
+        0,
+        0,
+        0
+      )
     );
 
     // Calculate hours since timeline start
@@ -119,7 +135,15 @@ export const TimeControls = ({
   const isCurrentTimeBeyondData = () => {
     const now = new Date();
     const currentUTC = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0, 0)
+      Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        now.getUTCHours(),
+        0,
+        0,
+        0
+      )
     );
 
     // Calculate hours since timeline start
@@ -179,12 +203,14 @@ export const TimeControls = ({
       nextUpdateTime.setUTCDate(nextUpdateTime.getUTCDate() + 1);
     }
 
-    return nextUpdateTime.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'UTC',
-      hour12: false
-    }) + ' UTC';
+    return (
+      nextUpdateTime.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'UTC',
+        hour12: false
+      }) + ' UTC'
+    );
   };
 
   return (
