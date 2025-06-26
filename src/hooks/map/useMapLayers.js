@@ -164,7 +164,11 @@ export const useMapLayers = (
           const textLayerId = `text-${layerId}`;
           if (map.getLayer(textLayerId)) {
             map.setPaintProperty(textLayerId, 'text-color', isDarkMode ? '#ffffff' : '#000000');
-            map.setPaintProperty(textLayerId, 'text-halo-color', isDarkMode ? '#000000' : '#ffffff');
+            map.setPaintProperty(
+              textLayerId,
+              'text-halo-color',
+              isDarkMode ? '#000000' : '#ffffff'
+            );
             map.setLayoutProperty(textLayerId, 'visibility', 'none');
             console.log(`Hidden text layer: ${textLayerId}`);
           }
@@ -307,25 +311,10 @@ export const useMapLayers = (
                 layout: {
                   'text-field': [
                     'to-string',
-                    [
-                      'round',
-                      ['*', ['to-number', ['get', 'PM25'], 0], 10]
-                    ]
+                    ['round', ['*', ['to-number', ['get', 'PM25'], 0], 10]]
                   ],
                   'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-                  'text-size': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    6,
-                    8,
-                    7,
-                    10,
-                    8,
-                    12,
-                    9,
-                    14
-                  ],
+                  'text-size': ['interpolate', ['linear'], ['zoom'], 6, 8, 7, 10, 8, 12, 9, 14],
                   'text-offset': [0, -2],
                   'text-anchor': 'center',
                   'text-allow-overlap': false,
@@ -337,19 +326,7 @@ export const useMapLayers = (
                   'text-color': isDarkMode ? '#ffffff' : '#000000',
                   'text-halo-color': isDarkMode ? '#000000' : '#ffffff',
                   'text-halo-width': 1.5,
-                  'text-opacity': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    6,
-                    0,
-                    7,
-                    0.8,
-                    8,
-                    1,
-                    9,
-                    1
-                  ]
+                  'text-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0, 7, 0.8, 8, 1, 9, 1]
                 }
               });
               loadedLayersRef.current.add(textLayerId);
@@ -568,25 +545,10 @@ export const useMapLayers = (
               layout: {
                 'text-field': [
                   'to-string',
-                  [
-                    'round',
-                    ['*', ['to-number', ['get', 'PM25'], 0], 10]
-                  ]
+                  ['round', ['*', ['to-number', ['get', 'PM25'], 0], 10]]
                 ],
                 'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-                'text-size': [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  6,
-                  8,
-                  7,
-                  10,
-                  8,
-                  12,
-                  9,
-                  14
-                ],
+                'text-size': ['interpolate', ['linear'], ['zoom'], 6, 8, 7, 10, 8, 12, 9, 14],
                 'text-offset': [0, -2],
                 'text-anchor': 'center',
                 'text-allow-overlap': false,
@@ -598,19 +560,7 @@ export const useMapLayers = (
                 'text-color': isDarkMode ? '#ffffff' : '#000000',
                 'text-halo-color': isDarkMode ? '#000000' : '#ffffff',
                 'text-halo-width': 1.5,
-                'text-opacity': [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  6,
-                  0,
-                  7,
-                  0.8,
-                  8,
-                  1,
-                  9,
-                  1
-                ]
+                'text-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0, 7, 0.8, 8, 1, 9, 1]
               }
             });
             loadedLayersRef.current.add(textLayerId);

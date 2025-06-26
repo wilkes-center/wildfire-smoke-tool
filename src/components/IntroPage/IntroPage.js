@@ -1,10 +1,21 @@
 import React, { useState } from 'react';
 
-import { Github, HelpCircle, Info, MapPin, MessageSquare, Play } from 'lucide-react';
+import { Github, HelpCircle, Info, MapPin, MessageSquare, Play, X } from 'lucide-react';
 // import StoryMapsDemo from './StoryMapsDemo';
 
 const IntroPage = ({ onComplete }) => {
   const [activeSection, setActiveSection] = useState('about');
+  const [showDemoModal, setShowDemoModal] = useState(false);
+
+  // Handle opening demo modal
+  const handleOpenDemo = () => {
+    setShowDemoModal(true);
+  };
+
+  // Handle closing demo modal
+  const handleCloseDemo = () => {
+    setShowDemoModal(false);
+  };
 
   // Handle launching the StoryMaps demo - DISABLED
   // const handleLaunchDemo = () => {
@@ -51,14 +62,22 @@ const IntroPage = ({ onComplete }) => {
             </h1>
           </div>
 
-          {/* Enter Map Button */}
-          <div className="flex justify-center mb-8">
+          {/* Enter Map and Demo Buttons */}
+          <div className="flex justify-center gap-4 mb-8">
             <button
               onClick={onComplete}
               className="bg-mahogany hover:bg-mahogany/90 text-white font-bold text-lg py-3 px-10 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center justify-center"
             >
               <MapPin className="w-5 h-5 mr-2" />
               Enter Map
+            </button>
+
+            <button
+              onClick={handleOpenDemo}
+              className="bg-sage hover:bg-sage/90 text-forest font-bold text-lg py-3 px-10 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center justify-center"
+            >
+              <Play className="w-5 h-5 mr-2" />
+              Demo
             </button>
           </div>
 
@@ -314,6 +333,37 @@ const IntroPage = ({ onComplete }) => {
           </p>
         </div>
       </footer>
+
+      {/* Demo Modal */}
+      {showDemoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-[90vw] h-[90vh] max-w-7xl flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-obsidian">Interactive Demo</h2>
+              <button
+                onClick={handleCloseDemo}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 p-6">
+              <iframe
+                src="https://storymaps.arcgis.com/stories/72ed342efcdb42d2a60016835ad1fcdf"
+                width="100%"
+                height="100%"
+                frameBorder="0"
+                allowFullScreen
+                allow="geolocation"
+                className="rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
