@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
 import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis
+    CartesianGrid,
+    Line,
+    LineChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis
 } from 'recharts';
 
 import { BarChart2 } from 'lucide-react';
@@ -31,9 +31,9 @@ const DateSeparator = ({ x, isDarkMode }) => (
 
 const StatsTable = ({ data, isDarkMode }) => {
   const headerStyles = {
-    min: { label: 'Min PM2.5', color: '#00e400', textColor: '#006400' },
-    avg: { label: 'Avg PM2.5', color: '#3B82F6', textColor: '#1D4ED8' },
-    max: { label: 'Max PM2.5', color: '#ff0000', textColor: '#990000' }
+    min: { label: 'Min PM<sub>2.5</sub>', color: '#00e400', textColor: '#006400' },
+    avg: { label: 'Avg PM<sub>2.5</sub>', color: '#3B82F6', textColor: '#1D4ED8' },
+    max: { label: 'Max PM<sub>2.5</sub>', color: '#ff0000', textColor: '#990000' }
   };
 
   return (
@@ -52,9 +52,8 @@ const StatsTable = ({ data, isDarkMode }) => {
                   color: isDarkMode ? style.color : style.textColor,
                   backgroundColor: `${style.color}15`
                 }}
-              >
-                {style.label}
-              </th>
+                dangerouslySetInnerHTML={{ __html: style.label }}
+              />
             ))}
           </tr>
         </thead>
@@ -242,7 +241,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
           ))}
           {!dataPoint?.hasData && (
             <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-              No smoke forecasted (PM2.5 = 0)
+              No smoke forecasted (PM<sub>2.5</sub> = 0)
             </div>
           )}
         </div>
@@ -285,7 +284,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
             domain={[0, max]}
             axisLine={{ stroke: isDarkMode ? '#374151' : '#E5E7EB' }}
             label={{
-              value: 'PM2.5 (μg/m³)',
+              value: 'PM₂.₅ (μg/m³)',
               angle: -90,
               position: 'insideLeft',
               style: {
@@ -301,7 +300,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
           <Line
             type="monotone"
             dataKey="maxPM25"
-            name="Max PM2.5"
+            name="Max PM<sub>2.5</sub>"
             stroke="#c52222"
             strokeWidth={2}
             dot={false}
@@ -310,7 +309,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
           <Line
             type="monotone"
             dataKey="averagePM25"
-            name="Average PM2.5"
+            name="Average PM<sub>2.5</sub>"
             stroke="#3B82F6"
             strokeWidth={2}
             dot={false}
@@ -319,7 +318,7 @@ const AreaStatsChart = ({ data, isDarkMode }) => {
           <Line
             type="monotone"
             dataKey="minPM25"
-            name="Min PM2.5"
+            name="Min PM<sub>2.5</sub>"
             stroke="#76f163"
             strokeWidth={2}
             dot={false}
@@ -435,7 +434,7 @@ const AreaAnalysis = ({
         console.warn('No data found for the selected area. This could be because:');
         console.warn('1. The area is outside the data coverage');
         console.warn('2. The map layers are not fully loaded yet');
-        console.warn('3. There is no PM2.5 data for this location');
+        console.warn('3. There is no PM<sub>2.5</sub> data for this location');
         setError('No smoke forecasted in this area.');
       }
 

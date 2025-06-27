@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Info,
-  MapPin,
-  PenLine,
-  Sun,
-  Wind,
-  X
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    Info,
+    MapPin,
+    PenLine,
+    Sun,
+    Wind,
+    X
 } from 'lucide-react';
 
 const IntroTour = ({ onComplete, isDarkMode }) => {
@@ -22,9 +22,9 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
 
   const tourSteps = [
     {
-      title: 'Welcome to PM2.5 visualization tool',
+      title: 'Welcome to PM<sub>2.5</sub> visualization tool',
       description:
-        "This interactive map shows PM2.5 air quality data from Smoke across the United States. We'll walk you through the main features to help you get started.",
+        "This interactive map shows PM<sub>2.5</sub> air quality data from Smoke across the United States. We'll walk you through the main features to help you get started.",
       target: null,
       icon: MapPin
     },
@@ -37,9 +37,9 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
       icon: Clock
     },
     {
-      title: 'PM2.5 Threshold',
+      title: 'PM<sub>2.5</sub> Threshold',
       description:
-        'Adjust this slider or enter a value to filter air quality data. Only areas with PM2.5 levels above or at this threshold will be visible. ',
+        'Adjust this slider or enter a value to filter air quality data. Only areas with PM<sub>2.5</sub> levels above or at this threshold will be visible. ',
       target: 'pm25-threshold',
       position: 'bottom',
       icon: Wind

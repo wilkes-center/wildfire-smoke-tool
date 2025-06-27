@@ -55,7 +55,7 @@ export const PM25Controls = ({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                PM2.5 Threshold
+                PM<sub>2.5</sub> Threshold
               </span>
               <span
                 className={`text-sm font-medium ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}

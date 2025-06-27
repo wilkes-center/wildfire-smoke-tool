@@ -195,7 +195,7 @@ const MapComponent = React.memo(
         {mapConfig?.showHealthLegend && (
           <div className="absolute top-6 right-6">
             <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 border border-obsidian/20 shadow-lg">
-              <h4 className="font-semibold mb-3 font-sora text-obsidian">PM2.5 Levels</h4>
+              <h4 className="font-semibold mb-3 font-sora text-obsidian">PM<sub>2.5</sub> Levels</h4>
               <div className="space-y-2 text-sm font-redhat text-obsidian">
                 {PM25_LEVELS.slice(0, 6).map((level, index) => (
                   <div key={level.label} className="flex items-center gap-2">
@@ -232,7 +232,7 @@ const MapComponent = React.memo(
             <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 border border-obsidian/20 shadow-lg">
               <div className="flex items-center gap-2 text-obsidian text-sm font-redhat">
                 <div className="w-2 h-2 bg-blue rounded-full"></div>
-                <span>PM2.5 ≥ {mapConfig.pm25Threshold} μg/m³</span>
+                <span>PM<sub>2.5</sub> ≥ {mapConfig.pm25Threshold} μg/m³</span>
               </div>
             </div>
           </div>
@@ -350,9 +350,9 @@ const sections = [
   },
   {
     id: 'pm25',
-    title: 'Understanding PM2.5 Health Impacts',
+    title: 'Understanding PM<sub>2.5</sub> Health Impacts',
     content:
-      'Fine particulate matter (PM2.5) from wildfire smoke penetrates deep into lungs and can enter the bloodstream. Even short-term exposure can cause serious health problems, especially for sensitive groups.',
+      'Fine particulate matter (PM<sub>2.5</sub>) from wildfire smoke penetrates deep into lungs and can enter the bloodstream. Even short-term exposure can cause serious health problems, especially for sensitive groups.',
     mediaType: 'video',
     mediaSrc: 'src/assets/storymaps/videos/pm25-health-impacts.mp4',
     mediaAlt: 'Animation showing PM2.5 particles entering respiratory system',

@@ -612,7 +612,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
           <div
             className={`text-xs font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-forest'}`}
           >
-            PM2.5 Level Distribution
+            PM<sub>2.5</sub> Level Distribution
           </div>
 
           {stats.exposureByPM25.error || !stats.exposureByPM25.value ? (
@@ -649,7 +649,7 @@ const PopulationExposureCounter = ({ map, polygon, isDarkMode, currentDateTime, 
             </div>
           ) : stats.exposureByPM25.isLoading ? (
             <div className={`text-xs ${isDarkMode ? 'text-white/70' : 'text-gray-600'}`}>
-              Loading PM2.5 data...
+              Loading PM<sub>2.5</sub> data...
             </div>
           ) : (
             <div className={`rounded-md ${isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50'} p-2`}>

@@ -219,7 +219,7 @@ const IntroPage = ({ onComplete }) => {
                     </span>
                     <div>
                       <h3 className="font-medium text-lg text-forest">
-                        Adjust the PM2.5 threshold
+                        Adjust the PM<sub>2.5</sub> threshold
                       </h3>
                       <p className="text-forest-dark font-redhat">
                         Use the slider in the top-left to filter visible smoke concentrations.
@@ -234,7 +234,7 @@ const IntroPage = ({ onComplete }) => {
                     <div>
                       <h3 className="font-medium text-lg text-forest">Draw custom areas</h3>
                       <p className="text-forest-dark font-redhat">
-                        Use the drawing tool to analyze population exposure to different PM2.5
+                        Use the drawing tool to analyze population exposure to different PM<sub>2.5</sub>
                         levels.
                       </p>
                     </div>
