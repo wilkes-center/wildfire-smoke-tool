@@ -93,16 +93,17 @@ const formatDate = date => {
 const generateTilesetInfo = date => {
   const formattedDate = formatDate(date);
   const chunks = [
-    { name: '00to12', start: 0, end: 11, index: 0 },
-    { name: '12to24', start: 12, end: 23, index: 1 }
+    { name: '00to08', start: 0, end: 7, index: 0 },
+    { name: '08to16', start: 8, end: 15, index: 1 },
+    { name: '16to24', start: 16, end: 23, index: 2 }
   ];
 
   // Debug log to track date conversions
   console.log(`Generating tileset info for date: ${date} -> ${formattedDate}`);
 
   return chunks.map(({ name, start, end, index }) => ({
-    id: `pkulandh.pm25_${formattedDate}${index}`,
-    layer: `pm25_${formattedDate}${index}`,
+    id: `pkulandh.pm25-${formattedDate}-${index}`,
+    layer: `${formattedDate}_${index}`,
     date: date.toISOString().split('T')[0],
     startHour: start,
     endHour: end

@@ -9,16 +9,18 @@ const PM25Section = () => {
       <div className="bg-forest text-white p-6">
         <div className="flex items-center gap-3">
           <Wind className="w-8 h-8" />
-          <h3 className="text-2xl font-bold">Understanding PM<sub>2.5</sub></h3>
+          <h3 className="text-2xl font-bold">
+            Understanding PM<sub>2.5</sub>
+          </h3>
         </div>
       </div>
 
       {/* Main content */}
       <div className="p-6">
         <p className="text-lg text-gray-700 mb-8 leading-relaxed">
-          PM<sub>2.5</sub> refers to fine particulate matter with a diameter of 2.5 micrometers or smaller.
-          These microscopic particles can penetrate deep into your lungs and even enter your
-          bloodstream, posing significant health risks, especially to vulnerable populations.
+          PM<sub>2.5</sub> refers to fine particulate matter with a diameter of 2.5 micrometers or
+          smaller. These microscopic particles can penetrate deep into your lungs and even enter
+          your bloodstream, posing significant health risks, especially to vulnerable populations.
         </p>
 
         {/* PM2.5 Level Chart */}

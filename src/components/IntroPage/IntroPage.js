@@ -234,7 +234,8 @@ const IntroPage = ({ onComplete }) => {
                     <div>
                       <h3 className="font-medium text-lg text-forest">Draw custom areas</h3>
                       <p className="text-forest-dark font-redhat">
-                        Use the drawing tool to analyze population exposure to different PM<sub>2.5</sub>
+                        Use the drawing tool to analyze population exposure to different PM
+                        <sub>2.5</sub>
                         levels.
                       </p>
                     </div>

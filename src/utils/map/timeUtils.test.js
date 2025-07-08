@@ -1,4 +1,4 @@
-import { getCurrentTimelineHour, formatLocalDateTime } from './timeUtils';
+import { formatLocalDateTime, getCurrentTimelineHour } from './timeUtils';
 
 /**
  * Simple test function to verify current time calculation
@@ -28,7 +28,7 @@ export const testCurrentTimeCalculation = () => {
   console.log(`Future start date hour (should be 0): ${futureHour}`);
 
   // Test with start date in the past beyond timeline
-  const pastStartDate = new Date(Date.now() - 72 * 60 * 60 * 1000); // 3 days ago
+  const pastStartDate = new Date(Date.now() - 48 * 60 * 60 * 1000); // 2 days ago
   const pastHour = getCurrentTimelineHour(pastStartDate, totalHours);
   console.log(`Past start date hour (should be ${totalHours - 1}): ${pastHour}`);
 

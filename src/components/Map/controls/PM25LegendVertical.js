@@ -18,7 +18,9 @@ const PM25LegendVertical = ({ isDarkMode }) => {
     >
       <div className="space-y-2">
         {/* Header */}
-        <div className="text-sm font-medium text-center">PM<sub>2.5</sub> Levels (μg/m³)</div>
+        <div className="text-sm font-medium text-center">
+          PM<sub>2.5</sub> Levels (μg/m³)
+        </div>
 
         {/* Vertical color bars */}
         <div className="space-y-1">

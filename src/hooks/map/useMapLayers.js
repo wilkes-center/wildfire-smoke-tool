@@ -17,7 +17,7 @@ export const useMapLayers = (
   const previousChunkRef = useRef(null);
   const preloadedChunksRef = useRef(new Set());
   const CHUNKS_TO_PRELOAD = 4;
-  const MAX_LOADED_CHUNKS = 12;
+  const MAX_LOADED_CHUNKS = 10;
   const getRelevantTilesets = useCallback((date, hour, count = CHUNKS_TO_PRELOAD) => {
     const tilesets = new Set();
     let currentDate = new Date(date);

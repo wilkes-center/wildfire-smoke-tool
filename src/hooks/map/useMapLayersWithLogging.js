@@ -30,7 +30,7 @@ export const useMapLayers = (
   const previousChunkRef = useRef(null);
   const preloadedChunksRef = useRef(new Set());
   const CHUNKS_TO_PRELOAD = 4;
-  const MAX_LOADED_CHUNKS = 12;
+  const MAX_LOADED_CHUNKS = 10;
 
   // Get relevant tilesets with logging
   const getRelevantTilesets = useCallback(

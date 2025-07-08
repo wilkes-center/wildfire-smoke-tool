@@ -162,7 +162,7 @@ const MapComponent = React.memo(
                 </div>
               ) : (
                 <div className="text-center text-obsidian font-redhat">
-                  <div className="font-medium mb-2">4-Day Forecast Timeline</div>
+                  <div className="font-medium mb-2">2-Day Forecast Timeline</div>
                 </div>
               )}
 
@@ -181,7 +181,7 @@ const MapComponent = React.memo(
                     <div
                       className="bg-mahogany h-2 rounded-full transition-all duration-200"
                       style={{
-                        width: `${(timeStep / 96) * 100}%` // 96 hours for forecast section
+                        width: `${(timeStep / 47) * 100}%` // 48 hours for forecast section
                       }}
                     ></div>
                   </div>
@@ -195,7 +195,9 @@ const MapComponent = React.memo(
         {mapConfig?.showHealthLegend && (
           <div className="absolute top-6 right-6">
             <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 border border-obsidian/20 shadow-lg">
-              <h4 className="font-semibold mb-3 font-sora text-obsidian">PM<sub>2.5</sub> Levels</h4>
+              <h4 className="font-semibold mb-3 font-sora text-obsidian">
+                PM<sub>2.5</sub> Levels
+              </h4>
               <div className="space-y-2 text-sm font-redhat text-obsidian">
                 {PM25_LEVELS.slice(0, 6).map((level, index) => (
                   <div key={level.label} className="flex items-center gap-2">
@@ -232,7 +234,9 @@ const MapComponent = React.memo(
             <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3 border border-obsidian/20 shadow-lg">
               <div className="flex items-center gap-2 text-obsidian text-sm font-redhat">
                 <div className="w-2 h-2 bg-blue rounded-full"></div>
-                <span>PM<sub>2.5</sub> ≥ {mapConfig.pm25Threshold} μg/m³</span>
+                <span>
+                  PM<sub>2.5</sub> ≥ {mapConfig.pm25Threshold} μg/m³
+                </span>
               </div>
             </div>
           </div>
@@ -406,8 +410,8 @@ const sections = [
       showSmoke: true,
       intensity: 'overview',
       pm25Threshold: 5,
-      customTileset: 'pkulandh.pm25_202505260',
-      customLayer: 'pm25_202505260',
+      customTileset: 'pkulandh.pm25-20250526-0',
+      customLayer: '20250526_0',
       showAnimation: true,
       baseDate: '2025-05-26',
       showHealthLegend: true
@@ -426,8 +430,8 @@ const sections = [
       showSmoke: true,
       intensity: 'detailed',
       pm25Threshold: 5,
-      customTileset: 'pkulandh.pm25_202505260',
-      customLayer: 'pm25_202505260',
+      customTileset: 'pkulandh.pm25-20250526-0',
+      customLayer: '20250526_0',
       showAnimation: true,
       baseDate: '2025-05-26',
       showHealthLegend: true,
@@ -472,7 +476,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
 
   // Calculate current hour based on timeStep for real data
   const getCurrentHour = () => {
-    return timeStep % 96; // 4 days * 24 hours
+    return timeStep % 48; // 2 days * 24 hours
   };
 
   // Get current date/time for real map data - stabilized version
@@ -570,7 +574,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
       });
 
       // Add custom tileset for section 7
-      const customTilesetId = 'pkulandh.pm25_202505260';
+      const customTilesetId = 'pkulandh.pm25-20250526-0';
       const customSourceId = `demo-source-${customTilesetId}`;
       const customLayerId = `demo-layer-${customTilesetId}`;
 
@@ -588,7 +592,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
               id: customLayerId,
               type: 'circle',
               source: customSourceId,
-              'source-layer': 'pm25_202505260',
+              'source-layer': '20250526_0',
               maxzoom: 9,
               paint: {
                 'circle-radius': [
@@ -794,7 +798,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
       });
 
       // Also hide custom tileset layer if it exists
-      const customLayerId = 'demo-layer-pkulandh.pm25_202505260';
+      const customLayerId = 'demo-layer-pkulandh.pm25-20250526-0';
       try {
         if (map.getLayer(customLayerId)) {
           map.setLayoutProperty(customLayerId, 'visibility', 'none');
@@ -983,7 +987,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
 
     if (isPlaying && currentSectionData?.mediaType === 'map') {
       if (currentSection === 2) {
-        // Regular forecast section - 4 days cycle
+        // Regular forecast section - 2 days cycle
         console.log('Starting regular forecast animation');
         interval = setInterval(() => {
           if (!isPlayingRef.current) {
@@ -992,7 +996,7 @@ const StoryMapsDemo = ({ onLaunchTool, onBack }) => {
           }
           setTimeStep(prev => {
             console.log('Regular forecast step:', prev);
-            return (prev + 1) % 96;
+            return (prev + 1) % 48;
           });
         }, 1000);
       } else if (currentSection === 5 || currentSection === 6) {

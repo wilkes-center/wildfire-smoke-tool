@@ -22,17 +22,24 @@ export const useDateTimeCalculator = currentHour => {
 
     // Force dates to match TILESET_INFO exactly
     // Timeline hours correspond to:
-    // - hour 0-23 (day 0 - today) -> TILESET_INFO[0] and [1]
-    // - hour 24-47 (day 1 - tomorrow) -> TILESET_INFO[2] and [3]
+    // - hour 0-23 (day 0) -> TILESET_INFO[0], [1], and [2]
+    // - hour 24-47 (day 1) -> TILESET_INFO[3], [4], and [5]
 
     // First determine which of the 2 days we're viewing (0-1)
     const tilesetDay = Math.min(dayIndex, 1); // Clamp to 0-1 range
 
-    // Then determine which chunk within that day (0 for morning, 1 for afternoon)
-    const isAfternoon = hourOfDay >= 12;
+    // Then determine which chunk within that day based on 8-hour segments
+    let chunkIndex;
+    if (hourOfDay < 8) {
+      chunkIndex = 0; // 00:00-07:59
+    } else if (hourOfDay < 16) {
+      chunkIndex = 1; // 08:00-15:59
+    } else {
+      chunkIndex = 2; // 16:00-23:59
+    }
 
-    // Calculate the index in the TILESET_INFO array (0-3)
-    const tilesetIndex = tilesetDay * 2 + (isAfternoon ? 1 : 0);
+    // Calculate the index in the TILESET_INFO array (0-5)
+    const tilesetIndex = tilesetDay * 3 + chunkIndex;
 
     // Get the matching tileset
     const currentTileset = tilesetIndex < TILESET_INFO.length ? TILESET_INFO[tilesetIndex] : null;
@@ -51,7 +58,7 @@ export const useDateTimeCalculator = currentHour => {
     const date = currentTileset.date;
 
     console.log(
-      `Current hour ${currentHour} -> Day ${dayIndex} (tileset day ${tilesetDay}), Hour ${hourOfDay} -> Tileset ${currentTileset.id}`
+      `Current hour ${currentHour} -> Day ${dayIndex} (tileset day ${tilesetDay}), Hour ${hourOfDay}, Chunk ${chunkIndex} -> Tileset ${currentTileset.id}`
     );
 
     return {

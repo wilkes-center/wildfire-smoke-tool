@@ -93,7 +93,9 @@ const PM25ThresholdSlider = ({ pm25Threshold = 5, setPM25Threshold, isDarkMode }
             : 'bg-white/95 text-gray-800 border-mahogany'
         }`}
       >
-        <div className="text-xl font-medium">PM<sub>2.5</sub></div>
+        <div className="text-xl font-medium">
+          PM<sub>2.5</sub>
+        </div>
         <div className={`w-px h-6 mx-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
         <div
           className="flex items-center gap-2 flex-1 min-w-0"
