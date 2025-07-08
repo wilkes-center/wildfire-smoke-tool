@@ -5,7 +5,7 @@ An interactive web application that visualizes wildfire smoke PM2.5 concentratio
 ## Features
 
 - Interactive map visualization of PM2.5 concentrations from wildfire smoke
-- 4-day data window: 2 days of historical data and 2 days of forecast data
+- 2-day forecast data window with 8-hour time segments
 - Timeline controls for navigating through the temporal data
 - PM2.5 threshold adjustment for filtering visible smoke concentrations
 - Drawing tools for custom area analysis and population exposure analysis

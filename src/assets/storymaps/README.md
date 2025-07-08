@@ -17,7 +17,7 @@ This directory contains the media assets used in the StoryMaps demo component.
 
 1. **Section 1 (Intro)**: Image - Wildfire smoke scene
 2. **Section 2 (PM2.5)**: Video - Health impacts animation
-3. **Section 3 (Forecast)**: Interactive Map - 4-day forecasting
+3. **Section 3 (Forecast)**: Interactive Map - 2-day forecasting
 4. **Section 4 (Population)**: Image - Population exposure analysis
 5. **Section 5 (Health Categories)**: Image - Color-coded health levels
 6. **Section 6 (Tools)**: Video - Interactive tools demonstration
@@ -46,4 +46,4 @@ This directory contains the media assets used in the StoryMaps demo component.
 
 - Images will fallback to a placeholder if they fail to load
 - Videos will be hidden if they fail to load
-- Maps will always work as they use the existing map infrastructure 
+- Maps will always work as they use the existing map infrastructure

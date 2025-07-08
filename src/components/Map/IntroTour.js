@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Info,
-  MapPin,
-  PenLine,
-  Sun,
-  Wind,
-  X
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    Info,
+    MapPin,
+    PenLine,
+    Sun,
+    Wind,
+    X
 } from 'lucide-react';
 
 const IntroTour = ({ onComplete, isDarkMode }) => {
@@ -31,7 +31,7 @@ const IntroTour = ({ onComplete, isDarkMode }) => {
     {
       title: 'Time Controls',
       description:
-        'Use these controls to play through time, change the playback speed, or jump to a specific time. This lets you see how air quality changes over 4 days, 2 days of archival data and 2 days of forecast data.',
+        'Use these controls to play through time, change the playback speed, or jump to a specific time. This lets you see how air quality changes over 2 days of forecast data.',
       target: 'time-controls',
       position: 'top',
       icon: Clock

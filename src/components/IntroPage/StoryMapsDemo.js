@@ -346,7 +346,7 @@ const sections = [
     id: 'intro',
     title: 'Wildfire Smoke: A Growing Threat',
     content:
-      'Wildfires are becoming more frequent and intense, creating dangerous air quality conditions across the Western United States. Our tool provides critical 4-day smoke forecasts to help communities prepare and protect public health.',
+      'Wildfires are becoming more frequent and intense, creating dangerous air quality conditions across the Western United States. Our tool provides critical 2-day smoke forecasts to help communities prepare and protect public health.',
     mediaType: 'image',
     mediaSrc: wildfireSmokeIntro,
     mediaAlt: 'Wildfire smoke billowing over mountainous terrain',
@@ -364,9 +364,9 @@ const sections = [
   },
   {
     id: 'forecast',
-    title: '4-Day Smoke Forecasting',
+    title: '2-Day Smoke Forecasting',
     content:
-      'Our advanced CMAQ chemical transport model provides accurate smoke forecasts up to 4 days ahead, helping communities plan evacuations, outdoor activities, and health precautions.',
+      'Our advanced CMAQ chemical transport model provides accurate smoke forecasts up to 2 days ahead, helping communities plan evacuations, outdoor activities, and health precautions.',
     mediaType: 'map',
     mapConfig: {
       zoom: 5,

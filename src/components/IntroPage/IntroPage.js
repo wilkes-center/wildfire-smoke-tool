@@ -150,7 +150,7 @@ const IntroPage = ({ onComplete }) => {
                 <p className="text-xl text-forest-dark mb-4 font-redhat">
                   This product depicts a smoke forecast for the Western U.S. using the CMAQ chemical
                   transport model, with smoke emissions estimated using version 1 of TraceAQs fire
-                  activity parameterization. Smoke forecasts are generated out to 4 days and have a
+                  activity parameterization. Smoke forecasts are generated out to 2 days and have a
                   spatial grid spacing of 12-km.
                 </p>
 
@@ -207,7 +207,7 @@ const IntroPage = ({ onComplete }) => {
                     <div>
                       <h3 className="font-medium text-lg text-forest">Use the time controls</h3>
                       <p className="text-forest-dark font-redhat">
-                        Play through the 4-day timeline or jump to a specific hour using the
+                        Play through the 2-day timeline or jump to a specific hour using the
                         controls at the bottom.
                       </p>
                     </div>
