@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { Github, HelpCircle, Info, MapPin, MessageSquare, Play, X } from 'lucide-react';
+import { Github, Info, MapPin, MessageSquare, Play, X } from 'lucide-react';
 // import StoryMapsDemo from './StoryMapsDemo';
 
 const IntroPage = ({ onComplete }) => {
@@ -102,23 +102,6 @@ const IntroPage = ({ onComplete }) => {
               </button>
 
               <button
-                onClick={() => setActiveSection('howto')}
-                className={`py-3 px-8 rounded-lg flex items-center transition-all relative ${
-                  activeSection === 'howto'
-                    ? 'bg-sage/30 text-forest font-semibold shadow-sm'
-                    : 'text-forest/70 hover:bg-forest/5'
-                }`}
-              >
-                <HelpCircle
-                  className={`w-5 h-5 mr-3 ${activeSection === 'howto' ? 'text-mahogany' : 'text-forest/60'}`}
-                />
-                <span>How to Use</span>
-                {activeSection === 'howto' && (
-                  <div className="absolute bottom-0 left-0 w-full h-1 bg-mahogany rounded-b-lg"></div>
-                )}
-              </button>
-
-              <button
                 onClick={() => setActiveSection('feedback')}
                 className={`py-3 px-8 rounded-lg flex items-center transition-all relative ${
                   activeSection === 'feedback'
@@ -176,117 +159,6 @@ const IntroPage = ({ onComplete }) => {
                   </p>
                 </div>
                 */}
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'howto' && (
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-              {/* Quick Start Guide */}
-              <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg lg:col-span-2">
-                <h2 className="text-3xl font-bold text-forest mb-6">Quick Start Guide</h2>
-                <div className="h-1 w-20 bg-mahogany mb-6"></div>
-
-                <ol className="space-y-6">
-                  <li className="flex">
-                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">
-                      1
-                    </span>
-                    <div>
-                      <h3 className="font-medium text-lg text-forest">Navigate the map</h3>
-                      <p className="text-forest-dark font-redhat">
-                        Use standard zoom and pan controls located on the left side of the screen.
-                      </p>
-                    </div>
-                  </li>
-
-                  <li className="flex">
-                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">
-                      2
-                    </span>
-                    <div>
-                      <h3 className="font-medium text-lg text-forest">Use the time controls</h3>
-                      <p className="text-forest-dark font-redhat">
-                        Play through the 2-day timeline or jump to a specific hour using the
-                        controls at the bottom.
-                      </p>
-                    </div>
-                  </li>
-
-                  <li className="flex">
-                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">
-                      3
-                    </span>
-                    <div>
-                      <h3 className="font-medium text-lg text-forest">
-                        Adjust the PM<sub>2.5</sub> threshold
-                      </h3>
-                      <p className="text-forest-dark font-redhat">
-                        Use the slider in the top-left to filter visible smoke concentrations.
-                      </p>
-                    </div>
-                  </li>
-
-                  <li className="flex">
-                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">
-                      4
-                    </span>
-                    <div>
-                      <h3 className="font-medium text-lg text-forest">Draw custom areas</h3>
-                      <p className="text-forest-dark font-redhat">
-                        Use the drawing tool to analyze population exposure to different PM
-                        <sub>2.5</sub>
-                        levels.
-                      </p>
-                    </div>
-                  </li>
-
-                  <li className="flex">
-                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-sage text-forest font-bold mr-4 flex-shrink-0">
-                      5
-                    </span>
-                    <div>
-                      <h3 className="font-medium text-lg text-forest">
-                        Toggle light and dark mode
-                      </h3>
-                      <p className="text-forest-dark font-redhat">
-                        Use the theme button for your preferred viewing experience.
-                      </p>
-                    </div>
-                  </li>
-                </ol>
-              </div>
-
-              {/* Video Tutorial - LARGER */}
-              <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg lg:col-span-3">
-                <div className="p-6 border-b border-gray-800">
-                  <h2 className="text-2xl font-bold text-cream mb-2">Video Tutorial</h2>
-                </div>
-
-                <div className="aspect-video bg-gray-800 relative">
-                  {/* Play button overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <div className="w-20 h-20 rounded-full bg-mahogany/80 flex items-center justify-center cursor-pointer hover:bg-mahogany transition-colors">
-                      <Play className="w-10 h-10 text-cream ml-1" />
-                    </div>
-                  </div>
-
-                  {/* Video thumbnail/placeholder */}
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-500 font-redhat">
-                    (Video would be embedded here)
-                  </div>
-                </div>
-
-                <div className="p-6 bg-gray-800 border-t border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-cream font-medium">
-                        Introduction to Wildfire Smoke Tool
-                      </h3>
-                      <p className="text-cream/70 text-sm font-redhat">Duration: 5:32</p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           )}

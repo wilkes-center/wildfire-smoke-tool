@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
 import {
-    CartesianGrid,
-    Line,
-    LineChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
 } from 'recharts';
 
 import { BarChart2 } from 'lucide-react';
