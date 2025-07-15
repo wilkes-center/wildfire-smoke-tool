@@ -93,9 +93,10 @@ const formatDate = date => {
 const generateTilesetInfo = date => {
   const formattedDate = formatDate(date);
   const chunks = [
-    { name: '00to08', start: 0, end: 7, index: 0 },
-    { name: '08to16', start: 8, end: 15, index: 1 },
-    { name: '16to24', start: 16, end: 23, index: 2 }
+    { name: '00to06', start: 0, end: 5, index: 0 },
+    { name: '06to12', start: 6, end: 11, index: 1 },
+    { name: '12to18', start: 12, end: 17, index: 2 },
+    { name: '18to24', start: 18, end: 23, index: 3 }
   ];
 
   // Debug log to track date conversions
