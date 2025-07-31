@@ -22,26 +22,30 @@ export const useDateTimeCalculator = currentHour => {
 
     // Force dates to match TILESET_INFO exactly
     // Timeline hours correspond to:
-    // - hour 0-23 (day 0) -> TILESET_INFO[0], [1], [2], and [3]
-    // - hour 24-47 (day 1) -> TILESET_INFO[4], [5], [6], and [7]
+    // - hour 0-23 (day 0) -> TILESET_INFO[0], [1], [2], [3], [4], and [5]
+    // - hour 24-47 (day 1) -> TILESET_INFO[6], [7], [8], [9], [10], and [11]
 
     // First determine which of the 2 days we're viewing (0-1)
     const tilesetDay = Math.min(dayIndex, 1); // Clamp to 0-1 range
 
-    // Then determine which chunk within that day based on 6-hour segments
+    // Then determine which chunk within that day based on 4-hour segments
     let chunkIndex;
-    if (hourOfDay < 6) {
-      chunkIndex = 0; // 00:00-05:59
+    if (hourOfDay < 4) {
+      chunkIndex = 0; // 00:00-03:59
+    } else if (hourOfDay < 8) {
+      chunkIndex = 1; // 04:00-07:59
     } else if (hourOfDay < 12) {
-      chunkIndex = 1; // 06:00-11:59
-    } else if (hourOfDay < 18) {
-      chunkIndex = 2; // 12:00-17:59
+      chunkIndex = 2; // 08:00-11:59
+    } else if (hourOfDay < 16) {
+      chunkIndex = 3; // 12:00-15:59
+    } else if (hourOfDay < 20) {
+      chunkIndex = 4; // 16:00-19:59
     } else {
-      chunkIndex = 3; // 18:00-23:59
+      chunkIndex = 5; // 20:00-23:59
     }
 
-    // Calculate the index in the TILESET_INFO array (0-7)
-    const tilesetIndex = tilesetDay * 4 + chunkIndex;
+    // Calculate the index in the TILESET_INFO array (0-11)
+    const tilesetIndex = tilesetDay * 6 + chunkIndex;
 
     // Get the matching tileset
     const currentTileset = tilesetIndex < TILESET_INFO.length ? TILESET_INFO[tilesetIndex] : null;
